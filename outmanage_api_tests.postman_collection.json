@@ -846,6 +846,767 @@
       ]
     },
     {
+      "name": "Role Management",
+      "item": [
+        {
+          "name": "Get All Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/roles",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles"]
+            },
+            "description": "This request retrieves all roles with their associated users. It should return a 200 status with an array of role objects."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/roles",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": 1,\n            \"name\": \"Admin\",\n            \"description\": \"Administrator with full access to the system\",\n            \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n            \"updatedAt\": \"2023-04-21T10:45:05.306Z\",\n            \"deletedAt\": null,\n            \"users\": [\n                {\n                    \"id\": 1,\n                    \"email\": \"admin@example.com\",\n                    \"name\": \"Admin User\"\n                }\n            ]\n        },\n        {\n            \"id\": 2,\n            \"name\": \"User\",\n            \"description\": \"Regular user with limited access\",\n            \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n            \"updatedAt\": \"2023-04-21T10:46:05.306Z\",\n            \"deletedAt\": null,\n            \"users\": [\n                {\n                    \"id\": 2,\n                    \"email\": \"user@example.com\",\n                    \"name\": \"Regular User\"\n                }\n            ]\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Role by ID - Valid",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/roles/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles", "1"]
+            },
+            "description": "This request retrieves a specific role by ID with its associated users. It should return a 200 status with the role object."
+          },
+          "response": [
+            {
+              "name": "Valid Role Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/roles/1",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles", "1"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 1,\n        \"name\": \"Admin\",\n        \"description\": \"Administrator with full access to the system\",\n        \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n        \"updatedAt\": \"2023-04-21T10:45:05.306Z\",\n        \"deletedAt\": null,\n        \"users\": [\n            {\n                \"id\": 1,\n                \"email\": \"admin@example.com\",\n                \"name\": \"Admin User\"\n            }\n        ]\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Role by ID - Invalid ID Format",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/roles/abc",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles", "abc"]
+            },
+            "description": "This request tests error handling with an invalid ID format. It should return a 400 status with error details about the invalid ID."
+          },
+          "response": [
+            {
+              "name": "Invalid ID Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/roles/abc",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles", "abc"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Invalid role ID\",\n    \"errorCode\": \"INVALID_ROLE_ID\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Role by ID - Role Not Found",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/roles/999",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles", "999"]
+            },
+            "description": "This request tests error handling for a non-existent role ID. It should return a 404 status with error details."
+          },
+          "response": [
+            {
+              "name": "Role Not Found Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/roles/999",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles", "999"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Role not found\",\n    \"errorCode\": \"ROLE_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Role - Valid",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Manager\",\n    \"description\": \"Manager with permissions to manage users and resources\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/roles",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles"]
+            },
+            "description": "This request tests successful role creation with valid data. It should pass validation and return a 201 status with the created role object."
+          },
+          "response": [
+            {
+              "name": "Valid Role Creation",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Manager\",\n    \"description\": \"Manager with permissions to manage users and resources\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/roles",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 3,\n        \"name\": \"Manager\",\n        \"description\": \"Manager with permissions to manage users and resources\",\n        \"createdAt\": \"2023-04-21T10:55:05.306Z\",\n        \"updatedAt\": \"2023-04-21T10:55:05.306Z\",\n        \"deletedAt\": null\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Role - Name Too Short",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"A\",\n    \"description\": \"Invalid short name\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/roles",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles"]
+            },
+            "description": "This request tests validation for a role name that is too short. It should return a 400 status with validation error details."
+          },
+          "response": [
+            {
+              "name": "Name Too Short Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"A\",\n    \"description\": \"Invalid short name\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/roles",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Validation error\",\n    \"errorCode\": \"VALIDATION_ERROR\",\n    \"details\": [\n        {\n            \"message\": \"Role name must be at least 2 characters long\",\n            \"path\": [\"name\"]\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Role - Missing Name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"description\": \"Role without name\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/roles",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles"]
+            },
+            "description": "This request tests validation for a missing name field. It should return a 400 status with validation error details."
+          },
+          "response": [
+            {
+              "name": "Missing Name Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"description\": \"Role without name\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/roles",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Validation error\",\n    \"errorCode\": \"VALIDATION_ERROR\",\n    \"details\": [\n        {\n            \"message\": \"Role name is required\",\n            \"path\": [\"name\"]\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Role - Duplicate Name",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Admin\",\n    \"description\": \"Duplicate role name\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/roles",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles"]
+            },
+            "description": "This request tests error handling for duplicate role names. It should return a 409 status with error details."
+          },
+          "response": [
+            {
+              "name": "Duplicate Name Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Admin\",\n    \"description\": \"Duplicate role name\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/roles",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles"]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Role with name: Admin, already exists\",\n    \"errorCode\": \"ROLE_NAME_DUPLICATE\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Role - Valid",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated description for this role\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/roles/2",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles", "2"]
+            },
+            "description": "This request updates a role with valid data. It should return a 200 status with the updated role object."
+          },
+          "response": [
+            {
+              "name": "Successful Update Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated description for this role\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/roles/2",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles", "2"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 2,\n        \"name\": \"Updated Role\",\n        \"description\": \"Updated description for this role\",\n        \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n        \"updatedAt\": \"2023-04-21T11:15:05.306Z\",\n        \"deletedAt\": null\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Role - No Fields",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/roles/2",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles", "2"]
+            },
+            "description": "This request tests error handling when no update fields are provided. It should return a 400 status with validation error details."
+          },
+          "response": [
+            {
+              "name": "No Fields Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/roles/2",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles", "2"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Validation error\",\n    \"errorCode\": \"VALIDATION_ERROR\",\n    \"details\": [\n        {\n            \"message\": \"At least one field must be provided for update\",\n            \"path\": []\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Role - Duplicate Name",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Admin\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/roles/2",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles", "2"]
+            },
+            "description": "This request tests error handling when updating to a duplicate name. It should return a 409 status with error details."
+          },
+          "response": [
+            {
+              "name": "Duplicate Name Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Admin\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/roles/2",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles", "2"]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Role with name: Admin, already exists\",\n    \"errorCode\": \"ROLE_NAME_DUPLICATE\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Role - Valid",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/roles/3",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles", "3"]
+            },
+            "description": "This request soft deletes a role by ID. It should return a 200 status with a success message and the deleted role."
+          },
+          "response": [
+            {
+              "name": "Successful Delete Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/roles/3",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles", "3"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 3,\n        \"name\": \"Manager\",\n        \"description\": \"Manager with permissions to manage users and resources\",\n        \"createdAt\": \"2023-04-21T10:55:05.306Z\",\n        \"updatedAt\": \"2023-04-21T11:20:05.306Z\",\n        \"deletedAt\": \"2023-04-21T11:20:05.306Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Role - With Users",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/roles/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles", "1"]
+            },
+            "description": "This request tests error handling when trying to delete a role that has users associated with it. It should return a 409 status with error details."
+          },
+          "response": [
+            {
+              "name": "Role In Use Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/roles/1",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles", "1"]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Role is associated with 1 users and cannot be deleted\",\n    \"errorCode\": \"ROLE_IN_USE\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Role - Invalid ID Format",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/roles/abc",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles", "abc"]
+            },
+            "description": "This request tests error handling for an invalid ID format. It should return a 400 status with validation error details."
+          },
+          "response": [
+            {
+              "name": "Invalid ID Format Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/roles/abc",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles", "abc"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Invalid role ID\",\n    \"errorCode\": \"INVALID_ROLE_ID\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Role - Not Found",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/roles/999",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "roles", "999"]
+            },
+            "description": "This request tests error handling for a non-existent role ID. It should return a 404 status with error details."
+          },
+          "response": [
+            {
+              "name": "Role Not Found Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/roles/999",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "roles", "999"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Role not found\",\n    \"errorCode\": \"ROLE_NOT_FOUND\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Authentication",
       "item": [
         {

@@ -6,7 +6,7 @@ import jwt from '../lib/jwt';
 import { CustomError } from '../middlewares/error';
 import { loginUserSchema, UserLoginInput } from '../schemas/user';
 import userService from '../services/userService';
-import { success } from '../utils/response';
+import { success } from '../types/response';
 
 /**
  * Authentication controller for handling user login and related operations

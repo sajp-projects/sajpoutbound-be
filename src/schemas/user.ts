@@ -1,5 +1,6 @@
 import { User as UserModel } from '@prisma/client';
 import Joi from 'joi';
+import { createResourceIdSchema } from './base';
 
 export type UserCreateInput = Pick<UserModel, 'email' | 'name' | 'roleId' | 'password'>;
 export type UserUpdateInput = Partial<Pick<UserModel, 'email' | 'name' | 'roleId'>>;
@@ -52,3 +53,6 @@ export const loginUserSchema = Joi.object<UserLoginInput>({
     'any.required': 'Password is required',
   }),
 });
+
+// Using createResourceIdSchema for user ID validation
+export const userIdSchema = createResourceIdSchema('User');

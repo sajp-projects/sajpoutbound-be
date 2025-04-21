@@ -8,10 +8,11 @@ import {
   createUserSchema,
   updateUserSchema,
   UserCreateInput,
+  userIdSchema,
   UserUpdateInput,
 } from '../schemas/user';
 import userService from '../services/userService';
-import { success } from '../utils/response';
+import { success } from '../types/response';
 
 export default {
   async getAllUsers(req: Request, res: Response, next: NextFunction) {
@@ -25,15 +26,12 @@ export default {
 
   async getUserById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
-      const id = parseInt(req.params.id, 10);
+      const { id: paramId } = req.params;
+      const id = parseInt(paramId, 10);
 
-      if (isNaN(id)) {
-        throw new CustomError({
-          message: 'Invalid user ID',
-          errorCode: 'INVALID_USER_ID',
-          status: 400,
-        });
-      }
+      await userIdSchema.validateAsync({
+        id,
+      });
 
       const user = await userService.getUserById(id);
 
@@ -127,15 +125,12 @@ export default {
     next: NextFunction,
   ) {
     try {
-      const id = parseInt(req.params.id, 10);
+      const { id: paramId } = req.params;
+      const id = parseInt(paramId, 10);
 
-      if (isNaN(id)) {
-        throw new CustomError({
-          message: 'Invalid user ID',
-          errorCode: 'INVALID_USER_ID',
-          status: 400,
-        });
-      }
+      await userIdSchema.validateAsync({
+        id,
+      });
 
       // Check if user exists
       const existingUser = await userService.getUserById(id);
@@ -199,15 +194,12 @@ export default {
 
   async deleteUser(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
-      const id = parseInt(req.params.id, 10);
+      const { id: paramId } = req.params;
+      const id = parseInt(paramId, 10);
 
-      if (isNaN(id)) {
-        throw new CustomError({
-          message: 'Invalid user ID',
-          errorCode: 'INVALID_USER_ID',
-          status: 400,
-        });
-      }
+      await userIdSchema.validateAsync({
+        id,
+      });
 
       // Check if user exists
       const existingUser = await userService.getUserById(id);

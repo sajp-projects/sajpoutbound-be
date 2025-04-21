@@ -3,8 +3,11 @@ import {
   NextFunction, Request, Response, 
 } from 'express';
 import { CustomError } from '../middlewares/error';
+import {
+  createRoleSchema, roleIdSchema, updateRoleSchema, 
+} from '../schemas/role';
 import roleService from '../services/roleService';
-import { success } from '../utils/response';
+import { success } from '../types/response';
 
 export default {
   async getAllRoles(req: Request, res: Response, next: NextFunction) {
@@ -18,15 +21,13 @@ export default {
 
   async getRoleById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
-      const id = parseInt(req.params.id, 10);
+      // Validate ID parameter
+      const { id: paramId } = req.params;
+      const id = parseInt(paramId, 10);
 
-      if (isNaN(id)) {
-        throw new CustomError({
-          message: 'Invalid role ID',
-          errorCode: 'INVALID_ROLE_ID',
-          status: 400,
-        });
-      }
+      await roleIdSchema.validateAsync({
+        id,
+      });
 
       const role = await roleService.getRoleById(id);
 
@@ -43,21 +44,14 @@ export default {
       next(error);
     }
   },
+
   async createRole(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, description } = req.body;
-
-      if (!name) {
-        throw new CustomError({
-          message: 'Role name is required',
-          errorCode: 'VALIDATION_ERROR',
-          status: 400,
-        });
-      }
+      const validated = await createRoleSchema.validateAsync(req.body);
 
       const role = await roleService.createRole({
-        name,
-        description,
+        name: validated.name,
+        description: validated.description === null ? undefined : validated.description,
       });
 
       res.status(201).json(success(role));
@@ -87,15 +81,13 @@ export default {
 
   async updateRole(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
-      const id = parseInt(req.params.id, 10);
+      // Validate ID parameter
+      const { id: paramId } = req.params;
+      const id = parseInt(paramId, 10);
 
-      if (isNaN(id)) {
-        throw new CustomError({
-          message: 'Invalid role ID',
-          errorCode: 'INVALID_ROLE_ID',
-          status: 400,
-        });
-      }
+      await roleIdSchema.validateAsync({
+        id,
+      });
 
       // Check if role exists
       const existingRole = await roleService.getRoleById(id);
@@ -108,19 +100,13 @@ export default {
         });
       }
 
-      const { name, description } = req.body;
+      // Validate request body
+      const validated = await updateRoleSchema.validateAsync(req.body);
 
-      if (!name && !description) {
-        throw new CustomError({
-          message: 'At least one field is required for update',
-          errorCode: 'VALIDATION_ERROR',
-          status: 400,
-        });
-      }
-
+      // Update the role with validated data
       const updatedRole = await roleService.updateRole(id, {
-        name,
-        description,
+        name: validated.name,
+        description: validated.description === null ? undefined : validated.description,
       });
 
       res.status(200).json(success(updatedRole));
@@ -150,15 +136,13 @@ export default {
 
   async deleteRole(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
-      const id = parseInt(req.params.id, 10);
+      // Validate ID parameter
+      const { id: paramId } = req.params;
+      const id = parseInt(paramId, 10);
 
-      if (isNaN(id)) {
-        throw new CustomError({
-          message: 'Invalid role ID',
-          errorCode: 'INVALID_ROLE_ID',
-          status: 400,
-        });
-      }
+      await roleIdSchema.validateAsync({
+        id,
+      });
 
       // Check if role exists
       const existingRole = await roleService.getRoleById(id);

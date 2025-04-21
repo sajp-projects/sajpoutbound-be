@@ -1,5 +1,6 @@
 import { Role } from '@prisma/client';
 import Joi from 'joi';
+import { createResourceIdSchema } from './base';
 
 export type RoleCreateInput = Pick<Role, 'name' | 'description'>;
 export type RoleUpdateInput = Partial<RoleCreateInput>;
@@ -12,26 +13,30 @@ export interface RoleWithUsers extends Role {
   }[];
 }
 
-export const createRoleSchema = Joi.object<RoleCreateInput>({
+export const createRoleSchema = Joi.object({
   name: Joi.string().min(2).max(50).required().messages({
-    'string.empty': 'Role name is required',
-    'string.min': 'Role name must be at least {#limit} characters long',
-    'string.max': 'Role name cannot exceed {#limit} characters',
-    'any.required': 'Role name is required',
+    'string.base': 'Name must be a text',
+    'string.empty': 'Name cannot be empty',
+    'string.min': 'Name must be at least {#limit} characters long',
+    'string.max': 'Name cannot be more than {#limit} characters long',
+    'any.required': 'Name is required',
   }),
-  description: Joi.string().max(200).allow('').allow(null).optional().messages({
-    'string.max': 'Description cannot exceed {#limit} characters',
+  description: Joi.string().max(200).allow(null).messages({
+    'string.base': 'Description must be a text',
+    'string.max': 'Description cannot be more than {#limit} characters long',
   }),
 });
 
-export const updateRoleSchema = Joi.object<RoleUpdateInput>({
-  name: Joi.string().min(2).max(50).optional().messages({
-    'string.empty': 'Role name cannot be empty',
-    'string.min': 'Role name must be at least {#limit} characters long',
-    'string.max': 'Role name cannot exceed {#limit} characters',
+export const updateRoleSchema = Joi.object({
+  name: Joi.string().min(2).max(50).messages({
+    'string.base': 'Name must be a text',
+    'string.empty': 'Name cannot be empty',
+    'string.min': 'Name must be at least {#limit} characters long',
+    'string.max': 'Name cannot be more than {#limit} characters long',
   }),
-  description: Joi.string().max(200).allow('').allow(null).optional().messages({
-    'string.max': 'Description cannot exceed {#limit} characters',
+  description: Joi.string().max(200).allow(null).messages({
+    'string.base': 'Description must be a text',
+    'string.max': 'Description cannot be more than {#limit} characters long',
   }),
 })
   .min(1)
@@ -39,11 +44,4 @@ export const updateRoleSchema = Joi.object<RoleUpdateInput>({
     'object.min': 'At least one field must be provided for update',
   });
 
-export const roleIdSchema = Joi.object({
-  id: Joi.number().integer().positive().required().messages({
-    'number.base': 'Role ID must be a number',
-    'number.integer': 'Role ID must be an integer',
-    'number.positive': 'Role ID must be a positive number',
-    'any.required': 'Role ID is required',
-  }),
-});
+export const roleIdSchema = createResourceIdSchema('Role');
