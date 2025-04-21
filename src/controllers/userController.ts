@@ -67,21 +67,7 @@ export default {
         password: hashedPassword,
       });
 
-      // Filter out the password from the response
-      const {
-        id, email, name, createdAt, updatedAt, roleId, 
-      } = user;
-
-      res.status(201).json(
-        success({
-          id,
-          email,
-          name,
-          roleId,
-          createdAt,
-          updatedAt,
-        }),
-      );
+      res.status(201).json(success(user));
     } catch (error) {
       // Handle Prisma errors
       if (error instanceof Prisma.PrismaClientKnownRequestError) {

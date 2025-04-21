@@ -16,13 +16,10 @@ export default {
         deletedAt: null,
       },
       include: {
-        role: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-          },
-        },
+        role: true,
+      },
+      omit: {
+        password: true,
       },
     });
   },
@@ -40,13 +37,10 @@ export default {
         deletedAt: null,
       },
       include: {
-        role: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-          },
-        },
+        role: true,
+      },
+      omit: {
+        password: true,
       },
     });
   },
@@ -60,6 +54,12 @@ export default {
   async createUser(userData: UserCreateInput) {
     return prisma.user.create({
       data: userData,
+      include: {
+        role: true,
+      },
+      omit: {
+        password: true,
+      },
     });
   },
 
@@ -95,13 +95,10 @@ export default {
       },
       data,
       include: {
-        role: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-          },
-        },
+        role: true,
+      },
+      omit: {
+        password: true,
       },
     });
   },
@@ -121,13 +118,10 @@ export default {
         deletedAt: new Date(),
       },
       include: {
-        role: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-          },
-        },
+        role: true,
+      },
+      omit: {
+        password: true,
       },
     });
   },
