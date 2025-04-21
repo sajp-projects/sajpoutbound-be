@@ -1,25 +1,10 @@
+import { User as UserModel } from '@prisma/client';
 import Joi from 'joi';
 
-// Define our own User interface based on the Prisma schema
-export interface User {
-  id: number;
-  email: string;
-  name: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type UserCreateInput = Pick<UserModel, 'email' | 'name' | 'roleId' | 'password'>;
+export type UserUpdateInput = Partial<Pick<UserModel, 'email' | 'name' | 'roleId'>>;
+export type UserLoginInput = Pick<UserModel, 'email' | 'password'>;
 
-// Type definitions based on Prisma schema
-export type UserCreateInput = Pick<User, 'email' | 'name'> & {
-  password: string;
-};
-export type UserUpdateInput = Partial<Pick<User, 'email' | 'name'>>;
-export type UserLoginInput = { email: string; password: string };
-
-/**
- * Validation schema for user creation
- * Based on Prisma User model
- */
 export const createUserSchema = Joi.object<UserCreateInput>({
   email: Joi.string().email().required().messages({
     'string.email': 'Email must be a valid email address',
@@ -34,12 +19,12 @@ export const createUserSchema = Joi.object<UserCreateInput>({
     'string.min': 'Password must be at least {#limit} characters long',
     'any.required': 'Password is required',
   }),
+  roleId: Joi.number().integer().required().messages({
+    'number.base': 'Role ID must be a number',
+    'any.required': 'Role ID is required',
+  }),
 });
 
-/**
- * Validation schema for user update
- * Based on Prisma User model
- */
 export const updateUserSchema = Joi.object<UserUpdateInput>({
   email: Joi.string().email().messages({
     'string.email': 'Email must be a valid email address',
@@ -48,11 +33,16 @@ export const updateUserSchema = Joi.object<UserUpdateInput>({
     'string.min': 'Name must be at least {#limit} characters long',
     'string.max': 'Name cannot exceed {#limit} characters',
   }),
-});
+  roleId: Joi.number().integer().messages({
+    'number.base': 'Role ID must be a number',
+    'number.integer': 'Role ID must be an integer',
+  }),
+})
+  .min(1)
+  .messages({
+    'object.min': 'At least one field must be provided for update',
+  });
 
-/**
- * Validation schema for user login
- */
 export const loginUserSchema = Joi.object<UserLoginInput>({
   email: Joi.string().email().required().messages({
     'string.email': 'Email must be a valid email address',

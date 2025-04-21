@@ -2,45 +2,232 @@ import { Prisma } from '@prisma/client';
 import {
   NextFunction, Request, Response, 
 } from 'express';
+import bcrypt from '../lib/bcrypt';
 import { CustomError } from '../middlewares/error';
-import { createUserSchema, UserCreateInput } from '../schemas/user';
+import {
+  createUserSchema,
+  updateUserSchema,
+  UserCreateInput,
+  UserUpdateInput,
+} from '../schemas/user';
 import userService from '../services/userService';
+import { success } from '../utils/response';
 
 export default {
+  async getAllUsers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const users = await userService.getAllUsers();
+      res.status(200).json(success(users));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getUserById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    try {
+      const id = parseInt(req.params.id, 10);
+
+      if (isNaN(id)) {
+        throw new CustomError({
+          message: 'Invalid user ID',
+          errorCode: 'INVALID_USER_ID',
+          status: 400,
+        });
+      }
+
+      const user = await userService.getUserById(id);
+
+      if (!user) {
+        throw new CustomError({
+          message: 'User not found',
+          errorCode: 'USER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      res.status(200).json(success(user));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createUser(
     req: Request<Record<string, never>, unknown, UserCreateInput>,
     res: Response,
     next: NextFunction,
   ) {
     try {
+      // Validate the request body
       const validated = await createUserSchema.validateAsync(req.body);
 
-      const user = await userService.createUser(validated);
+      // Hash the password before storing it
+      const hashedPassword = await bcrypt.hashPassword(validated.password);
 
-      res.status(201).json(user);
+      // Create the user with the hashed password
+      const user = await userService.createUser({
+        ...validated,
+        password: hashedPassword,
+      });
+
+      // Filter out the password from the response
+      const {
+        id, email, name, createdAt, updatedAt, roleId, 
+      } = user;
+
+      res.status(201).json(
+        success({
+          id,
+          email,
+          name,
+          roleId,
+          createdAt,
+          updatedAt,
+        }),
+      );
     } catch (error) {
       // Handle Prisma errors
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           const target = (error.meta?.target as string[]) || [];
           if (target.includes('email')) {
-            throw new CustomError(
-              `User with email: ${req.body.email}, already exists`,
-              'USER_EMAIL_DUPLICATE',
-              409,
-            );
+            throw new CustomError({
+              message: `User with email: ${req.body.email}, already exists`,
+              errorCode: 'USER_EMAIL_DUPLICATE',
+              status: 409,
+            });
           }
+        } else if (error.code === 'P2003') {
+          // Foreign key constraint violation (typically roleId not found)
+          const fieldName = ((error.meta?.field_name as string) || '').includes('roleId')
+            ? 'Role ID'
+            : 'Foreign key';
+
+          throw new CustomError({
+            message: `${fieldName} not found: ${req.body.roleId}`,
+            errorCode: 'FOREIGN_KEY_NOT_FOUND',
+            status: 404,
+          });
         }
 
         // For other Prisma errors
-        throw new CustomError(
-          error.message || 'Database error occurred',
-          `PRISMA_ERROR_${error.code}`,
-          400,
-        );
+        throw new CustomError({
+          message: error.message || 'Database error occurred',
+          errorCode: `PRISMA_ERROR_${error.code}`,
+          status: 400,
+        });
       }
 
-      // For all other errors (including Joi validation errors), pass to the error middleware
+      next(error);
+    }
+  },
+
+  async updateUser(
+    req: Request<{ id: string }, unknown, UserUpdateInput>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const id = parseInt(req.params.id, 10);
+
+      if (isNaN(id)) {
+        throw new CustomError({
+          message: 'Invalid user ID',
+          errorCode: 'INVALID_USER_ID',
+          status: 400,
+        });
+      }
+
+      // Check if user exists
+      const existingUser = await userService.getUserById(id);
+
+      if (!existingUser) {
+        throw new CustomError({
+          message: 'User not found',
+          errorCode: 'USER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Validate the request body
+      const validated = await updateUserSchema.validateAsync(req.body);
+
+      if (Object.keys(validated).length === 0) {
+        throw new CustomError({
+          message: 'At least one field is required for update',
+          errorCode: 'VALIDATION_ERROR',
+          status: 400,
+        });
+      }
+
+      const updatedUser = await userService.updateUser(id, validated);
+
+      res.status(200).json(success(updatedUser));
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          const target = (error.meta?.target as string[]) || [];
+          if (target.includes('email')) {
+            throw new CustomError({
+              message: `User with email: ${req.body.email}, already exists`,
+              errorCode: 'USER_EMAIL_DUPLICATE',
+              status: 409,
+            });
+          }
+        } else if (error.code === 'P2003') {
+          // Foreign key constraint violation for roleId
+          const fieldName = ((error.meta?.field_name as string) || '').includes('roleId')
+            ? 'Role'
+            : 'Referenced record';
+
+          throw new CustomError({
+            message: `${fieldName} not found`,
+            errorCode: 'ROLE_NOT_FOUND',
+            status: 404,
+          });
+        }
+
+        throw new CustomError({
+          message: error.message || 'Database error occurred',
+          errorCode: `PRISMA_ERROR_${error.code}`,
+          status: 400,
+        });
+      }
+
+      next(error);
+    }
+  },
+
+  async deleteUser(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    try {
+      const id = parseInt(req.params.id, 10);
+
+      if (isNaN(id)) {
+        throw new CustomError({
+          message: 'Invalid user ID',
+          errorCode: 'INVALID_USER_ID',
+          status: 400,
+        });
+      }
+
+      // Check if user exists
+      const existingUser = await userService.getUserById(id);
+
+      if (!existingUser) {
+        throw new CustomError({
+          message: 'User not found',
+          errorCode: 'USER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      await userService.deleteUser(id);
+
+      res.status(200).json(
+        success({
+          message: 'User deleted successfully',
+        }),
+      );
+    } catch (error) {
       next(error);
     }
   },

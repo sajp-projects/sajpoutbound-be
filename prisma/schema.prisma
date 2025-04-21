@@ -21,4 +21,16 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime?
+  role      Role     @relation(fields: [roleId], references: [id])
+  roleId    Int
+}
+
+model Role {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+  users     User[]
 }

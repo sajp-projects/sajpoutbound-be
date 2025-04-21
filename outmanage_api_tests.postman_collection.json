@@ -7,32 +7,179 @@
   },
   "item": [
     {
-      "name": "Create User - Invalid (Error Handling Test)",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"email\": \"invalid-email\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\"\n}"
-        },
-        "url": {
-          "raw": "http://localhost:3000/api/users",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "3000",
-          "path": ["api", "users"]
-        },
-        "description": "This request tests error handling with an invalid email format. It should trigger the Joi validation middleware and return a 400 status with error details."
-      },
-      "response": [
+      "name": "User Management",
+      "item": [
         {
-          "name": "Invalid Email Response",
-          "originalRequest": {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users"]
+            },
+            "description": "This request retrieves all active users with their roles. It should return a 200 status with an array of user objects."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/users",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": 1,\n            \"email\": \"admin@example.com\",\n            \"name\": \"Admin User\",\n            \"roleId\": 1,\n            \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n            \"updatedAt\": \"2023-04-21T10:45:05.306Z\",\n            \"deletedAt\": null,\n            \"role\": {\n                \"id\": 1,\n                \"name\": \"Admin\",\n                \"description\": \"System administrator with full access\"\n            }\n        },\n        {\n            \"id\": 2,\n            \"email\": \"user@example.com\",\n            \"name\": \"Regular User\",\n            \"roleId\": 2,\n            \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n            \"updatedAt\": \"2023-04-21T10:46:05.306Z\",\n            \"deletedAt\": null,\n            \"role\": {\n                \"id\": 2,\n                \"name\": \"User\",\n                \"description\": \"Regular user with limited access\"\n            }\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User by ID - Valid",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/users/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "1"]
+            },
+            "description": "This request retrieves a specific user by ID with their role details. It should return a 200 status with the user object."
+          },
+          "response": [
+            {
+              "name": "Valid User Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/users/1",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "1"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 1,\n        \"email\": \"admin@example.com\",\n        \"name\": \"Admin User\",\n        \"roleId\": 1,\n        \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n        \"updatedAt\": \"2023-04-21T10:45:05.306Z\",\n        \"deletedAt\": null,\n        \"role\": {\n            \"id\": 1,\n            \"name\": \"Admin\",\n            \"description\": \"System administrator with full access\"\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User by ID - Invalid ID Format",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/users/abc",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "abc"]
+            },
+            "description": "This request tests error handling with an invalid ID format. It should return a 400 status with error details about the invalid ID."
+          },
+          "response": [
+            {
+              "name": "Invalid ID Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/users/abc",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "abc"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Invalid user ID\",\n    \"errorCode\": \"INVALID_USER_ID\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get User by ID - User Not Found",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/users/999",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "999"]
+            },
+            "description": "This request tests error handling for a non-existent user ID. It should return a 404 status with error details."
+          },
+          "response": [
+            {
+              "name": "User Not Found Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/users/999",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "999"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"User not found\",\n    \"errorCode\": \"USER_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create User - Invalid (Error Handling Test)",
+          "request": {
             "method": "POST",
             "header": [
               {
@@ -42,7 +189,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"invalid-email\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\"\n}"
+              "raw": "{\n    \"email\": \"invalid-email\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
             },
             "url": {
               "raw": "http://localhost:3000/api/users",
@@ -50,49 +197,49 @@
               "host": ["localhost"],
               "port": "3000",
               "path": ["api", "users"]
-            }
+            },
+            "description": "This request tests error handling with an invalid email format. It should trigger the Joi validation middleware and return a 400 status with error details."
           },
-          "status": "Bad Request",
-          "code": 400,
-          "_postman_previewlanguage": "json",
-          "header": [
+          "response": [
             {
-              "key": "Content-Type",
-              "value": "application/json; charset=utf-8"
+              "name": "Invalid Email Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"invalid-email\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/users",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Email must be a valid email address\",\n            \"path\": [\n                \"email\"\n            ],\n            \"type\": \"string.email\"\n        }\n    ]\n}"
             }
-          ],
-          "cookie": [],
-          "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Email must be a valid email address\",\n            \"path\": [\n                \"email\"\n            ],\n            \"type\": \"string.email\"\n        }\n    ]\n}"
-        }
-      ]
-    },
-    {
-      "name": "Create User - Valid",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\"\n}"
+          ]
         },
-        "url": {
-          "raw": "http://localhost:3000/api/users",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "3000",
-          "path": ["api", "users"]
-        },
-        "description": "This request tests successful user creation with valid data. It should pass validation and return a 201 status with the created user object."
-      },
-      "response": [
         {
-          "name": "Valid User Creation",
-          "originalRequest": {
+          "name": "Create User - Valid",
+          "request": {
             "method": "POST",
             "header": [
               {
@@ -102,7 +249,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\"\n}"
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
             },
             "url": {
               "raw": "http://localhost:3000/api/users",
@@ -110,49 +257,49 @@
               "host": ["localhost"],
               "port": "3000",
               "path": ["api", "users"]
-            }
+            },
+            "description": "This request tests successful user creation with valid data. It should pass validation and return a 201 status with the created user object."
           },
-          "status": "Created",
-          "code": 201,
-          "_postman_previewlanguage": "json",
-          "header": [
+          "response": [
             {
-              "key": "Content-Type",
-              "value": "application/json; charset=utf-8"
+              "name": "Valid User Creation",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/users",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"id\": 1,\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"roleId\": 1,\n    \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n    \"updatedAt\": \"2023-04-21T10:46:05.306Z\"\n}"
             }
-          ],
-          "cookie": [],
-          "body": "{\n    \"id\": 1,\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n    \"updatedAt\": \"2023-04-21T10:46:05.306Z\",\n    \"deletedAt\": null\n}"
-        }
-      ]
-    },
-    {
-      "name": "Create User - Missing Required Fields",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"name\": \"Missing Email User\"\n}"
+          ]
         },
-        "url": {
-          "raw": "http://localhost:3000/api/users",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "3000",
-          "path": ["api", "users"]
-        },
-        "description": "This request tests error handling with missing required fields. It should trigger the Joi validation middleware and return a 400 status with error details about missing email and password."
-      },
-      "response": [
         {
-          "name": "Missing Fields Response",
-          "originalRequest": {
+          "name": "Create User - Missing Required Fields",
+          "request": {
             "method": "POST",
             "header": [
               {
@@ -170,49 +317,49 @@
               "host": ["localhost"],
               "port": "3000",
               "path": ["api", "users"]
-            }
+            },
+            "description": "This request tests error handling with missing required fields. It should trigger the Joi validation middleware and return a 400 status with error details about missing email and password."
           },
-          "status": "Bad Request",
-          "code": 400,
-          "_postman_previewlanguage": "json",
-          "header": [
+          "response": [
             {
-              "key": "Content-Type",
-              "value": "application/json; charset=utf-8"
+              "name": "Missing Fields Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Missing Email User\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/users",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Email is required\",\n            \"path\": [\n                \"email\"\n            ],\n            \"type\": \"any.required\"\n        },\n        {\n            \"message\": \"Password is required\",\n            \"path\": [\n                \"password\"\n            ],\n            \"type\": \"any.required\"\n        },\n        {\n            \"message\": \"Role ID is required\",\n            \"path\": [\n                \"roleId\"\n            ],\n            \"type\": \"any.required\"\n        }\n    ]\n}"
             }
-          ],
-          "cookie": [],
-          "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Email is required\",\n            \"path\": [\n                \"email\"\n            ],\n            \"type\": \"any.required\"\n        },\n        {\n            \"message\": \"Password is required\",\n            \"path\": [\n                \"password\"\n            ],\n            \"type\": \"any.required\"\n        }\n    ]\n}"
-        }
-      ]
-    },
-    {
-      "name": "Create User - Password Too Short",
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"email\": \"test2@example.com\",\n    \"name\": \"Short Password User\",\n    \"password\": \"123\"\n}"
+          ]
         },
-        "url": {
-          "raw": "http://localhost:3000/api/users",
-          "protocol": "http",
-          "host": ["localhost"],
-          "port": "3000",
-          "path": ["api", "users"]
-        },
-        "description": "This request tests password length validation. It should trigger the Joi validation middleware and return a 400 status with error details about the password being too short."
-      },
-      "response": [
         {
-          "name": "Short Password Response",
-          "originalRequest": {
+          "name": "Create User - Password Too Short",
+          "request": {
             "method": "POST",
             "header": [
               {
@@ -222,7 +369,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"test2@example.com\",\n    \"name\": \"Short Password User\",\n    \"password\": \"123\"\n}"
+              "raw": "{\n    \"email\": \"test2@example.com\",\n    \"name\": \"Short Password User\",\n    \"password\": \"123\",\n    \"roleId\": 1\n}"
             },
             "url": {
               "raw": "http://localhost:3000/api/users",
@@ -230,19 +377,776 @@
               "host": ["localhost"],
               "port": "3000",
               "path": ["api", "users"]
-            }
+            },
+            "description": "This request tests password length validation. It should trigger the Joi validation middleware and return a 400 status with error details about the password being too short."
           },
-          "status": "Bad Request",
-          "code": 400,
-          "_postman_previewlanguage": "json",
-          "header": [
+          "response": [
             {
-              "key": "Content-Type",
-              "value": "application/json; charset=utf-8"
+              "name": "Short Password Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"test2@example.com\",\n    \"name\": \"Short Password User\",\n    \"password\": \"123\",\n    \"roleId\": 1\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/users",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Password must be at least 8 characters long\",\n            \"path\": [\n                \"password\"\n            ],\n            \"type\": \"string.min\"\n        }\n    ]\n}"
             }
-          ],
-          "cookie": [],
-          "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Password must be at least 8 characters long\",\n            \"path\": [\n                \"password\"\n            ],\n            \"type\": \"string.min\"\n        }\n    ]\n}"
+          ]
+        },
+        {
+          "name": "Create User - Role Not Found",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test3@example.com\",\n    \"name\": \"Invalid Role User\",\n    \"password\": \"password123\",\n    \"roleId\": 999\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users"]
+            },
+            "description": "This request tests foreign key constraint validation. It should trigger a Prisma P2003 error and return a 404 status with error details about the role not being found."
+          },
+          "response": [
+            {
+              "name": "Role Not Found Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"test3@example.com\",\n    \"name\": \"Invalid Role User\",\n    \"password\": \"password123\",\n    \"roleId\": 999\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/users",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Role ID not found: 999\",\n    \"errorType\": \"FOREIGN_KEY_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update User - Valid",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated User Name\",\n    \"email\": \"updated.email@example.com\",\n    \"roleId\": 2\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/users/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "1"]
+            },
+            "description": "This request updates a user with valid data. It should return a 200 status with the updated user object."
+          },
+          "response": [
+            {
+              "name": "Successful Update Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Updated User Name\",\n    \"email\": \"updated.email@example.com\",\n    \"roleId\": 2\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/users/1",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "1"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 1,\n        \"email\": \"updated.email@example.com\",\n        \"name\": \"Updated User Name\",\n        \"roleId\": 2,\n        \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n        \"updatedAt\": \"2023-04-21T11:30:05.306Z\",\n        \"deletedAt\": null,\n        \"role\": {\n            \"id\": 2,\n            \"name\": \"User\",\n            \"description\": \"Regular user with limited access\"\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update User - No Fields",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/users/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "1"]
+            },
+            "description": "This request tests error handling when no update fields are provided. It should return a 400 status with validation error details."
+          },
+          "response": [
+            {
+              "name": "No Fields Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/users/1",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "1"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Validation error\",\n    \"errorCode\": \"VALIDATION_ERROR\",\n    \"details\": [\n        {\n            \"message\": \"At least one field must be provided for update\",\n            \"path\": []\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update User - Invalid Email Format",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"invalid-email\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/users/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "1"]
+            },
+            "description": "This request tests validation for an invalid email format. It should return a 400 status with validation error details."
+          },
+          "response": [
+            {
+              "name": "Invalid Email Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"invalid-email\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/users/1",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "1"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Validation error\",\n    \"errorCode\": \"VALIDATION_ERROR\",\n    \"details\": [\n        {\n            \"message\": \"Email must be a valid email address\",\n            \"path\": [\"email\"]\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update User - Role Not Found",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"roleId\": 999\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/users/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "1"]
+            },
+            "description": "This request tests foreign key constraint with a non-existent role ID. It should return a 404 status with error details."
+          },
+          "response": [
+            {
+              "name": "Role Not Found Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"roleId\": 999\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/users/1",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "1"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Role not found\",\n    \"errorCode\": \"ROLE_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete User - Valid",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/users/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "1"]
+            },
+            "description": "This request soft deletes a user by ID. It should return a 200 status with a success message."
+          },
+          "response": [
+            {
+              "name": "Successful Delete Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/users/1",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "1"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"message\": \"User deleted successfully\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete User - Invalid ID Format",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/users/abc",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "abc"]
+            },
+            "description": "This request tests error handling for an invalid ID format. It should return a 400 status with validation error details."
+          },
+          "response": [
+            {
+              "name": "Invalid ID Format Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/users/abc",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "abc"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Validation error\",\n    \"errorCode\": \"VALIDATION_ERROR\",\n    \"details\": [\n        {\n            \"message\": \"User ID must be a positive integer\",\n            \"path\": [\"id\"]\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete User - Not Found",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/users/999",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "999"]
+            },
+            "description": "This request tests error handling for a non-existent user ID. It should return a 404 status with error details."
+          },
+          "response": [
+            {
+              "name": "User Not Found Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/users/999",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "999"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"User not found\",\n    \"errorCode\": \"USER_NOT_FOUND\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login - Valid Credentials",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "login"]
+            },
+            "description": "This request tests successful login with valid credentials. It should return a 200 status with user information and authentication tokens."
+          },
+          "response": [
+            {
+              "name": "Valid Login Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/auth/login",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "auth", "login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Login successful\",\n    \"data\": {\n        \"user\": {\n            \"id\": 1,\n            \"email\": \"test@example.com\",\n            \"name\": \"Test User\"\n        },\n        \"tokens\": {\n            \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsImlhdCI6MTY4MTk5MjQxMSwiZXhwIjoxNjgyMDc4ODExfQ.Q7MnpVQEpsvZBhGiJKKjkCA-0GgYUt9-1RKA-QC56pM\",\n            \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsImVtYWlsIjoidGVzdEBleGFtcGxlLmNvbSIsInR5cGUiOiJyZWZyZXNoIiwiaWF0IjoxNjgxOTkyNDExLCJleHAiOjE2ODI1OTcyMTF9.M7YsCdFfCFOBv-aG3Sx3vWQoLZEY6DGFvDYOQwgYWxc\"\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login - Invalid Email Format",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"invalid-email\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "login"]
+            },
+            "description": "This request tests login validation with an invalid email format. It should trigger the Joi validation middleware and return a 400 status with error details."
+          },
+          "response": [
+            {
+              "name": "Invalid Email Format Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"invalid-email\",\n    \"password\": \"password123\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/auth/login",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "auth", "login"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Email must be a valid email address\",\n            \"path\": [\n                \"email\"\n            ],\n            \"type\": \"string.email\"\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login - Missing Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "login"]
+            },
+            "description": "This request tests login validation with missing required fields. It should trigger the Joi validation middleware and return a 400 status with error details about the missing password."
+          },
+          "response": [
+            {
+              "name": "Missing Password Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"test@example.com\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/auth/login",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "auth", "login"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Password is required\",\n            \"path\": [\n                \"password\"\n            ],\n            \"type\": \"any.required\"\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login - Incorrect Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"wrongpassword\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "login"]
+            },
+            "description": "This request tests login with a valid email but incorrect password. It should return a 401 Unauthorized status with a generic error message."
+          },
+          "response": [
+            {
+              "name": "Incorrect Password Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"wrongpassword\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/auth/login",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "auth", "login"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Invalid email or password\",\n    \"errorType\": \"INVALID_CREDENTIALS\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login - User Not Found",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"nonexistent@example.com\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "auth", "login"]
+            },
+            "description": "This request tests login with an email that doesn't exist in the system. It should return a 401 Unauthorized status with a generic error message (same as incorrect password for security)."
+          },
+          "response": [
+            {
+              "name": "User Not Found Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"email\": \"nonexistent@example.com\",\n    \"password\": \"password123\"\n}"
+                },
+                "url": {
+                  "raw": "http://localhost:3000/api/auth/login",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "auth", "login"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Invalid email or password\",\n    \"errorType\": \"INVALID_CREDENTIALS\"\n}"
+            }
+          ]
         }
       ]
     }

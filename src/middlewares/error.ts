@@ -4,7 +4,7 @@ import {
   ErrorRequestHandler, Request, Response, 
 } from 'express';
 import Joi from 'joi';
-import { ICustomError } from '../types/error';
+import { ErrorParams, ICustomError } from '../types/error';
 
 dotenv.config();
 
@@ -16,12 +16,12 @@ export class CustomError extends Error implements ICustomError {
   errorCode: string;
   details?: any;
 
-  constructor(message: string, errorCode: string, status = 400, details?: any) {
-    super(message);
+  constructor(params: ErrorParams) {
+    super(params.message);
     this.name = 'CustomError';
-    this.errorCode = errorCode;
-    this.status = status;
-    this.details = details;
+    this.errorCode = params.errorCode;
+    this.status = params.status || 400;
+    this.details = params.details;
   }
 }
 
@@ -135,9 +135,12 @@ export const generateError = (err: unknown, req: Request, res: Response, logger:
   });
 
   return res.status(code).json({
-    message,
-    errorType,
-    details: computedErr,
+    success: false,
+    data: {
+      message,
+      errorType,
+      details: computedErr,
+    },
   });
 };
 
