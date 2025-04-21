@@ -7,7 +7,24 @@ import { Logger } from './error';
 // Create Winston logger
 export const createLogger = () => {
   return winston.createLogger({
-    format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+    format: winston.format.combine(
+      winston.format.timestamp({
+        format: () => {
+          // Use Asia/Jakarta timezone
+          return new Date().toLocaleString('en-US', {
+            timeZone: 'Asia/Jakarta',
+            hour12: false,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+        },
+      }),
+      winston.format.json(),
+    ),
     transports: [new winston.transports.Console()],
   });
 };
