@@ -1,0 +1,273 @@
+{
+  "info": {
+    "_postman_id": "e8a3a41e-5b9d-4aa7-ba79-6c02c4c3c7ac",
+    "name": "Outmanage API Tests",
+    "description": "Test collection for Outmanage API with valid and invalid request examples to test error handling and logging",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create User - Invalid (Error Handling Test)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"invalid-email\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "users"]
+        },
+        "description": "This request tests error handling with an invalid email format. It should trigger the Joi validation middleware and return a 400 status with error details."
+      },
+      "response": [
+        {
+          "name": "Invalid Email Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"invalid-email\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users"]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Email must be a valid email address\",\n            \"path\": [\n                \"email\"\n            ],\n            \"type\": \"string.email\"\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create User - Valid",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "users"]
+        },
+        "description": "This request tests successful user creation with valid data. It should pass validation and return a 201 status with the created user object."
+      },
+      "response": [
+        {
+          "name": "Valid User Creation",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users"]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"id\": 1,\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n    \"updatedAt\": \"2023-04-21T10:46:05.306Z\",\n    \"deletedAt\": null\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create User - Missing Required Fields",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"Missing Email User\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "users"]
+        },
+        "description": "This request tests error handling with missing required fields. It should trigger the Joi validation middleware and return a 400 status with error details about missing email and password."
+      },
+      "response": [
+        {
+          "name": "Missing Fields Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Missing Email User\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users"]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Email is required\",\n            \"path\": [\n                \"email\"\n            ],\n            \"type\": \"any.required\"\n        },\n        {\n            \"message\": \"Password is required\",\n            \"path\": [\n                \"password\"\n            ],\n            \"type\": \"any.required\"\n        }\n    ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create User - Password Too Short",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"test2@example.com\",\n    \"name\": \"Short Password User\",\n    \"password\": \"123\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/users",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "users"]
+        },
+        "description": "This request tests password length validation. It should trigger the Joi validation middleware and return a 400 status with error details about the password being too short."
+      },
+      "response": [
+        {
+          "name": "Short Password Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test2@example.com\",\n    \"name\": \"Short Password User\",\n    \"password\": \"123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/api/users",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users"]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Password must be at least 8 characters long\",\n            \"path\": [\n                \"password\"\n            ],\n            \"type\": \"string.min\"\n        }\n    ]\n}"
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}
