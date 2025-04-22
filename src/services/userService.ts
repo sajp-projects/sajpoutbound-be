@@ -89,11 +89,18 @@ export default {
    * @returns Updated user
    */
   async updateUser(id: number, data: UserUpdateInput) {
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
     return prisma.user.update({
       where: {
         id,
       },
-      data,
+      data: {
+        ...data,
+        updatedAt: jakartaTime,
+      },
       include: {
         role: true,
       },
@@ -110,12 +117,16 @@ export default {
    * @returns Deleted user
    */
   async deleteUser(id: number) {
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
     return prisma.user.update({
       where: {
         id,
       },
       data: {
-        deletedAt: new Date(),
+        deletedAt: jakartaTime,
       },
       include: {
         role: true,

@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import {
   ErrorRequestHandler, Request, Response, 
@@ -55,13 +54,6 @@ export interface Logger {
 }
 
 /**
- * Interface for metrics counter that tracks HTTP requests
- */
-export interface HttpRequestCounter {
-  inc: (labels: { method: string; path: string; status: number; namespace?: string }) => void;
-}
-
-/**
  * Generate and handle Express errors with proper status codes and logging
  */
 export const generateError = (err: unknown, req: Request, res: Response, logger: Logger) => {
@@ -95,22 +87,6 @@ export const generateError = (err: unknown, req: Request, res: Response, logger:
     if (customError.status) {
       code = customError.status;
     }
-
-    // Check for Prisma-specific error properties
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (customError.errorCode) {
-        errorType = customError.errorCode;
-      } else {
-        errorType = `prisma_${customError.code}`;
-      }
-      message = customError.message;
-    } else if (customError.code) {
-      errorType = customError.code;
-      message = customError.message;
-    } else if (customError.errorCode) {
-      errorType = customError.errorCode;
-      message = customError.message;
-    }
   }
 
   let logLevel: keyof Logger = 'error';
@@ -131,7 +107,6 @@ export const generateError = (err: unknown, req: Request, res: Response, logger:
     err: processedErr,
     params: req.params,
     body: req.body,
-    requestID: (req as any).requestID,
   });
 
   return res.status(code).json({
