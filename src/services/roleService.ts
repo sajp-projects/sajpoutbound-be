@@ -21,13 +21,16 @@ export default {
    * Get a role by ID
    *
    * @param id Role ID
-   * @returns Role if found, null otherwise
+   * @returns Role if found with users associated, null otherwise
    */
   async getRoleById(id: number) {
     return prisma.role.findFirst({
       where: {
         id,
         deletedAt: null,
+      },
+      include: {
+        users: true,
       },
     });
   },
