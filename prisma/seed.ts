@@ -117,6 +117,7 @@ async function main() {
           name: 'Robert Taylor',
           password: defaultPassword,
           roleId: roles[3].id,
+          deletedAt: new Date(),
         },
       }),
       // Customers
@@ -126,6 +127,7 @@ async function main() {
           name: 'James Wilson',
           password: defaultPassword,
           roleId: roles[4].id,
+          deletedAt: new Date(),
         },
       }),
       prisma.user.create({
@@ -134,6 +136,7 @@ async function main() {
           name: 'Maria Garcia',
           password: defaultPassword,
           roleId: roles[4].id,
+          deletedAt: new Date(),
         },
       }),
     ]);

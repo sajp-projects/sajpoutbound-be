@@ -25,6 +25,27 @@ export default {
   },
 
   /**
+   * Get all archived users
+   *
+   * @returns List of all archived users
+   */
+  async getArchivedUsers() {
+    return prisma.user.findMany({
+      where: {
+        deletedAt: {
+          not: null,
+        },
+      },
+      include: {
+        role: true,
+      },
+      omit: {
+        password: true,
+      },
+    });
+  },
+
+  /**
    * Get a user by ID with role information
    *
    * @param id User ID

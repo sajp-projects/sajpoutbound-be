@@ -24,6 +24,15 @@ export default {
     }
   },
 
+  async getArchivedUsers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const users = await userService.getArchivedUsers();
+      res.status(200).json(success(users));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getUserById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
       const { id: paramId } = req.params;

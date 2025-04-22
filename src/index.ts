@@ -56,22 +56,16 @@ process.on('uncaughtException', (error) => {
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, _promise) => {
-  // Force convert reason to string to ensure we capture something
-  const reasonStr =
-    reason instanceof Error
-      ? reason.stack || reason.message || String(reason)
-      : String(reason || 'Unknown rejection reason');
+process.on('unhandledRejection', (error) => {
+  // Force convert error to string to ensure we capture something
+  const errorStr =
+    error instanceof Error
+      ? error.stack || error.message || String(error)
+      : String(error || 'Unknown rejection error');
 
-  logger.error(`Unhandled Rejection: ${reasonStr}`);
-  console.error('CRITICAL: Unhandled Promise Rejection:', reasonStr);
+  logger.error(`Unhandled Rejection: ${errorStr}`);
 
-  // Use a more aggressive approach to force the process to exit in a way Docker will detect
-  console.error('Server crashing due to unhandled promise rejection...');
-
-  // This will cause the Node.js process to crash with an uncaught exception
-  // Docker should detect this and restart the container based on restart policy
-  throw new Error(`FORCED CRASH DUE TO UNHANDLED REJECTION: ${reasonStr}`);
+  process.exit(1);
 });
 
 // Handle graceful shutdown

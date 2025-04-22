@@ -52,6 +52,48 @@
           ]
         },
         {
+          "name": "Get Archived Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/users/archived",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "archived"]
+            },
+            "description": "This request retrieves all soft-deleted users with their roles. It should return a 200 status with an array of archived user objects."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/users/archived",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "archived"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": 1,\n            \"email\": \"archived@example.com\",\n            \"name\": \"Archived User\",\n            \"roleId\": 2,\n            \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n            \"updatedAt\": \"2023-04-21T10:45:05.306Z\",\n            \"deletedAt\": \"2023-04-21T11:45:05.306Z\",\n            \"role\": {\n                \"id\": 2,\n                \"name\": \"User\",\n                \"description\": \"Regular user with limited access\"\n            }\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
           "name": "Get User by ID - Valid",
           "request": {
             "method": "GET",
