@@ -46,6 +46,29 @@ export default {
   },
 
   /**
+   * Get a user by ID that is archived (deletedAt not null) with role information
+   *
+   * @param id User ID
+   * @returns User if found, null otherwise
+   */
+  async getArchivedUserById(id: number) {
+    return prisma.user.findFirst({
+      where: {
+        id,
+        deletedAt: {
+          not: null,
+        },
+      },
+      include: {
+        role: true,
+      },
+      omit: {
+        password: true,
+      },
+    });
+  },
+
+  /**
    * Get a user by ID with role information
    *
    * @param id User ID
@@ -120,6 +143,35 @@ export default {
       },
       data: {
         ...data,
+        updatedAt: jakartaTime,
+      },
+      include: {
+        role: true,
+      },
+      omit: {
+        password: true,
+      },
+    });
+  },
+
+  /**
+   * Unarchive a user (undo soft-delete)
+   *
+   * @param id User ID
+   * @returns Updated User
+   */
+
+  async unarchiveUser(id: number) {
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+    return prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        deletedAt: null,
         updatedAt: jakartaTime,
       },
       include: {

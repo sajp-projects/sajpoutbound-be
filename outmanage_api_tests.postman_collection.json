@@ -884,6 +884,132 @@
               "body": "{\n    \"message\": \"User not found\",\n    \"errorCode\": \"USER_NOT_FOUND\"\n}"
             }
           ]
+        },
+        {
+          "name": "Unarchive User - Valid",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/users/1/unarchived",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "1", "unarchived"]
+            },
+            "description": "This request unarchives (restores) a soft-deleted user. It should return a 200 status with the restored user object."
+          },
+          "response": [
+            {
+              "name": "Successful Unarchive Response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/users/1/unarchived",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "1", "unarchived"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 1,\n        \"email\": \"restored@example.com\",\n        \"name\": \"Restored User\",\n        \"roleId\": 2,\n        \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n        \"updatedAt\": \"2023-04-21T11:45:05.306Z\",\n        \"deletedAt\": null,\n        \"role\": {\n            \"id\": 2,\n            \"name\": \"User\",\n            \"description\": \"Regular user with limited access\"\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unarchive User - Invalid ID Format",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/users/abc/unarchived",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "abc", "unarchived"]
+            },
+            "description": "This request tests error handling with an invalid ID format. It should return a 400 status with error details about the invalid ID."
+          },
+          "response": [
+            {
+              "name": "Invalid ID Response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/users/abc/unarchived",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "abc", "unarchived"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Invalid user ID\",\n    \"errorCode\": \"INVALID_USER_ID\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Unarchive User - User Not Found",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/api/users/999/unarchived",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["api", "users", "999", "unarchived"]
+            },
+            "description": "This request tests error handling for a non-existent user ID. It should return a 404 status with error details."
+          },
+          "response": [
+            {
+              "name": "User Not Found Response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "http://localhost:3000/api/users/999/unarchived",
+                  "protocol": "http",
+                  "host": ["localhost"],
+                  "port": "3000",
+                  "path": ["api", "users", "999", "unarchived"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"User not found\",\n    \"errorCode\": \"USER_NOT_FOUND\"\n}"
+            }
+          ]
         }
       ]
     },

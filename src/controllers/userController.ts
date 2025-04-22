@@ -187,6 +187,34 @@ export default {
     }
   },
 
+  async unarchiveUser(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    try {
+      const { id: paramId } = req.params;
+      const id = parseInt(paramId, 10);
+
+      await userIdSchema.validateAsync({
+        id,
+      });
+
+      // Check if user exists
+      const existingUser = await userService.getArchivedUserById(id);
+
+      if (!existingUser) {
+        throw new CustomError({
+          message: 'User not found',
+          errorCode: 'USER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      const updatedUser = await userService.unarchiveUser(id);
+
+      res.status(200).json(success(updatedUser));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async deleteUser(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
       const { id: paramId } = req.params;
