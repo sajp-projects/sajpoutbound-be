@@ -23,7 +23,7 @@ services:
       sh -c "if [ \"$NODE_ENV\" = \"production\" ]; then echo 'Waiting for MySQL to be ready...' &&
       sleep 5 && npx prisma migrate deploy && npm start; else echo 'Waiting for MySQL to be
       ready...' && sleep 5 && npx prisma migrate reset --force && npm run dev; fi"
-    restart: unless-stopped
+    restart: on-failure
     networks:
       - outmanage-network
 
@@ -40,7 +40,7 @@ services:
       - '${MYSQL_PORT:-3307}:3306'
     volumes:
       - mysql-data:/var/lib/mysql
-    restart: unless-stopped
+    restart: on-failure
     networks:
       - outmanage-network
     command:
