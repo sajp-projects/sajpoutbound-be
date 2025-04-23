@@ -47,13 +47,13 @@ export default {
 
       // Generate JWT token
       const token = jwt.generateToken({
-        userId: user.id,
+        id: user.id,
         email: user.email,
       });
 
       // Generate refresh token
       const refreshToken = jwt.generateRefreshToken({
-        userId: user.id,
+        id: user.id,
         email: user.email,
       });
 

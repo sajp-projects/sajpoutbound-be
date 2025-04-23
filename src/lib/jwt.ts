@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'default_jwt_secret_for_development
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
 
 interface TokenPayload {
-  userId: string;
+  id: string;
   email: string;
   [key: string]: any; // Allow additional custom fields
 }
