@@ -43,27 +43,16 @@ app.use('/api', routes);
 // Error handling middleware - use our custom error middleware with Winston logger
 app.use(createErrorMiddleware(logger));
 
-// Start the server
-server.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
-
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', (error: Error) => {
   logger.error(`Uncaught Exception: ${error.stack || error.message || error}`);
   // Perform any necessary cleanup here
   process.exit(1); // It's safer to exit and let the process manager restart the app
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (error) => {
-  // Force convert error to string to ensure we capture something
-  const errorStr =
-    error instanceof Error
-      ? error.stack || error.message || String(error)
-      : String(error || 'Unknown rejection error');
-
-  logger.error(`Unhandled Rejection: ${errorStr}`);
+process.on('unhandledRejection', (error: Error) => {
+  logger.error(`Unhandled Rejection: ${error.stack || error.message || error}`);
 
   process.exit(1);
 });
@@ -73,6 +62,11 @@ process.on('SIGINT', async () => {
   await prisma.$disconnect();
   logger.info('Disconnected from database');
   process.exit(0);
+});
+
+// Start the server
+server.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
 
 export default app;

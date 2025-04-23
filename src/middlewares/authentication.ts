@@ -1,20 +1,14 @@
 import {
   NextFunction, Request, Response, 
 } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt from '../lib/jwt';
+import { JwtPayload } from '../types/jwt';
 import { error } from './error';
 
-// Token Authentication Middleware
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers['x-outmanage-token'] || req.headers.authorization;
+  const authHeader = req.headers['x-outmanage-token'];
 
-  // Extract token regardless of whether it's "Bearer <token>" or just "<token>"
-  const token =
-    typeof authHeader === 'string'
-      ? authHeader.startsWith('Bearer ')
-        ? authHeader.slice(7)
-        : authHeader
-      : null;
+  const token = authHeader && (authHeader as string).split(' ')[1];
 
   if (!token) {
     res.status(401).json(error('Invalid authentication token format', 'INVALID_TOKEN_FORMAT'));
@@ -25,55 +19,19 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
   if (!tokenSecret) {
     console.error('JWT_SECRET is not defined in environment variables');
-    res.status(500).json({
-      success: false,
-      code: 'SERVER_CONFIGURATION_ERROR',
-      message: 'Server configuration error',
-    });
+    res.status(500).json(error('Server configuration error', 'SERVER_CONFIGURATION_ERROR'));
     return;
   }
 
-  try {
-    const decoded = jwt.verify(token as string, tokenSecret as string) as JwtPayload;
+  // Use the custom JWT verify method that returns null on error
+  const decoded = jwt.verifyToken(token);
 
-    // Check for either id or userId field, and ensure email exists
-    if ((!decoded.id && !decoded.userId) || !decoded.email) {
-      res.status(403).json({
-        success: false,
-        code: 'INVALID_TOKEN_PAYLOAD',
-        message: 'Token payload missing required fields',
-      });
-      return;
-    }
-
-    // If only userId exists, map it to id for consistency in the application
-    if (!decoded.id && decoded.userId) {
-      decoded.id = decoded.userId;
-    }
-
-    // Set user data in request object
-    req.user = decoded;
-    next();
-  } catch (err) {
-    if (err instanceof jwt.TokenExpiredError) {
-      res.status(403).json({
-        success: false,
-        code: 'TOKEN_EXPIRED',
-        message: 'Authentication token has expired',
-      });
-    } else if (err instanceof jwt.JsonWebTokenError) {
-      res.status(403).json({
-        success: false,
-        code: 'INVALID_TOKEN',
-        message: 'Invalid authentication token',
-      });
-    } else {
-      // Handle other unexpected errors
-      res.status(403).json({
-        success: false,
-        code: 'AUTHENTICATION_ERROR',
-        message: 'Authentication failed',
-      });
-    }
+  if (!decoded) {
+    res.status(403).json(error('Invalid authentication token', 'INVALID_TOKEN'));
+    return;
   }
+
+  // Set user data in request object
+  req.user = decoded as JwtPayload;
+  next();
 };
