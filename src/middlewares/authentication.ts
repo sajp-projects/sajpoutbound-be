@@ -6,9 +6,7 @@ import { JwtPayload } from '../types/jwt';
 import { error } from './error';
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers['x-outmanage-token'];
-
-  const token = authHeader && (authHeader as string).split(' ')[1];
+  const token = req.headers['x-outmanage-token'];
 
   if (!token) {
     res.status(401).json(error('Invalid authentication token format', 'INVALID_TOKEN_FORMAT'));
@@ -24,7 +22,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   }
 
   // Use the custom JWT verify method that returns null on error
-  const decoded = jwt.verifyToken(token);
+  const decoded = jwt.verifyToken(token as string);
 
   if (!decoded) {
     res.status(403).json(error('Invalid authentication token', 'INVALID_TOKEN'));
