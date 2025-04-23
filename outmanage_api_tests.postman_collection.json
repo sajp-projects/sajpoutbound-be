@@ -15,11 +15,23 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/users",
+              "raw": "{{baseUrl}}/api/users?page=1&limit=10",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "users"]
+              "path": ["api", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (1-based)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                }
+              ]
             },
-            "description": "This request retrieves all active users with their roles. It should return a 200 status with an array of user objects."
+            "description": "This request retrieves all active users with their roles using pagination. Default values: page=1, limit=10. It should return a 200 status with an array of user objects and pagination metadata."
           },
           "response": [
             {
@@ -28,9 +40,19 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/api/users",
+                  "raw": "{{baseUrl}}/api/users?page=1&limit=10",
                   "host": ["{{baseUrl}}"],
-                  "path": ["api", "users"]
+                  "path": ["api", "users"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
                 }
               },
               "status": "OK",
@@ -43,7 +65,106 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": 1,\n            \"email\": \"admin@example.com\",\n            \"name\": \"Admin User\",\n            \"roleId\": 1,\n            \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n            \"updatedAt\": \"2023-04-21T10:45:05.306Z\",\n            \"deletedAt\": null,\n            \"role\": {\n                \"id\": 1,\n                \"name\": \"Admin\",\n                \"description\": \"System administrator with full access\"\n            }\n        },\n        {\n            \"id\": 2,\n            \"email\": \"user@example.com\",\n            \"name\": \"Regular User\",\n            \"roleId\": 2,\n            \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n            \"updatedAt\": \"2023-04-21T10:46:05.306Z\",\n            \"deletedAt\": null,\n            \"role\": {\n                \"id\": 2,\n                \"name\": \"User\",\n                \"description\": \"Regular user with limited access\"\n            }\n        }\n    ]\n}"
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"users\": [\n            {\n                \"id\": \"1\",\n                \"email\": \"admin@example.com\",\n                \"name\": \"Admin User\",\n                \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n                \"updatedAt\": \"2023-04-21T10:45:05.306Z\",\n                \"deletedAt\": null,\n                \"role\": {\n                    \"id\": \"1\",\n                    \"name\": \"Admin\",\n                    \"description\": \"System administrator with full access\"\n                }\n            },\n            {\n                \"id\": \"2\",\n                \"email\": \"user@example.com\",\n                \"name\": \"Regular User\",\n                \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n                \"updatedAt\": \"2023-04-21T10:46:05.306Z\",\n                \"deletedAt\": null,\n                \"role\": {\n                    \"id\": \"2\",\n                    \"name\": \"User\",\n                    \"description\": \"Regular user with limited access\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 2,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            },
+            {
+              "name": "Empty Page Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users?page=5&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "users"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "5"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"users\": [],\n        \"pagination\": {\n            \"total\": 2,\n            \"page\": 5,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": true\n        }\n    }\n}"
+            },
+            {
+              "name": "Invalid Page Parameter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users?page=invalid&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "users"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "invalid"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Page must be a positive integer\",\n    \"errorCode\": \"INVALID_PAGINATION\"\n}"
+            },
+            {
+              "name": "Invalid Limit Parameter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users?page=1&limit=200",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "users"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "200"
+                    }
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Limit must be a positive integer between 1 and 100\",\n    \"errorCode\": \"INVALID_PAGINATION\"\n}"
             }
           ]
         },
@@ -930,23 +1051,30 @@
               "body": "{\n    \"message\": \"User not found\",\n    \"errorCode\": \"USER_NOT_FOUND\"\n}"
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "Role Management",
-      "item": [
+        },
         {
-          "name": "Get All Roles",
+          "name": "Get User Logs",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/roles",
+              "raw": "{{baseUrl}}/api/users/{{userId}}/logs?page=1&limit=10",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "roles"]
+              "path": ["api", "users", "{{userId}}", "logs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10, max: 100)"
+                }
+              ]
             },
-            "description": "This request retrieves all roles with their associated users. It should return a 200 status with an array of role objects."
+            "description": "This request retrieves logs for a specific user with pagination. It returns a 200 status with an array of log entries and pagination metadata."
           },
           "response": [
             {
@@ -955,9 +1083,19 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/api/roles",
+                  "raw": "{{baseUrl}}/api/users/{{userId}}/logs?page=1&limit=10",
                   "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles"]
+                  "path": ["api", "users", "{{userId}}", "logs"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
                 }
               },
               "status": "OK",
@@ -970,7 +1108,269 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": 1,\n            \"name\": \"Admin\",\n            \"description\": \"Administrator with full access to the system\",\n            \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n            \"updatedAt\": \"2023-04-21T10:45:05.306Z\",\n            \"deletedAt\": null,\n            \"users\": [\n                {\n                    \"id\": 1,\n                    \"email\": \"admin@example.com\",\n                    \"name\": \"Admin User\"\n                }\n            ]\n        },\n        {\n            \"id\": 2,\n            \"name\": \"User\",\n            \"description\": \"Regular user with limited access\",\n            \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n            \"updatedAt\": \"2023-04-21T10:46:05.306Z\",\n            \"deletedAt\": null,\n            \"users\": [\n                {\n                    \"id\": 2,\n                    \"email\": \"user@example.com\",\n                    \"name\": \"Regular User\"\n                }\n            ]\n        }\n    ]\n}"
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"logs\": [\n            {\n                \"id\": 1,\n                \"userId\": \"1\",\n                \"performedById\": \"2\",\n                \"action\": \"UPDATE\",\n                \"entityType\": \"USER\",\n                \"oldData\": {\n                    \"name\": \"Original Name\",\n                    \"email\": \"original@example.com\"\n                },\n                \"newData\": {\n                    \"name\": \"Updated Name\",\n                    \"email\": \"updated@example.com\"\n                },\n                \"description\": \"Updated user information\",\n                \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n                \"performedBy\": {\n                    \"id\": \"2\",\n                    \"name\": \"Admin User\",\n                    \"email\": \"admin@example.com\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 5,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Logs By Performer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/{{userId}}/performed-logs?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "{{userId}}", "performed-logs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10, max: 100)"
+                }
+              ]
+            },
+            "description": "This request retrieves logs of actions performed by a specific user with pagination. It returns a 200 status with an array of log entries and pagination metadata."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/{{userId}}/performed-logs?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "users", "{{userId}}", "performed-logs"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"logs\": [\n            {\n                \"id\": 2,\n                \"userId\": \"2\",\n                \"performedById\": \"1\",\n                \"action\": \"CREATE\",\n                \"entityType\": \"USER\",\n                \"oldData\": null,\n                \"newData\": {\n                    \"name\": \"New User\",\n                    \"email\": \"new@example.com\",\n                    \"roleId\": 2\n                },\n                \"description\": \"Created new user account: New User\",\n                \"createdAt\": \"2023-04-21T11:45:05.306Z\",\n                \"user\": {\n                    \"id\": \"2\",\n                    \"name\": \"New User\",\n                    \"email\": \"new@example.com\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 3,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Search All Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logs", "search"]
+            },
+            "description": "This request searches all logs with optional filter parameters. This is an admin function that would typically include pagination and filtering."
+          },
+          "response": [
+            {
+              "name": "Not Implemented Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/logs/search",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "logs", "search"]
+                }
+              },
+              "status": "Not Implemented",
+              "code": 501,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Log search functionality not implemented yet\",\n    \"errorCode\": \"NOT_IMPLEMENTED\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Role Management",
+      "item": [
+        {
+          "name": "Get All Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/roles?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "roles"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10, max: 100)"
+                }
+              ]
+            },
+            "description": "This request retrieves all roles with pagination. It returns a 200 status with an array of role objects and pagination metadata."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/roles?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "roles"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"roles\": [\n            {\n                \"id\": 1,\n                \"name\": \"Admin\",\n                \"description\": \"Administrator with full access to the system\",\n                \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n                \"updatedAt\": \"2023-04-21T10:45:05.306Z\",\n                \"deletedAt\": null\n            },\n            {\n                \"id\": 2,\n                \"name\": \"User\",\n                \"description\": \"Regular user with limited access\",\n                \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n                \"updatedAt\": \"2023-04-21T10:46:05.306Z\",\n                \"deletedAt\": null\n            }\n        ],\n        \"pagination\": {\n            \"total\": 2,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            },
+            {
+              "name": "Empty Page Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/roles?page=5&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "roles"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "5"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"roles\": [],\n        \"pagination\": {\n            \"total\": 2,\n            \"page\": 5,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": true\n        }\n    }\n}"
+            },
+            {
+              "name": "Invalid Page Parameter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/roles?page=invalid&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "roles"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "invalid"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"error\",\n    \"message\": \"Page must be a positive integer\",\n    \"errorCode\": \"INVALID_PAGINATION\"\n}"
+            },
+            {
+              "name": "Invalid Limit Parameter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/roles?page=1&limit=500",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "roles"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "500"
+                    }
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"error\",\n    \"message\": \"Limit must be a positive integer between 1 and 100\",\n    \"errorCode\": \"INVALID_PAGINATION\"\n}"
             }
           ]
         },
@@ -1100,14 +1500,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Manager\",\n    \"description\": \"Manager with permissions to manage users and resources\"\n}"
+              "raw": "{\n    \"name\": \"Manager\",\n    \"description\": \"Department manager with specialized access\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/roles",
               "host": ["{{baseUrl}}"],
               "path": ["api", "roles"]
             },
-            "description": "This request tests successful role creation with valid data. It should pass validation and return a 201 status with the created role object."
+            "description": "This request creates a new role with valid data. It should return a 201 status with the created role object."
           },
           "response": [
             {
@@ -1122,7 +1522,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"name\": \"Manager\",\n    \"description\": \"Manager with permissions to manage users and resources\"\n}"
+                  "raw": "{\n    \"name\": \"Manager\",\n    \"description\": \"Department manager with specialized access\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/roles",
@@ -1140,119 +1540,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 3,\n        \"name\": \"Manager\",\n        \"description\": \"Manager with permissions to manage users and resources\",\n        \"createdAt\": \"2023-04-21T10:55:05.306Z\",\n        \"updatedAt\": \"2023-04-21T10:55:05.306Z\",\n        \"deletedAt\": null\n    }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create Role - Name Too Short",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"name\": \"A\",\n    \"description\": \"Invalid short name\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/roles",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles"]
-            },
-            "description": "This request tests validation for a role name that is too short. It should return a 400 status with validation error details."
-          },
-          "response": [
-            {
-              "name": "Name Too Short Response",
-              "originalRequest": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"name\": \"A\",\n    \"description\": \"Invalid short name\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles"]
-                }
-              },
-              "status": "Bad Request",
-              "code": 400,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"message\": \"Validation error\",\n    \"errorCode\": \"VALIDATION_ERROR\",\n    \"details\": [\n        {\n            \"message\": \"Role name must be at least 2 characters long\",\n            \"path\": [\"name\"]\n        }\n    ]\n}"
-            }
-          ]
-        },
-        {
-          "name": "Create Role - Missing Name",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"description\": \"Role without name\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/roles",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles"]
-            },
-            "description": "This request tests validation for a missing name field. It should return a 400 status with validation error details."
-          },
-          "response": [
-            {
-              "name": "Missing Name Response",
-              "originalRequest": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"description\": \"Role without name\"\n}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles"]
-                }
-              },
-              "status": "Bad Request",
-              "code": 400,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"message\": \"Validation error\",\n    \"errorCode\": \"VALIDATION_ERROR\",\n    \"details\": [\n        {\n            \"message\": \"Role name is required\",\n            \"path\": [\"name\"]\n        }\n    ]\n}"
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 3,\n        \"name\": \"Manager\",\n        \"description\": \"Department manager with specialized access\",\n        \"createdAt\": \"2023-04-21T11:45:05.306Z\",\n        \"updatedAt\": \"2023-04-21T11:45:05.306Z\",\n        \"deletedAt\": null\n    }\n}"
             }
           ]
         },
@@ -1268,14 +1556,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Admin\",\n    \"description\": \"Duplicate role name\"\n}"
+              "raw": "{\n    \"name\": \"Admin\",\n    \"description\": \"Another admin role\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/roles",
               "host": ["{{baseUrl}}"],
               "path": ["api", "roles"]
             },
-            "description": "This request tests error handling for duplicate role names. It should return a 409 status with error details."
+            "description": "This request tests error handling when trying to create a role with a name that already exists. It should return a 409 Conflict status."
           },
           "response": [
             {
@@ -1290,7 +1578,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"name\": \"Admin\",\n    \"description\": \"Duplicate role name\"\n}"
+                  "raw": "{\n    \"name\": \"Admin\",\n    \"description\": \"Another admin role\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/roles",
@@ -1313,6 +1601,62 @@
           ]
         },
         {
+          "name": "Create Role - Missing Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"description\": \"Role without a name\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "roles"]
+            },
+            "description": "This request tests validation when creating a role without the required name field. It should return a 400 Bad Request status."
+          },
+          "response": [
+            {
+              "name": "Missing Name Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"description\": \"Role without a name\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/roles",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "roles"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Role name is required\",\n            \"path\": [\n                \"name\"\n            ],\n            \"type\": \"any.required\"\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
           "name": "Update Role - Valid",
           "request": {
             "method": "PUT",
@@ -1324,7 +1668,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated description for this role\"\n}"
+              "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated role description\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/roles/2",
@@ -1346,7 +1690,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated description for this role\"\n}"
+                  "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated role description\"\n}"
                 },
                 "url": {
                   "raw": "{{baseUrl}}/api/roles/2",
@@ -1364,63 +1708,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 2,\n        \"name\": \"Updated Role\",\n        \"description\": \"Updated description for this role\",\n        \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n        \"updatedAt\": \"2023-04-21T11:15:05.306Z\",\n        \"deletedAt\": null\n    }\n}"
-            }
-          ]
-        },
-        {
-          "name": "Update Role - No Fields",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/roles/2",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles", "2"]
-            },
-            "description": "This request tests error handling when no update fields are provided. It should return a 400 status with validation error details."
-          },
-          "response": [
-            {
-              "name": "No Fields Response",
-              "originalRequest": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{}"
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles/2",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles", "2"]
-                }
-              },
-              "status": "Bad Request",
-              "code": 400,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"message\": \"Validation error\",\n    \"errorCode\": \"VALIDATION_ERROR\",\n    \"details\": [\n        {\n            \"message\": \"At least one field must be provided for update\",\n            \"path\": []\n        }\n    ]\n}"
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 2,\n        \"name\": \"Updated Role\",\n        \"description\": \"Updated role description\",\n        \"createdAt\": \"2023-04-21T10:46:05.306Z\",\n        \"updatedAt\": \"2023-04-21T11:30:05.306Z\",\n        \"deletedAt\": null\n    }\n}"
             }
           ]
         },
@@ -1443,7 +1731,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "2"]
             },
-            "description": "This request tests error handling when updating to a duplicate name. It should return a 409 status with error details."
+            "description": "This request tests error handling when trying to update a role with a name that already exists. It should return a 409 Conflict status."
           },
           "response": [
             {
@@ -1481,6 +1769,62 @@
           ]
         },
         {
+          "name": "Update Role - Role Not Found",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated role description\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/roles/999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "roles", "999"]
+            },
+            "description": "This request tests error handling when trying to update a non-existent role. It should return a 404 Not Found status."
+          },
+          "response": [
+            {
+              "name": "Role Not Found Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated role description\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/roles/999",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "roles", "999"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Role not found\",\n    \"errorCode\": \"ROLE_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
           "name": "Delete Role - Valid",
           "request": {
             "method": "DELETE",
@@ -1490,7 +1834,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "3"]
             },
-            "description": "This request soft deletes a role by ID. It should return a 200 status with a success message and the deleted role."
+            "description": "This request soft deletes a role that is not associated with any users. It should return a 200 status with the deleted role object."
           },
           "response": [
             {
@@ -1514,12 +1858,12 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 3,\n        \"name\": \"Manager\",\n        \"description\": \"Manager with permissions to manage users and resources\",\n        \"createdAt\": \"2023-04-21T10:55:05.306Z\",\n        \"updatedAt\": \"2023-04-21T11:20:05.306Z\",\n        \"deletedAt\": \"2023-04-21T11:20:05.306Z\"\n    }\n}"
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 3,\n        \"name\": \"Manager\",\n        \"description\": \"Department manager with specialized access\",\n        \"createdAt\": \"2023-04-21T11:45:05.306Z\",\n        \"updatedAt\": \"2023-04-21T12:30:05.306Z\",\n        \"deletedAt\": \"2023-04-21T12:30:05.306Z\"\n    }\n}"
             }
           ]
         },
         {
-          "name": "Delete Role - With Users",
+          "name": "Delete Role - Role in Use",
           "request": {
             "method": "DELETE",
             "header": [],
@@ -1528,11 +1872,11 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "1"]
             },
-            "description": "This request tests error handling when trying to delete a role that has users associated with it. It should return a 409 status with error details."
+            "description": "This request tests error handling when trying to delete a role that is associated with users. It should return a 409 Conflict status."
           },
           "response": [
             {
-              "name": "Role In Use Response",
+              "name": "Role in Use Response",
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
@@ -1552,65 +1896,21 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"message\": \"Role is associated with 1 users and cannot be deleted\",\n    \"errorCode\": \"ROLE_IN_USE\"\n}"
+              "body": "{\n    \"message\": \"Role is associated with 2 users and cannot be deleted\",\n    \"errorCode\": \"ROLE_IN_USE\"\n}"
             }
           ]
         },
         {
-          "name": "Delete Role - Invalid ID Format",
+          "name": "Delete Role - Role Not Found",
           "request": {
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/roles/abc",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
-              "path": ["api", "roles", "abc"]
-            },
-            "description": "This request tests error handling for an invalid ID format. It should return a 400 status with validation error details."
-          },
-          "response": [
-            {
-              "name": "Invalid ID Format Response",
-              "originalRequest": {
-                "method": "DELETE",
-                "header": [],
-                "url": {
-                  "raw": "http://localhost:3000/api/roles/abc",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
-                  "path": ["api", "roles", "abc"]
-                }
-              },
-              "status": "Bad Request",
-              "code": 400,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"message\": \"Invalid role ID\",\n    \"errorCode\": \"INVALID_ROLE_ID\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "Delete Role - Not Found",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "http://localhost:3000/api/roles/999",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles/999",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "999"]
             },
-            "description": "This request tests error handling for a non-existent role ID. It should return a 404 status with error details."
+            "description": "This request tests error handling when trying to delete a non-existent role. It should return a 404 Not Found status."
           },
           "response": [
             {
@@ -1619,10 +1919,8 @@
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/roles/999",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles/999",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles", "999"]
                 }
               },
@@ -1955,125 +2253,6 @@
               ],
               "cookie": [],
               "body": "{\n    \"message\": \"Invalid email or password\",\n    \"errorType\": \"INVALID_CREDENTIALS\"\n}"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "User Logs",
-      "item": [
-        {
-          "name": "Get Logs For User",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/logs/user/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "logs", "user", "1"]
-            },
-            "description": "This request retrieves all activity logs for a specific user. It should return a 200 status with an array of log entries."
-          },
-          "response": [
-            {
-              "name": "Success Response",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/logs/user/1",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "logs", "user", "1"]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": 1,\n            \"userId\": \"1\",\n            \"performedById\": \"2\",\n            \"action\": \"UPDATE\",\n            \"entityType\": \"USER\",\n            \"oldData\": {\n                \"name\": \"Original Name\",\n                \"email\": \"original@example.com\"\n            },\n            \"newData\": {\n                \"name\": \"Updated Name\",\n                \"email\": \"updated@example.com\"\n            },\n            \"description\": \"Updated user information\",\n            \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n            \"performedBy\": {\n                \"id\": \"2\",\n                \"name\": \"Admin User\",\n                \"email\": \"admin@example.com\"\n            }\n        }\n    ]\n}"
-            }
-          ]
-        },
-        {
-          "name": "Get Logs By Performer",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/logs/performer/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "logs", "performer", "1"]
-            },
-            "description": "This request retrieves all logs of actions performed by a specific user. It should return a 200 status with an array of log entries."
-          },
-          "response": [
-            {
-              "name": "Success Response",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/logs/performer/1",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "logs", "performer", "1"]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": 2,\n            \"userId\": \"2\",\n            \"performedById\": \"1\",\n            \"action\": \"CREATE\",\n            \"entityType\": \"USER\",\n            \"oldData\": null,\n            \"newData\": {\n                \"name\": \"New User\",\n                \"email\": \"new@example.com\",\n                \"roleId\": 2\n            },\n            \"description\": \"Created new user account: New User\",\n            \"createdAt\": \"2023-04-21T11:45:05.306Z\",\n            \"user\": {\n                \"id\": \"2\",\n                \"name\": \"New User\",\n                \"email\": \"new@example.com\"\n            }\n        }\n    ]\n}"
-            }
-          ]
-        },
-        {
-          "name": "Search All Logs",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/logs/search",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "logs", "search"]
-            },
-            "description": "This request searches all logs with optional filter parameters. This is an admin function that would typically include pagination and filtering."
-          },
-          "response": [
-            {
-              "name": "Not Implemented Response",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/logs/search",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "logs", "search"]
-                }
-              },
-              "status": "Not Implemented",
-              "code": 501,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"message\": \"Log search functionality not implemented yet\",\n    \"errorCode\": \"NOT_IMPLEMENTED\"\n}"
             }
           ]
         }

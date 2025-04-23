@@ -12,8 +12,43 @@ import { success } from '../types/response';
 export default {
   async getAllRoles(req: Request, res: Response, next: NextFunction) {
     try {
-      const roles = await roleService.getAllRoles();
-      res.status(200).json(success(roles));
+      // Extract pagination parameters from query
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+
+      // Validate pagination parameters
+      if (isNaN(page) || page < 1) {
+        throw new CustomError({
+          message: 'Page must be a positive integer',
+          errorCode: 'INVALID_PAGINATION',
+          status: 400,
+        });
+      }
+
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new CustomError({
+          message: 'Limit must be a positive integer between 1 and 100',
+          errorCode: 'INVALID_PAGINATION',
+          status: 400,
+        });
+      }
+
+      // Get paginated roles
+      const result = await roleService.getAllRoles(page, limit);
+
+      res.status(200).json(
+        success({
+          roles: result.roles,
+          pagination: {
+            total: result.total,
+            page,
+            limit,
+            totalPages: Math.ceil(result.total / limit),
+            hasNext: page * limit < result.total,
+            hasPrev: page > 1,
+          },
+        }),
+      );
     } catch (error) {
       next(error);
     }
@@ -22,8 +57,7 @@ export default {
   async getRoleById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
       // Validate ID parameter
-      const { id: paramId } = req.params;
-      const id = parseInt(paramId, 10);
+      const { id } = req.params;
 
       await roleIdSchema.validateAsync({
         id,
@@ -82,8 +116,7 @@ export default {
   async updateRole(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
       // Validate ID parameter
-      const { id: paramId } = req.params;
-      const id = parseInt(paramId, 10);
+      const { id } = req.params;
 
       await roleIdSchema.validateAsync({
         id,
@@ -137,8 +170,7 @@ export default {
   async deleteRole(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
       // Validate ID parameter
-      const { id: paramId } = req.params;
-      const id = parseInt(paramId, 10);
+      const { id } = req.params;
 
       await roleIdSchema.validateAsync({
         id,

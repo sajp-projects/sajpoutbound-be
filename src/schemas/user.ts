@@ -21,8 +21,8 @@ export const createUserSchema = Joi.object<UserCreateInput>({
     'any.required': 'Password is required',
   }),
   roleId: Joi.string().required().messages({
-    'string.email': 'Email must be a valid email address',
-    'any.required': 'Email is required',
+    'string.base': 'Role ID must be a valid type',
+    'any.required': 'Role ID is required',
   }),
 });
 
@@ -35,7 +35,7 @@ export const updateUserSchema = Joi.object<UserUpdateInput>({
     'string.max': 'Name cannot exceed {#limit} characters',
   }),
   roleId: Joi.string().required().messages({
-    'string.email': 'Role ID must be a valid role ID',
+    'string.base': 'Role ID must be a valid type',
     'any.required': 'Role ID is required',
   }),
 })

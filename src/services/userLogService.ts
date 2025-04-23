@@ -122,51 +122,95 @@ export default {
    * Get all logs for a specific user
    *
    * @param userId The ID of the user to get logs for
-   * @returns List of log entries
+   * @param page The page number (1-based)
+   * @param limit The number of items per page
+   * @returns Object containing logs array and total count
    */
-  async getUserLogs(userId: string) {
-    return prisma.userLog.findMany({
-      where: {
-        userId,
-      },
-      include: {
-        performedBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+  async getUserLogs(userId: string, page: number = 1, limit: number = 10) {
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    // Execute both queries in parallel for efficiency
+    const [logs, total] = await Promise.all([
+      // Get paginated logs
+      prisma.userLog.findMany({
+        where: {
+          userId,
+        },
+        include: {
+          performedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+
+      // Get total count for pagination
+      prisma.userLog.count({
+        where: {
+          userId,
+        },
+      }),
+    ]);
+
+    return {
+      logs,
+      total,
+    };
   },
 
   /**
    * Get all logs performed by a specific user
    *
    * @param performedById The ID of the user who performed the actions
-   * @returns List of log entries
+   * @param page The page number (1-based)
+   * @param limit The number of items per page
+   * @returns Object containing logs array and total count
    */
-  async getLogsByPerformer(performedById: string) {
-    return prisma.userLog.findMany({
-      where: {
-        performedById,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+  async getLogsByPerformer(performedById: string, page: number = 1, limit: number = 10) {
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    // Execute both queries in parallel for efficiency
+    const [logs, total] = await Promise.all([
+      // Get paginated logs
+      prisma.userLog.findMany({
+        where: {
+          performedById,
+        },
+        include: {
+          user: {
+            omit: {
+              password: true,
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+
+      // Get total count for pagination
+      prisma.userLog.count({
+        where: {
+          performedById,
+        },
+      }),
+    ]);
+
+    return {
+      logs,
+      total,
+    };
   },
 };

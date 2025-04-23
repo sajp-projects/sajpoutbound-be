@@ -7,22 +7,54 @@ import userLogService from './userLogService';
  */
 export default {
   /**
-   * Get all users with their roles
+   * Get all users with their roles, with pagination
    *
-   * @returns List of all users
+   * @param page The page number (1-based)
+   * @param limit The number of items per page
+   * @returns Object containing users array and total count
    */
-  async getAllUsers() {
-    return prisma.user.findMany({
-      where: {
-        deletedAt: null,
-      },
-      include: {
-        role: true,
-      },
-      omit: {
-        password: true,
-      },
-    });
+  async getAllUsers(page: number = 1, limit: number = 10) {
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    // Execute both queries in parallel for efficiency
+    const [users, total] = await Promise.all([
+      // Get paginated users
+      prisma.user.findMany({
+        where: {
+          deletedAt: null,
+        },
+        include: {
+          role: {
+            omit: {
+              createdAt: true,
+              updatedAt: true,
+              deletedAt: true,
+            },
+          },
+        },
+        omit: {
+          password: true,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+
+      // Get total count for pagination
+      prisma.user.count({
+        where: {
+          deletedAt: null,
+        },
+      }),
+    ]);
+
+    return {
+      users,
+      total,
+    };
   },
 
   /**

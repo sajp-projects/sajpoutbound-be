@@ -5,16 +5,42 @@ import prisma from '../config/prisma';
  */
 export default {
   /**
-   * Get all roles
+   * Get all roles with pagination
    *
-   * @returns List of all roles
+   * @param page The page number (1-based)
+   * @param limit The number of items per page
+   * @returns Object containing roles array and total count
    */
-  async getAllRoles() {
-    return prisma.role.findMany({
-      where: {
-        deletedAt: null,
-      },
-    });
+  async getAllRoles(page: number = 1, limit: number = 10) {
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    // Execute both queries in parallel for efficiency
+    const [roles, total] = await Promise.all([
+      // Get paginated roles
+      prisma.role.findMany({
+        where: {
+          deletedAt: null,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+
+      // Get total count for pagination
+      prisma.role.count({
+        where: {
+          deletedAt: null,
+        },
+      }),
+    ]);
+
+    return {
+      roles,
+      total,
+    };
   },
 
   /**
@@ -23,7 +49,7 @@ export default {
    * @param id Role ID
    * @returns Role if found with users associated, null otherwise
    */
-  async getRoleById(id: number) {
+  async getRoleById(id: string) {
     return prisma.role.findFirst({
       where: {
         id,
@@ -54,7 +80,7 @@ export default {
    * @param data Role data to update
    * @returns Updated role
    */
-  async updateRole(id: number, data: { name?: string; description?: string }) {
+  async updateRole(id: string, data: { name?: string; description?: string }) {
     return prisma.role.update({
       where: {
         id,
@@ -69,7 +95,7 @@ export default {
    * @param id Role ID
    * @returns Deleted role
    */
-  async deleteRole(id: number) {
+  async deleteRole(id: string) {
     return prisma.role.update({
       where: {
         id,
@@ -86,7 +112,7 @@ export default {
    * @param roleId Role ID
    * @returns Number of users with the role
    */
-  async getUsersWithRole(roleId: number) {
+  async getUsersWithRole(roleId: string) {
     return prisma.user.count({
       where: {
         roleId,

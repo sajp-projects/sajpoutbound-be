@@ -18,8 +18,43 @@ export default {
         id: userId,
       });
 
-      const logs = await userLogService.getUserLogs(userId);
-      res.status(200).json(success(logs));
+      // Extract pagination parameters from query
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+
+      // Validate pagination parameters
+      if (isNaN(page) || page < 1) {
+        throw new CustomError({
+          message: 'Page must be a positive integer',
+          errorCode: 'INVALID_PAGINATION',
+          status: 400,
+        });
+      }
+
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new CustomError({
+          message: 'Limit must be a positive integer between 1 and 100',
+          errorCode: 'INVALID_PAGINATION',
+          status: 400,
+        });
+      }
+
+      // Get paginated logs
+      const result = await userLogService.getUserLogs(userId, page, limit);
+
+      res.status(200).json(
+        success({
+          logs: result.logs,
+          pagination: {
+            total: result.total,
+            page,
+            limit,
+            totalPages: Math.ceil(result.total / limit),
+            hasNext: page * limit < result.total,
+            hasPrev: page > 1,
+          },
+        }),
+      );
     } catch (error) {
       next(error);
     }
@@ -36,8 +71,43 @@ export default {
         id: userId,
       });
 
-      const logs = await userLogService.getLogsByPerformer(userId);
-      res.status(200).json(success(logs));
+      // Extract pagination parameters from query
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+
+      // Validate pagination parameters
+      if (isNaN(page) || page < 1) {
+        throw new CustomError({
+          message: 'Page must be a positive integer',
+          errorCode: 'INVALID_PAGINATION',
+          status: 400,
+        });
+      }
+
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new CustomError({
+          message: 'Limit must be a positive integer between 1 and 100',
+          errorCode: 'INVALID_PAGINATION',
+          status: 400,
+        });
+      }
+
+      // Get paginated logs
+      const result = await userLogService.getLogsByPerformer(userId, page, limit);
+
+      res.status(200).json(
+        success({
+          logs: result.logs,
+          pagination: {
+            total: result.total,
+            page,
+            limit,
+            totalPages: Math.ceil(result.total / limit),
+            hasNext: page * limit < result.total,
+            hasPrev: page > 1,
+          },
+        }),
+      );
     } catch (error) {
       next(error);
     }
