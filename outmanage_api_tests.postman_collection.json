@@ -1058,9 +1058,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/users/{{userId}}/logs?page=1&limit=10",
+              "raw": "{{baseUrl}}/api/logs/user/{{userId}}?page=1&limit=10",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "{{userId}}", "logs"],
+              "path": ["api", "logs", "user", "{{userId}}"],
               "query": [
                 {
                   "key": "page",
@@ -1083,9 +1083,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/api/users/{{userId}}/logs?page=1&limit=10",
+                  "raw": "{{baseUrl}}/api/logs/user/{{userId}}?page=1&limit=10",
                   "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "{{userId}}", "logs"],
+                  "path": ["api", "logs", "user", "{{userId}}"],
                   "query": [
                     {
                       "key": "page",
@@ -1118,9 +1118,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/users/{{userId}}/performed-logs?page=1&limit=10",
+              "raw": "{{baseUrl}}/api/logs/performer/{{userId}}?page=1&limit=10",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "{{userId}}", "performed-logs"],
+              "path": ["api", "logs", "performer", "{{userId}}"],
               "query": [
                 {
                   "key": "page",
@@ -1143,9 +1143,9 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{baseUrl}}/api/users/{{userId}}/performed-logs?page=1&limit=10",
+                  "raw": "{{baseUrl}}/api/logs/performer/{{userId}}?page=1&limit=10",
                   "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "{{userId}}", "performed-logs"],
+                  "path": ["api", "logs", "performer", "{{userId}}"],
                   "query": [
                     {
                       "key": "page",
@@ -1178,13 +1178,58 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/logs/search",
+              "raw": "{{baseUrl}}/api/logs/search?page=1&limit=10",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "logs", "search"]
+              "path": ["api", "logs", "search"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10, max: 100)"
+                }
+              ]
             },
-            "description": "This request searches all logs with optional filter parameters. This is an admin function that would typically include pagination and filtering."
+            "description": "This request searches all logs with optional filter parameters. This is an admin function that supports pagination and filtering."
           },
           "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/logs/search?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "logs", "search"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"logs\": [\n            {\n                \"id\": 1,\n                \"userId\": \"1\",\n                \"performedById\": \"2\",\n                \"action\": \"UPDATE\",\n                \"entityType\": \"USER\",\n                \"description\": \"Updated user information\",\n                \"createdAt\": \"2023-04-21T10:45:05.306Z\"\n            },\n            {\n                \"id\": 2,\n                \"userId\": \"2\",\n                \"performedById\": \"1\",\n                \"action\": \"CREATE\",\n                \"entityType\": \"USER\",\n                \"description\": \"Created new user account\",\n                \"createdAt\": \"2023-04-21T11:45:05.306Z\"\n            }\n        ],\n        \"pagination\": {\n            \"total\": 8,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            },
             {
               "name": "Not Implemented Response",
               "originalRequest": {

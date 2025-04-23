@@ -27,19 +27,20 @@ export class CustomError extends Error implements ICustomError {
 /**
  * Creates an error object with a message and optional details
  */
-export const error = ({
-  err,
-  message,
-  errorType,
-}: {
-  message: string;
-  errorType?: string;
-  err?: unknown;
-}) => {
+/**
+ * Error response data format
+ *
+ * @param message Error message
+ * @param errorType Error code/type
+ * @param details Additional error details
+ * @returns A formatted error response object
+ */
+export const error = (message: string, errorType: string, details?: any) => {
   return {
+    success: false,
     message,
-    err,
     errorType,
+    details,
   };
 };
 
@@ -109,14 +110,16 @@ export const generateError = (err: unknown, req: Request, res: Response, logger:
     body: req.body,
   });
 
-  return res.status(code).json({
-    success: false,
-    data: {
-      message,
-      errorType,
-      details: computedErr,
-    },
-  });
+  // return res.status(code).json({
+  //   success: false,
+  //   data: {
+  //     message,
+  //     errorType,
+  //     details: computedErr,
+  //   },
+  // });
+
+  return res.status(code).json(error(message, errorType, computedErr));
 };
 
 /**

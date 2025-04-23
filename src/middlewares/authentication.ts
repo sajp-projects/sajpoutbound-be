@@ -2,6 +2,7 @@ import {
   NextFunction, Request, Response, 
 } from 'express';
 import jwt from 'jsonwebtoken';
+import { error } from './error';
 
 // Token Authentication Middleware
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
@@ -16,11 +17,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       : null;
 
   if (!token) {
-    res.status(401).json({
-      success: false,
-      code: 'INVALID_TOKEN_FORMAT',
-      message: 'Invalid authentication token format',
-    });
+    res.status(401).json(error('Invalid authentication token format', 'INVALID_TOKEN_FORMAT'));
     return;
   }
 

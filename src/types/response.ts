@@ -10,20 +10,3 @@ export const success = <T>(data: T | null = null) => {
     data,
   };
 };
-
-/**
- * Error response data format
- *
- * @param message Error message
- * @param errorType Error code/type
- * @param details Additional error details
- * @returns A formatted error response object
- */
-export const error = (message: string, errorType: string, details?: any) => {
-  return {
-    success: false,
-    message,
-    errorType,
-    details,
-  };
-};
