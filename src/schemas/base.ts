@@ -19,14 +19,11 @@ export const idSchema = Joi.object({
  */
 export const createResourceIdSchema = (resourceName: string) =>
   Joi.object({
-    id: Joi.number()
-      .integer()
-      .positive()
+    id: Joi.string()
+      .uuid()
       .required()
       .messages({
-        'number.base': `${resourceName} ID must be a number`,
-        'number.integer': `${resourceName} ID must be an integer`,
-        'number.positive': `${resourceName} ID must be a positive number`,
+        'string.uuid': `${resourceName} ID must be a valid UUID`,
         'any.required': `${resourceName} ID is required`,
       }),
   });

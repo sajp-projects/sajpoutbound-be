@@ -1,5 +1,6 @@
 import prisma from '../config/prisma';
 import { UserCreateInput, UserUpdateInput } from '../schemas/user';
+import userLogService from './userLogService';
 
 /**
  * User service for handling user-related database operations
@@ -51,7 +52,7 @@ export default {
    * @param id User ID
    * @returns User if found, null otherwise
    */
-  async getArchivedUserById(id: number) {
+  async getArchivedUserById(id: string) {
     return prisma.user.findFirst({
       where: {
         id,
@@ -74,7 +75,7 @@ export default {
    * @param id User ID
    * @returns User if found, null otherwise
    */
-  async getUserById(id: number) {
+  async getUserById(id: string) {
     return prisma.user.findFirst({
       where: {
         id,
@@ -93,17 +94,41 @@ export default {
    * Create a new user in the database
    *
    * @param userData User data to create
+   * @param performedById ID of the user who created this user
    * @returns Created user
    */
-  async createUser(userData: UserCreateInput) {
-    return prisma.user.create({
-      data: userData,
-      include: {
-        role: true,
-      },
-      omit: {
-        password: true,
-      },
+  async createUser(userData: UserCreateInput, performedById: string) {
+    // Use transaction to ensure both operations succeed or fail together
+    return prisma.$transaction(async (tx) => {
+      // Create the user in the database
+      console.log(userData, '-------');
+      const createdUser = await tx.user.create({
+        data: userData,
+        include: {
+          role: true,
+        },
+      });
+
+      // Create log entry - don't include password in the log
+      const userDataToLog = {
+        email: userData.email,
+        name: userData.name,
+        roleId: userData.roleId,
+      };
+      await userLogService.logUserCreation(createdUser.id, performedById, userDataToLog, tx);
+
+      // Return user without password
+      const userWithoutPassword = {
+        id: createdUser.id,
+        email: createdUser.email,
+        name: createdUser.name,
+        roleId: createdUser.roleId,
+        role: createdUser.role,
+        createdAt: createdUser.createdAt,
+        updatedAt: createdUser.updatedAt,
+        deletedAt: createdUser.deletedAt,
+      };
+      return userWithoutPassword;
     });
   },
 
@@ -130,27 +155,69 @@ export default {
    *
    * @param id User ID
    * @param data User data to update
+   * @param performedById ID of the user who updated this user
    * @returns Updated user
    */
-  async updateUser(id: number, data: UserUpdateInput) {
-    // Create a Jakarta timezone date (UTC+7)
-    const jakartaTime = new Date();
-    jakartaTime.setHours(jakartaTime.getHours() + 7);
+  async updateUser(id: string, data: UserUpdateInput, performedById: string) {
+    // Use transaction to ensure both operations succeed or fail together
+    return prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-    return prisma.user.update({
-      where: {
-        id,
-      },
-      data: {
-        ...data,
-        updatedAt: jakartaTime,
-      },
-      include: {
-        role: true,
-      },
-      omit: {
-        password: true,
-      },
+      // Get the current user data for logging the changes
+      const oldUserData = await tx.user.findUnique({
+        where: {
+          id,
+        },
+        select: {
+          email: true,
+          name: true,
+          roleId: true,
+        },
+      });
+
+      // Update the user in the database
+      const updatedUser = await tx.user.update({
+        where: {
+          id,
+        },
+        data: {
+          ...data,
+          updatedAt: jakartaTime,
+        },
+        include: {
+          role: true,
+        },
+      });
+
+      // Create log entry - only include changed fields
+      const changedFields: Record<string, any> = {};
+      Object.keys(data).forEach((key) => {
+        if (
+          oldUserData &&
+          oldUserData[key as keyof typeof oldUserData] !== data[key as keyof typeof data]
+        ) {
+          changedFields[key] = data[key as keyof typeof data];
+        }
+      });
+
+      if (Object.keys(changedFields).length > 0) {
+        await userLogService.logUserUpdate(id, performedById, oldUserData, changedFields, tx);
+      }
+
+      // Return user without password
+      const userWithoutPassword = {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        roleId: updatedUser.roleId,
+        role: updatedUser.role,
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt,
+        deletedAt: updatedUser.deletedAt,
+      };
+      return userWithoutPassword;
     });
   },
 
@@ -158,28 +225,56 @@ export default {
    * Unarchive a user (undo soft-delete)
    *
    * @param id User ID
+   * @param performedById ID of the user who unarchived this user
    * @returns Updated User
    */
+  async unarchiveUser(id: string, performedById: string) {
+    // Use transaction to ensure both operations succeed or fail together
+    return prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-  async unarchiveUser(id: number) {
-    // Create a Jakarta timezone date (UTC+7)
-    const jakartaTime = new Date();
-    jakartaTime.setHours(jakartaTime.getHours() + 7);
+      // Get the current user data for logging
+      const archivedUserData = await tx.user.findUnique({
+        where: {
+          id,
+        },
+        select: {
+          name: true,
+          email: true,
+          deletedAt: true,
+        },
+      });
 
-    return prisma.user.update({
-      where: {
-        id,
-      },
-      data: {
-        deletedAt: null,
-        updatedAt: jakartaTime,
-      },
-      include: {
-        role: true,
-      },
-      omit: {
-        password: true,
-      },
+      // Update the user in the database
+      const updatedUser = await tx.user.update({
+        where: {
+          id,
+        },
+        data: {
+          deletedAt: null,
+          updatedAt: jakartaTime,
+        },
+        include: {
+          role: true,
+        },
+      });
+
+      await userLogService.logUserRestoration(id, performedById, archivedUserData, tx);
+
+      // Return user without password
+      const userWithoutPassword = {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        roleId: updatedUser.roleId,
+        role: updatedUser.role,
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt,
+        deletedAt: updatedUser.deletedAt,
+      };
+      return userWithoutPassword;
     });
   },
 
@@ -187,26 +282,53 @@ export default {
    * Delete a user (soft delete)
    *
    * @param id User ID
+   * @param performedById ID of the user who deleted this user
    * @returns Deleted user
    */
-  async deleteUser(id: number) {
-    // Create a Jakarta timezone date (UTC+7)
-    const jakartaTime = new Date();
-    jakartaTime.setHours(jakartaTime.getHours() + 7);
+  async deleteUser(id: string, performedById: string) {
+    // Use transaction to ensure both operations succeed or fail together
+    return prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-    return prisma.user.update({
-      where: {
-        id,
-      },
-      data: {
-        deletedAt: jakartaTime,
-      },
-      include: {
-        role: true,
-      },
-      omit: {
-        password: true,
-      },
+      const userData = await tx.user.findUnique({
+        where: {
+          id,
+        },
+        select: {
+          name: true,
+          email: true,
+        },
+      });
+
+      // Update the user in the database (soft delete)
+      const deletedUser = await tx.user.update({
+        where: {
+          id,
+        },
+        data: {
+          deletedAt: jakartaTime,
+        },
+        include: {
+          role: true,
+        },
+      });
+
+      await userLogService.logUserDeletion(id, performedById, userData, tx);
+
+      // Return user without password
+      const userWithoutPassword = {
+        id: deletedUser.id,
+        email: deletedUser.email,
+        name: deletedUser.name,
+        roleId: deletedUser.roleId,
+        role: deletedUser.role,
+        createdAt: deletedUser.createdAt,
+        updatedAt: deletedUser.updatedAt,
+        deletedAt: deletedUser.deletedAt,
+      };
+      return userWithoutPassword;
     });
   },
 };

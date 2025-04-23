@@ -14,23 +14,51 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-  role      Role     @relation(fields: [roleId], references: [id])
-  roleId    Int
+  id            String    @id @default(uuid())
+  email         String    @unique
+  name          String?
+  password      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+  roleId        String
+  role          Role      @relation(fields: [roleId], references: [id])
+  userLogs      UserLog[] @relation("UserLogs")
+  performedLogs UserLog[] @relation("PerformedLogs")
+}
+model UserLog {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation("UserLogs", fields: [userId], references: [id])
+  performedById String
+  performedBy   User     @relation("PerformedLogs", fields: [performedById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  action        ACTION
+  entityType    ENTITY_TYPE
+  oldData       Json?
+  newData       Json?
+  description   String?
+}
+model Role {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  users       User[]
 }
 
-model Role {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  description String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-  users     User[]
+enum ACTION {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+}
+
+// Add more entity types as needed
+enum ENTITY_TYPE {
+  USER
+  ROLE
 }

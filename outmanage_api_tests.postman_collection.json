@@ -15,10 +15,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/users",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users"]
             },
             "description": "This request retrieves all active users with their roles. It should return a 200 status with an array of user objects."
@@ -30,10 +28,8 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users"]
                 }
               },
@@ -57,10 +53,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/users/archived",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/archived",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "archived"]
             },
             "description": "This request retrieves all soft-deleted users with their roles. It should return a 200 status with an array of archived user objects."
@@ -72,10 +66,8 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users/archived",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/archived",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "archived"]
                 }
               },
@@ -99,10 +91,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/users/1",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "1"]
             },
             "description": "This request retrieves a specific user by ID with their role details. It should return a 200 status with the user object."
@@ -114,10 +104,8 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users/1",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/1",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "1"]
                 }
               },
@@ -141,10 +129,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/users/abc",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/abc",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "abc"]
             },
             "description": "This request tests error handling with an invalid ID format. It should return a 400 status with error details about the invalid ID."
@@ -156,10 +142,8 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users/abc",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/abc",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "abc"]
                 }
               },
@@ -183,10 +167,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/users/999",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/999",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "999"]
             },
             "description": "This request tests error handling for a non-existent user ID. It should return a 404 status with error details."
@@ -198,10 +180,8 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users/999",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/999",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "999"]
                 }
               },
@@ -234,10 +214,8 @@
               "raw": "{\n    \"email\": \"invalid-email\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/users",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users"]
             },
             "description": "This request tests error handling with an invalid email format. It should trigger the Joi validation middleware and return a 400 status with error details."
@@ -258,10 +236,8 @@
                   "raw": "{\n    \"email\": \"invalid-email\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/users",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users"]
                 }
               },
@@ -294,10 +270,8 @@
               "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/users",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users"]
             },
             "description": "This request tests successful user creation with valid data. It should pass validation and return a 201 status with the created user object."
@@ -318,10 +292,8 @@
                   "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/users",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users"]
                 }
               },
@@ -354,10 +326,8 @@
               "raw": "{\n    \"name\": \"Missing Email User\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/users",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users"]
             },
             "description": "This request tests error handling with missing required fields. It should trigger the Joi validation middleware and return a 400 status with error details about missing email and password."
@@ -378,10 +348,8 @@
                   "raw": "{\n    \"name\": \"Missing Email User\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/users",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users"]
                 }
               },
@@ -414,10 +382,8 @@
               "raw": "{\n    \"email\": \"test2@example.com\",\n    \"name\": \"Short Password User\",\n    \"password\": \"123\",\n    \"roleId\": 1\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/users",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users"]
             },
             "description": "This request tests password length validation. It should trigger the Joi validation middleware and return a 400 status with error details about the password being too short."
@@ -438,10 +404,8 @@
                   "raw": "{\n    \"email\": \"test2@example.com\",\n    \"name\": \"Short Password User\",\n    \"password\": \"123\",\n    \"roleId\": 1\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/users",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users"]
                 }
               },
@@ -474,10 +438,8 @@
               "raw": "{\n    \"email\": \"test3@example.com\",\n    \"name\": \"Invalid Role User\",\n    \"password\": \"password123\",\n    \"roleId\": 999\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/users",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users"]
             },
             "description": "This request tests foreign key constraint validation. It should trigger a Prisma P2003 error and return a 404 status with error details about the role not being found."
@@ -498,10 +460,8 @@
                   "raw": "{\n    \"email\": \"test3@example.com\",\n    \"name\": \"Invalid Role User\",\n    \"password\": \"password123\",\n    \"roleId\": 999\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/users",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users"]
                 }
               },
@@ -534,10 +494,8 @@
               "raw": "{\n    \"name\": \"Updated User Name\",\n    \"email\": \"updated.email@example.com\",\n    \"roleId\": 2\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/users/1",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "1"]
             },
             "description": "This request updates a user with valid data. It should return a 200 status with the updated user object."
@@ -558,10 +516,8 @@
                   "raw": "{\n    \"name\": \"Updated User Name\",\n    \"email\": \"updated.email@example.com\",\n    \"roleId\": 2\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/users/1",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/1",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "1"]
                 }
               },
@@ -594,10 +550,8 @@
               "raw": "{}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/users/1",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "1"]
             },
             "description": "This request tests error handling when no update fields are provided. It should return a 400 status with validation error details."
@@ -618,10 +572,8 @@
                   "raw": "{}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/users/1",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/1",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "1"]
                 }
               },
@@ -654,10 +606,8 @@
               "raw": "{\n    \"email\": \"invalid-email\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/users/1",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "1"]
             },
             "description": "This request tests validation for an invalid email format. It should return a 400 status with validation error details."
@@ -678,10 +628,8 @@
                   "raw": "{\n    \"email\": \"invalid-email\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/users/1",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/1",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "1"]
                 }
               },
@@ -714,10 +662,8 @@
               "raw": "{\n    \"roleId\": 999\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/users/1",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "1"]
             },
             "description": "This request tests foreign key constraint with a non-existent role ID. It should return a 404 status with error details."
@@ -738,10 +684,8 @@
                   "raw": "{\n    \"roleId\": 999\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/users/1",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/1",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "1"]
                 }
               },
@@ -765,10 +709,8 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/users/1",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/1",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "1"]
             },
             "description": "This request soft deletes a user by ID. It should return a 200 status with a success message."
@@ -780,10 +722,8 @@
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users/1",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/1",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "1"]
                 }
               },
@@ -807,10 +747,8 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/users/abc",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/abc",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "abc"]
             },
             "description": "This request tests error handling for an invalid ID format. It should return a 400 status with validation error details."
@@ -822,10 +760,8 @@
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users/abc",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/abc",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "abc"]
                 }
               },
@@ -849,10 +785,8 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/users/999",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/999",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "999"]
             },
             "description": "This request tests error handling for a non-existent user ID. It should return a 404 status with error details."
@@ -864,10 +798,8 @@
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users/999",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/999",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "999"]
                 }
               },
@@ -891,10 +823,8 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/users/1/unarchived",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/1/unarchived",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "1", "unarchived"]
             },
             "description": "This request unarchives (restores) a soft-deleted user. It should return a 200 status with the restored user object."
@@ -906,10 +836,8 @@
                 "method": "PATCH",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users/1/unarchived",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/1/unarchived",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "1", "unarchived"]
                 }
               },
@@ -933,10 +861,8 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/users/abc/unarchived",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/abc/unarchived",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "abc", "unarchived"]
             },
             "description": "This request tests error handling with an invalid ID format. It should return a 400 status with error details about the invalid ID."
@@ -948,10 +874,8 @@
                 "method": "PATCH",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users/abc/unarchived",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/abc/unarchived",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "abc", "unarchived"]
                 }
               },
@@ -975,10 +899,8 @@
             "method": "PATCH",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/users/999/unarchived",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/users/999/unarchived",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "users", "999", "unarchived"]
             },
             "description": "This request tests error handling for a non-existent user ID. It should return a 404 status with error details."
@@ -990,10 +912,8 @@
                 "method": "PATCH",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/users/999/unarchived",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/users/999/unarchived",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "users", "999", "unarchived"]
                 }
               },
@@ -1022,10 +942,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/roles",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles"]
             },
             "description": "This request retrieves all roles with their associated users. It should return a 200 status with an array of role objects."
@@ -1037,10 +955,8 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/roles",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles"]
                 }
               },
@@ -1064,10 +980,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/roles/1",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles/1",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "1"]
             },
             "description": "This request retrieves a specific role by ID with its associated users. It should return a 200 status with the role object."
@@ -1079,10 +993,8 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/roles/1",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles/1",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles", "1"]
                 }
               },
@@ -1106,10 +1018,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/roles/abc",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles/abc",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "abc"]
             },
             "description": "This request tests error handling with an invalid ID format. It should return a 400 status with error details about the invalid ID."
@@ -1121,10 +1031,8 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/roles/abc",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles/abc",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles", "abc"]
                 }
               },
@@ -1148,10 +1056,8 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/roles/999",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles/999",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "999"]
             },
             "description": "This request tests error handling for a non-existent role ID. It should return a 404 status with error details."
@@ -1163,10 +1069,8 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/roles/999",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles/999",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles", "999"]
                 }
               },
@@ -1199,10 +1103,8 @@
               "raw": "{\n    \"name\": \"Manager\",\n    \"description\": \"Manager with permissions to manage users and resources\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/roles",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles"]
             },
             "description": "This request tests successful role creation with valid data. It should pass validation and return a 201 status with the created role object."
@@ -1223,10 +1125,8 @@
                   "raw": "{\n    \"name\": \"Manager\",\n    \"description\": \"Manager with permissions to manage users and resources\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/roles",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles"]
                 }
               },
@@ -1259,10 +1159,8 @@
               "raw": "{\n    \"name\": \"A\",\n    \"description\": \"Invalid short name\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/roles",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles"]
             },
             "description": "This request tests validation for a role name that is too short. It should return a 400 status with validation error details."
@@ -1283,10 +1181,8 @@
                   "raw": "{\n    \"name\": \"A\",\n    \"description\": \"Invalid short name\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/roles",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles"]
                 }
               },
@@ -1319,10 +1215,8 @@
               "raw": "{\n    \"description\": \"Role without name\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/roles",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles"]
             },
             "description": "This request tests validation for a missing name field. It should return a 400 status with validation error details."
@@ -1343,10 +1237,8 @@
                   "raw": "{\n    \"description\": \"Role without name\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/roles",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles"]
                 }
               },
@@ -1379,10 +1271,8 @@
               "raw": "{\n    \"name\": \"Admin\",\n    \"description\": \"Duplicate role name\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/roles",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles"]
             },
             "description": "This request tests error handling for duplicate role names. It should return a 409 status with error details."
@@ -1403,10 +1293,8 @@
                   "raw": "{\n    \"name\": \"Admin\",\n    \"description\": \"Duplicate role name\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/roles",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles"]
                 }
               },
@@ -1439,10 +1327,8 @@
               "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated description for this role\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/roles/2",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles/2",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "2"]
             },
             "description": "This request updates a role with valid data. It should return a 200 status with the updated role object."
@@ -1463,10 +1349,8 @@
                   "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated description for this role\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/roles/2",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles/2",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles", "2"]
                 }
               },
@@ -1499,10 +1383,8 @@
               "raw": "{}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/roles/2",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles/2",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "2"]
             },
             "description": "This request tests error handling when no update fields are provided. It should return a 400 status with validation error details."
@@ -1523,10 +1405,8 @@
                   "raw": "{}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/roles/2",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles/2",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles", "2"]
                 }
               },
@@ -1559,10 +1439,8 @@
               "raw": "{\n    \"name\": \"Admin\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/roles/2",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles/2",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "2"]
             },
             "description": "This request tests error handling when updating to a duplicate name. It should return a 409 status with error details."
@@ -1583,10 +1461,8 @@
                   "raw": "{\n    \"name\": \"Admin\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/roles/2",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles/2",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles", "2"]
                 }
               },
@@ -1610,10 +1486,8 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/roles/3",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles/3",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "3"]
             },
             "description": "This request soft deletes a role by ID. It should return a 200 status with a success message and the deleted role."
@@ -1625,10 +1499,8 @@
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/roles/3",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles/3",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles", "3"]
                 }
               },
@@ -1652,10 +1524,8 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "http://localhost:3000/api/roles/1",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/roles/1",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "roles", "1"]
             },
             "description": "This request tests error handling when trying to delete a role that has users associated with it. It should return a 409 status with error details."
@@ -1667,10 +1537,8 @@
                 "method": "DELETE",
                 "header": [],
                 "url": {
-                  "raw": "http://localhost:3000/api/roles/1",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/roles/1",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "roles", "1"]
                 }
               },
@@ -1792,14 +1660,45 @@
               "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/auth/login",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "login"]
             },
             "description": "This request tests successful login with valid credentials. It should return a 200 status with user information and authentication tokens."
           },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Check if login was successful",
+                  "if (pm.response.code === 200) {",
+                  "    // Parse the response JSON",
+                  "    const responseJson = pm.response.json();",
+                  "    ",
+                  "    // Check if response has the expected structure",
+                  "    if (responseJson.data && responseJson.data.tokens && responseJson.data.tokens.accessToken) {",
+                  "        // Get the access token",
+                  "        const accessToken = responseJson.data.tokens.accessToken;",
+                  "        ",
+                  "        // Save the token to a Postman environment variable",
+                  "        pm.environment.set('accessToken', accessToken);",
+                  "        ",
+                  "        // Also save to globals as backup",
+                  "        pm.globals.set('accessToken', accessToken);",
+                  "        ",
+                  "        console.log('Access token saved successfully!');",
+                  "    } else {",
+                  "        console.error('Response does not contain the expected tokens structure');",
+                  "    }",
+                  "} else {",
+                  "    console.error('Login failed with status code: ' + pm.response.code);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "response": [
             {
               "name": "Valid Login Response",
@@ -1816,10 +1715,8 @@
                   "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/auth/login",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/auth/login",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "auth", "login"]
                 }
               },
@@ -1852,10 +1749,8 @@
               "raw": "{\n    \"email\": \"invalid-email\",\n    \"password\": \"password123\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/auth/login",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "login"]
             },
             "description": "This request tests login validation with an invalid email format. It should trigger the Joi validation middleware and return a 400 status with error details."
@@ -1876,10 +1771,8 @@
                   "raw": "{\n    \"email\": \"invalid-email\",\n    \"password\": \"password123\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/auth/login",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/auth/login",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "auth", "login"]
                 }
               },
@@ -1912,10 +1805,8 @@
               "raw": "{\n    \"email\": \"test@example.com\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/auth/login",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "login"]
             },
             "description": "This request tests login validation with missing required fields. It should trigger the Joi validation middleware and return a 400 status with error details about the missing password."
@@ -1936,10 +1827,8 @@
                   "raw": "{\n    \"email\": \"test@example.com\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/auth/login",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/auth/login",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "auth", "login"]
                 }
               },
@@ -1972,10 +1861,8 @@
               "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"wrongpassword\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/auth/login",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "login"]
             },
             "description": "This request tests login with a valid email but incorrect password. It should return a 401 Unauthorized status with a generic error message."
@@ -1996,10 +1883,8 @@
                   "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"wrongpassword\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/auth/login",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/auth/login",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "auth", "login"]
                 }
               },
@@ -2032,10 +1917,8 @@
               "raw": "{\n    \"email\": \"nonexistent@example.com\",\n    \"password\": \"password123\"\n}"
             },
             "url": {
-              "raw": "http://localhost:3000/api/auth/login",
-              "protocol": "http",
-              "host": ["localhost"],
-              "port": "3000",
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "login"]
             },
             "description": "This request tests login with an email that doesn't exist in the system. It should return a 401 Unauthorized status with a generic error message (same as incorrect password for security)."
@@ -2056,10 +1939,8 @@
                   "raw": "{\n    \"email\": \"nonexistent@example.com\",\n    \"password\": \"password123\"\n}"
                 },
                 "url": {
-                  "raw": "http://localhost:3000/api/auth/login",
-                  "protocol": "http",
-                  "host": ["localhost"],
-                  "port": "3000",
+                  "raw": "{{baseUrl}}/api/auth/login",
+                  "host": ["{{baseUrl}}"],
                   "path": ["api", "auth", "login"]
                 }
               },
@@ -2078,6 +1959,125 @@
           ]
         }
       ]
+    },
+    {
+      "name": "User Logs",
+      "item": [
+        {
+          "name": "Get Logs For User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/user/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logs", "user", "1"]
+            },
+            "description": "This request retrieves all activity logs for a specific user. It should return a 200 status with an array of log entries."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/logs/user/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "logs", "user", "1"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": 1,\n            \"userId\": \"1\",\n            \"performedById\": \"2\",\n            \"action\": \"UPDATE\",\n            \"entityType\": \"USER\",\n            \"oldData\": {\n                \"name\": \"Original Name\",\n                \"email\": \"original@example.com\"\n            },\n            \"newData\": {\n                \"name\": \"Updated Name\",\n                \"email\": \"updated@example.com\"\n            },\n            \"description\": \"Updated user information\",\n            \"createdAt\": \"2023-04-21T10:45:05.306Z\",\n            \"performedBy\": {\n                \"id\": \"2\",\n                \"name\": \"Admin User\",\n                \"email\": \"admin@example.com\"\n            }\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Logs By Performer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/performer/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logs", "performer", "1"]
+            },
+            "description": "This request retrieves all logs of actions performed by a specific user. It should return a 200 status with an array of log entries."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/logs/performer/1",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "logs", "performer", "1"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": 2,\n            \"userId\": \"2\",\n            \"performedById\": \"1\",\n            \"action\": \"CREATE\",\n            \"entityType\": \"USER\",\n            \"oldData\": null,\n            \"newData\": {\n                \"name\": \"New User\",\n                \"email\": \"new@example.com\",\n                \"roleId\": 2\n            },\n            \"description\": \"Created new user account: New User\",\n            \"createdAt\": \"2023-04-21T11:45:05.306Z\",\n            \"user\": {\n                \"id\": \"2\",\n                \"name\": \"New User\",\n                \"email\": \"new@example.com\"\n            }\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Search All Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/search",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logs", "search"]
+            },
+            "description": "This request searches all logs with optional filter parameters. This is an admin function that would typically include pagination and filtering."
+          },
+          "response": [
+            {
+              "name": "Not Implemented Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/logs/search",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "logs", "search"]
+                }
+              },
+              "status": "Not Implemented",
+              "code": 501,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Log search functionality not implemented yet\",\n    \"errorCode\": \"NOT_IMPLEMENTED\"\n}"
+            }
+          ]
+        }
+      ]
     }
   ],
   "event": [
@@ -2085,7 +2085,16 @@
       "listen": "prerequest",
       "script": {
         "type": "text/javascript",
-        "exec": [""]
+        "exec": [
+          "// Automatically add auth token to all requests if it exists",
+          "const token = pm.environment.get('accessToken') || pm.globals.get('accessToken');",
+          "if (token) {",
+          "    pm.request.headers.upsert({",
+          "        key: 'x-outmanage-token',",
+          "        value: token",
+          "    });",
+          "}"
+        ]
       }
     },
     {

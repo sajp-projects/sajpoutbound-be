@@ -150,3 +150,54 @@ npm run lint:fix
 - `npm run seed` - Seed the database with initial data
 
 # api-outmanage
+
+# Outmanage API - Postman Collection
+
+This repository contains a Postman collection and environment for testing the Outmanage API.
+
+## Features
+
+- Complete API test coverage for User and Role management endpoints
+- Token-based authentication with automatic token handling
+- Environment variables for easy configuration
+- Test scripts for successful login that automatically save the authentication token
+
+## Setup Instructions
+
+1. Import the `outmanage_api_tests.postman_collection.json` file into Postman
+2. Import the `outmanage_api_environment.json` file as an environment
+3. Make sure the environment is selected in Postman
+
+## Authentication Flow
+
+The collection is configured to automatically handle authentication:
+
+1. When you execute the "Login - Valid Credentials" request in the Authentication folder
+2. The test script automatically extracts the access token from the response
+3. The token is saved to the environment variable `accessToken`
+4. All subsequent requests will automatically include the token in the `x-outmanage-token` header
+
+## How It Works
+
+This is implemented using:
+
+1. A pre-request script at the collection level that adds the auth token header to all requests
+2. A test script in the login request that extracts and saves the token
+3. Environment variables to store the token
+
+## Manual Testing
+
+1. Start by running the login request to authenticate
+2. After successful login, the token is automatically saved to environment variables
+3. Proceed to test other endpoints - the token is automatically included in all requests
+
+## Environment Variables
+
+- `baseUrl` - Base URL for the API (default: http://localhost:3000)
+- `accessToken` - Access token for authentication (set automatically after login)
+
+## Notes
+
+- If you need to manually set the token, you can update the `accessToken` variable in the
+  environment
+- All requests use the `baseUrl` variable, so you can easily switch between environments

@@ -35,8 +35,7 @@ export default {
 
   async getUserById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
-      const { id: paramId } = req.params;
-      const id = parseInt(paramId, 10);
+      const { id } = req.params;
 
       await userIdSchema.validateAsync({
         id,
@@ -70,11 +69,24 @@ export default {
       // Hash the password before storing it
       const hashedPassword = await bcrypt.hashPassword(validated.password);
 
+      const performedById = req.user.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
       // Create the user with the hashed password
-      const user = await userService.createUser({
-        ...validated,
-        password: hashedPassword,
-      });
+      const user = await userService.createUser(
+        {
+          ...validated,
+          password: hashedPassword,
+        },
+        performedById,
+      );
 
       res.status(201).json(success(user));
     } catch (error) {
@@ -120,8 +132,7 @@ export default {
     next: NextFunction,
   ) {
     try {
-      const { id: paramId } = req.params;
-      const id = parseInt(paramId, 10);
+      const { id } = req.params;
 
       await userIdSchema.validateAsync({
         id,
@@ -149,7 +160,17 @@ export default {
         });
       }
 
-      const updatedUser = await userService.updateUser(id, validated);
+      const performedById = req.user.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
+      const updatedUser = await userService.updateUser(id, validated, performedById);
 
       res.status(200).json(success(updatedUser));
     } catch (error) {
@@ -189,8 +210,7 @@ export default {
 
   async unarchiveUser(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
-      const { id: paramId } = req.params;
-      const id = parseInt(paramId, 10);
+      const { id } = req.params;
 
       await userIdSchema.validateAsync({
         id,
@@ -207,7 +227,17 @@ export default {
         });
       }
 
-      const updatedUser = await userService.unarchiveUser(id);
+      const performedById = req.user.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
+      const updatedUser = await userService.unarchiveUser(id, performedById);
 
       res.status(200).json(success(updatedUser));
     } catch (error) {
@@ -217,8 +247,7 @@ export default {
 
   async deleteUser(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
-      const { id: paramId } = req.params;
-      const id = parseInt(paramId, 10);
+      const { id } = req.params;
 
       await userIdSchema.validateAsync({
         id,
@@ -235,7 +264,17 @@ export default {
         });
       }
 
-      await userService.deleteUser(id);
+      const performedById = req.user.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
+      await userService.deleteUser(id, performedById);
 
       res.status(200).json(
         success({

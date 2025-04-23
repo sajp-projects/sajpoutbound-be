@@ -1,11 +1,13 @@
-import { PrismaClient } from '@prisma/client';
+import {
+  ACTION, ENTITY_TYPE, PrismaClient, 
+} from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   try {
-    // Clear existing data to avoid duplicates
+    console.log(process.env.DATABASE_URL); // Clear existing data to avoid duplicates
     await prisma.user.deleteMany();
     await prisma.role.deleteMany();
 
@@ -50,16 +52,20 @@ async function main() {
     // Create 10 users with different roles
     const defaultPassword = await bcrypt.hash('Password123!', 10);
 
+    // Create an admin user first
+    const adminUser = await prisma.user.create({
+      data: {
+        email: 'admin@example.com',
+        name: 'Admin User',
+        password: defaultPassword,
+        roleId: roles[0].id,
+      },
+    });
+
+    // Create other users
     const users = await Promise.all([
-      // Admin user
-      prisma.user.create({
-        data: {
-          email: 'admin@example.com',
-          name: 'Admin User',
-          password: defaultPassword,
-          roleId: roles[0].id,
-        },
-      }),
+      // Admin user already created
+      adminUser,
       // Managers
       prisma.user.create({
         data: {
@@ -141,7 +147,41 @@ async function main() {
       }),
     ]);
 
-    console.log('Created 10 users with roles');
+    // Create some example UserLog entries
+    await prisma.userLog.create({
+      data: {
+        userId: users[8].id, // customer1
+        performedById: adminUser.id, // admin user
+        action: ACTION.CREATE,
+        entityType: ENTITY_TYPE.USER,
+        newData: {
+          email: 'customer1@example.com',
+          name: 'James Wilson',
+          roleId: roles[4].id,
+        },
+        description: 'Created new customer account',
+      },
+    });
+
+    await prisma.userLog.create({
+      data: {
+        userId: users[7].id, // robert.accountant
+        performedById: adminUser.id,
+        action: ACTION.DELETE,
+        entityType: ENTITY_TYPE.USER,
+        oldData: {
+          email: 'robert.accountant@example.com',
+          name: 'Robert Taylor',
+          deletedAt: null,
+        },
+        newData: {
+          deletedAt: new Date().toISOString(),
+        },
+        description: 'Archived accountant user',
+      },
+    });
+
+    console.log('Created 10 users with roles and sample user logs');
 
     // Log summary of created data
     console.log('Seed data created successfully:');
