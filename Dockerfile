@@ -1,27 +1,28 @@
+# Use lightweight Node image
 FROM node:18-alpine
 
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Install netcat for database connection checking
+RUN apk add --no-cache netcat-openbsd
+
+# Copy only the package files first for better Docker layer caching
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the code
+# Copy the rest of the project files
 COPY . .
 
-# Set environment variables
+# Set timezone environment variable
 ENV TZ=Asia/Jakarta
 
-# Generate Prisma client
-RUN npx prisma generate
-
-# Build the app
+# Build the app (e.g., transpile TypeScript if needed)
 RUN npm run build
 
-# Expose the port
+# Expose app port (default: 3000)
 EXPOSE 3000
 
-# Command to run the app with proper DB setup based on environment
-CMD sh -c "echo 'Waiting for MySQL to be ready...' && sleep 5 && if [ \"$NODE_ENV\" = \"production\" ]; then npx prisma migrate deploy; else npx prisma migrate reset --force; fi && npm start"
+# Runtime command will be defined in docker-compose, so no CMD needed here
