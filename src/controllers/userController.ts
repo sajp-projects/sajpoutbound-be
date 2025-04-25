@@ -20,6 +20,8 @@ export default {
       // Extract pagination parameters from query
       const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const search = req.query.search as string | undefined;
+      const roleId = req.query.roleId as string | undefined;
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
@@ -37,8 +39,8 @@ export default {
         });
       }
 
-      // Get paginated users
-      const result = await userService.getAllUsers(page, limit);
+      // Get paginated users with search and filter
+      const result = await userService.getAllUsers(page, limit, search, roleId);
 
       res.status(200).json(
         success({
@@ -308,11 +310,11 @@ export default {
         });
       }
 
-      await userService.deleteUser(id, performedById);
+      const deletedUser = await userService.deleteUser(id, performedById);
 
       res.status(200).json(
         success({
-          message: 'User deleted successfully',
+          user: deletedUser,
         }),
       );
     } catch (error) {

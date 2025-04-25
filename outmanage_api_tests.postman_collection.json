@@ -1,9 +1,10 @@
 {
   "info": {
-    "_postman_id": "e8a3a41e-5b9d-4aa7-ba79-6c02c4c3c7ac",
+    "_postman_id": "07f91499-2eb2-4951-a821-4a4edaa62bbd",
     "name": "Outmanage API Tests",
     "description": "Test collection for Outmanage API with valid and invalid request examples to test error handling and logging",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+    "_exporter_id": "40065133"
   },
   "item": [
     {
@@ -15,7 +16,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/users?page=1&limit=10",
+              "raw": "{{baseUrl}}/api/users?page=1&limit=10&roleId=e9e94e45-8ba2-4be1-9c24-199e8ef87310",
               "host": ["{{baseUrl}}"],
               "path": ["api", "users"],
               "query": [
@@ -28,6 +29,15 @@
                   "key": "limit",
                   "value": "10",
                   "description": "Number of items per page (1-100)"
+                },
+                {
+                  "key": "search",
+                  "value": "ben",
+                  "disabled": true
+                },
+                {
+                  "key": "roleId",
+                  "value": "e9e94e45-8ba2-4be1-9c24-199e8ef87310"
                 }
               ]
             },
@@ -173,11 +183,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/archived",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "archived"]
-            },
+            "url": "{{baseUrl}}/api/users/archived",
             "description": "This request retrieves all soft-deleted users with their roles. It should return a 200 status with an array of archived user objects."
           },
           "response": [
@@ -186,11 +192,7 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/archived",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "archived"]
-                }
+                "url": "{{baseUrl}}/api/users/archived"
               },
               "status": "OK",
               "code": 200,
@@ -211,11 +213,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "1"]
-            },
+            "url": "{{baseUrl}}/api/users/4773be52-94f1-4618-9aa8-95fabb61aceb",
             "description": "This request retrieves a specific user by ID with their role details. It should return a 200 status with the user object."
           },
           "response": [
@@ -224,11 +222,7 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/1",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "1"]
-                }
+                "url": "{{baseUrl}}/api/users/1"
               },
               "status": "OK",
               "code": 200,
@@ -249,11 +243,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/abc",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "abc"]
-            },
+            "url": "{{baseUrl}}/api/users/abc",
             "description": "This request tests error handling with an invalid ID format. It should return a 400 status with error details about the invalid ID."
           },
           "response": [
@@ -262,11 +252,7 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/abc",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "abc"]
-                }
+                "url": "{{baseUrl}}/api/users/abc"
               },
               "status": "Bad Request",
               "code": 400,
@@ -287,11 +273,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/999",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "999"]
-            },
+            "url": "{{baseUrl}}/api/users/999",
             "description": "This request tests error handling for a non-existent user ID. It should return a 404 status with error details."
           },
           "response": [
@@ -300,11 +282,7 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/999",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "999"]
-                }
+                "url": "{{baseUrl}}/api/users/999"
               },
               "status": "Not Found",
               "code": 404,
@@ -334,11 +312,7 @@
               "mode": "raw",
               "raw": "{\n    \"email\": \"invalid-email\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/users",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users"]
-            },
+            "url": "{{baseUrl}}/api/users",
             "description": "This request tests error handling with an invalid email format. It should trigger the Joi validation middleware and return a 400 status with error details."
           },
           "response": [
@@ -356,11 +330,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"email\": \"invalid-email\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/users",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users"]
-                }
+                "url": "{{baseUrl}}/api/users"
               },
               "status": "Bad Request",
               "code": 400,
@@ -390,11 +360,7 @@
               "mode": "raw",
               "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/users",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users"]
-            },
+            "url": "{{baseUrl}}/api/users",
             "description": "This request tests successful user creation with valid data. It should pass validation and return a 201 status with the created user object."
           },
           "response": [
@@ -412,11 +378,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/users",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users"]
-                }
+                "url": "{{baseUrl}}/api/users"
               },
               "status": "Created",
               "code": 201,
@@ -446,11 +408,7 @@
               "mode": "raw",
               "raw": "{\n    \"name\": \"Missing Email User\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/users",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users"]
-            },
+            "url": "{{baseUrl}}/api/users",
             "description": "This request tests error handling with missing required fields. It should trigger the Joi validation middleware and return a 400 status with error details about missing email and password."
           },
           "response": [
@@ -468,11 +426,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"name\": \"Missing Email User\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/users",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users"]
-                }
+                "url": "{{baseUrl}}/api/users"
               },
               "status": "Bad Request",
               "code": 400,
@@ -502,11 +456,7 @@
               "mode": "raw",
               "raw": "{\n    \"email\": \"test2@example.com\",\n    \"name\": \"Short Password User\",\n    \"password\": \"123\",\n    \"roleId\": 1\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/users",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users"]
-            },
+            "url": "{{baseUrl}}/api/users",
             "description": "This request tests password length validation. It should trigger the Joi validation middleware and return a 400 status with error details about the password being too short."
           },
           "response": [
@@ -524,11 +474,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"email\": \"test2@example.com\",\n    \"name\": \"Short Password User\",\n    \"password\": \"123\",\n    \"roleId\": 1\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/users",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users"]
-                }
+                "url": "{{baseUrl}}/api/users"
               },
               "status": "Bad Request",
               "code": 400,
@@ -558,11 +504,7 @@
               "mode": "raw",
               "raw": "{\n    \"email\": \"test3@example.com\",\n    \"name\": \"Invalid Role User\",\n    \"password\": \"password123\",\n    \"roleId\": 999\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/users",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users"]
-            },
+            "url": "{{baseUrl}}/api/users",
             "description": "This request tests foreign key constraint validation. It should trigger a Prisma P2003 error and return a 404 status with error details about the role not being found."
           },
           "response": [
@@ -580,11 +522,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"email\": \"test3@example.com\",\n    \"name\": \"Invalid Role User\",\n    \"password\": \"password123\",\n    \"roleId\": 999\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/users",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users"]
-                }
+                "url": "{{baseUrl}}/api/users"
               },
               "status": "Not Found",
               "code": 404,
@@ -614,11 +552,7 @@
               "mode": "raw",
               "raw": "{\n    \"name\": \"Updated User Name\",\n    \"email\": \"updated.email@example.com\",\n    \"roleId\": 2\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/users/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "1"]
-            },
+            "url": "{{baseUrl}}/api/users/1",
             "description": "This request updates a user with valid data. It should return a 200 status with the updated user object."
           },
           "response": [
@@ -636,11 +570,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"name\": \"Updated User Name\",\n    \"email\": \"updated.email@example.com\",\n    \"roleId\": 2\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/1",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "1"]
-                }
+                "url": "{{baseUrl}}/api/users/1"
               },
               "status": "OK",
               "code": 200,
@@ -670,11 +600,7 @@
               "mode": "raw",
               "raw": "{}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/users/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "1"]
-            },
+            "url": "{{baseUrl}}/api/users/1",
             "description": "This request tests error handling when no update fields are provided. It should return a 400 status with validation error details."
           },
           "response": [
@@ -692,11 +618,7 @@
                   "mode": "raw",
                   "raw": "{}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/1",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "1"]
-                }
+                "url": "{{baseUrl}}/api/users/1"
               },
               "status": "Bad Request",
               "code": 400,
@@ -726,11 +648,7 @@
               "mode": "raw",
               "raw": "{\n    \"email\": \"invalid-email\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/users/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "1"]
-            },
+            "url": "{{baseUrl}}/api/users/1",
             "description": "This request tests validation for an invalid email format. It should return a 400 status with validation error details."
           },
           "response": [
@@ -748,11 +666,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"email\": \"invalid-email\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/1",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "1"]
-                }
+                "url": "{{baseUrl}}/api/users/1"
               },
               "status": "Bad Request",
               "code": 400,
@@ -782,11 +696,7 @@
               "mode": "raw",
               "raw": "{\n    \"roleId\": 999\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/users/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "1"]
-            },
+            "url": "{{baseUrl}}/api/users/1",
             "description": "This request tests foreign key constraint with a non-existent role ID. It should return a 404 status with error details."
           },
           "response": [
@@ -804,11 +714,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"roleId\": 999\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/1",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "1"]
-                }
+                "url": "{{baseUrl}}/api/users/1"
               },
               "status": "Not Found",
               "code": 404,
@@ -829,11 +735,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "1"]
-            },
+            "url": "{{baseUrl}}/api/users/1",
             "description": "This request soft deletes a user by ID. It should return a 200 status with a success message."
           },
           "response": [
@@ -842,11 +744,7 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/1",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "1"]
-                }
+                "url": "{{baseUrl}}/api/users/1"
               },
               "status": "OK",
               "code": 200,
@@ -867,11 +765,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/abc",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "abc"]
-            },
+            "url": "{{baseUrl}}/api/users/abc",
             "description": "This request tests error handling for an invalid ID format. It should return a 400 status with validation error details."
           },
           "response": [
@@ -880,11 +774,7 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/abc",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "abc"]
-                }
+                "url": "{{baseUrl}}/api/users/abc"
               },
               "status": "Bad Request",
               "code": 400,
@@ -905,11 +795,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/999",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "999"]
-            },
+            "url": "{{baseUrl}}/api/users/999",
             "description": "This request tests error handling for a non-existent user ID. It should return a 404 status with error details."
           },
           "response": [
@@ -918,11 +804,7 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/999",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "999"]
-                }
+                "url": "{{baseUrl}}/api/users/999"
               },
               "status": "Not Found",
               "code": 404,
@@ -943,11 +825,7 @@
           "request": {
             "method": "PATCH",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/1/unarchived",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "1", "unarchived"]
-            },
+            "url": "{{baseUrl}}/api/users/1/unarchived",
             "description": "This request unarchives (restores) a soft-deleted user. It should return a 200 status with the restored user object."
           },
           "response": [
@@ -956,11 +834,7 @@
               "originalRequest": {
                 "method": "PATCH",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/1/unarchived",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "1", "unarchived"]
-                }
+                "url": "{{baseUrl}}/api/users/1/unarchived"
               },
               "status": "OK",
               "code": 200,
@@ -981,11 +855,7 @@
           "request": {
             "method": "PATCH",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/abc/unarchived",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "abc", "unarchived"]
-            },
+            "url": "{{baseUrl}}/api/users/abc/unarchived",
             "description": "This request tests error handling with an invalid ID format. It should return a 400 status with error details about the invalid ID."
           },
           "response": [
@@ -994,11 +864,7 @@
               "originalRequest": {
                 "method": "PATCH",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/abc/unarchived",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "abc", "unarchived"]
-                }
+                "url": "{{baseUrl}}/api/users/abc/unarchived"
               },
               "status": "Bad Request",
               "code": 400,
@@ -1019,11 +885,7 @@
           "request": {
             "method": "PATCH",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/users/999/unarchived",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "999", "unarchived"]
-            },
+            "url": "{{baseUrl}}/api/users/47011f99-8b19-46c4-b41a-c957e0f50a57/unarchived",
             "description": "This request tests error handling for a non-existent user ID. It should return a 404 status with error details."
           },
           "response": [
@@ -1032,11 +894,7 @@
               "originalRequest": {
                 "method": "PATCH",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/users/999/unarchived",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "users", "999", "unarchived"]
-                }
+                "url": "{{baseUrl}}/api/users/999/unarchived"
               },
               "status": "Not Found",
               "code": 404,
@@ -1235,11 +1093,7 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/logs/search",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "logs", "search"]
-                }
+                "url": "{{baseUrl}}/api/logs/search"
               },
               "status": "Not Implemented",
               "code": 501,
@@ -1424,11 +1278,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/roles/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles", "1"]
-            },
+            "url": "{{baseUrl}}/api/roles/66c73e27-b3ca-4061-8ae9-9263c339dc25",
             "description": "This request retrieves a specific role by ID with its associated users. It should return a 200 status with the role object."
           },
           "response": [
@@ -1437,11 +1287,7 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles/1",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles", "1"]
-                }
+                "url": "{{baseUrl}}/api/roles/1"
               },
               "status": "OK",
               "code": 200,
@@ -1462,11 +1308,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/roles/abc",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles", "abc"]
-            },
+            "url": "{{baseUrl}}/api/roles/abc",
             "description": "This request tests error handling with an invalid ID format. It should return a 400 status with error details about the invalid ID."
           },
           "response": [
@@ -1475,11 +1317,7 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles/abc",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles", "abc"]
-                }
+                "url": "{{baseUrl}}/api/roles/abc"
               },
               "status": "Bad Request",
               "code": 400,
@@ -1500,11 +1338,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/roles/999",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles", "999"]
-            },
+            "url": "{{baseUrl}}/api/roles/999",
             "description": "This request tests error handling for a non-existent role ID. It should return a 404 status with error details."
           },
           "response": [
@@ -1513,11 +1347,7 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles/999",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles", "999"]
-                }
+                "url": "{{baseUrl}}/api/roles/999"
               },
               "status": "Not Found",
               "code": 404,
@@ -1547,11 +1377,7 @@
               "mode": "raw",
               "raw": "{\n    \"name\": \"Manager\",\n    \"description\": \"Department manager with specialized access\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/roles",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles"]
-            },
+            "url": "{{baseUrl}}/api/roles",
             "description": "This request creates a new role with valid data. It should return a 201 status with the created role object."
           },
           "response": [
@@ -1569,11 +1395,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"name\": \"Manager\",\n    \"description\": \"Department manager with specialized access\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles"]
-                }
+                "url": "{{baseUrl}}/api/roles"
               },
               "status": "Created",
               "code": 201,
@@ -1603,11 +1425,7 @@
               "mode": "raw",
               "raw": "{\n    \"name\": \"Admin\",\n    \"description\": \"Another admin role\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/roles",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles"]
-            },
+            "url": "{{baseUrl}}/api/roles",
             "description": "This request tests error handling when trying to create a role with a name that already exists. It should return a 409 Conflict status."
           },
           "response": [
@@ -1625,11 +1443,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"name\": \"Admin\",\n    \"description\": \"Another admin role\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles"]
-                }
+                "url": "{{baseUrl}}/api/roles"
               },
               "status": "Conflict",
               "code": 409,
@@ -1659,11 +1473,7 @@
               "mode": "raw",
               "raw": "{\n    \"description\": \"Role without a name\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/roles",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles"]
-            },
+            "url": "{{baseUrl}}/api/roles",
             "description": "This request tests validation when creating a role without the required name field. It should return a 400 Bad Request status."
           },
           "response": [
@@ -1681,11 +1491,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"description\": \"Role without a name\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles"]
-                }
+                "url": "{{baseUrl}}/api/roles"
               },
               "status": "Bad Request",
               "code": 400,
@@ -1715,11 +1521,7 @@
               "mode": "raw",
               "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated role description\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/roles/2",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles", "2"]
-            },
+            "url": "{{baseUrl}}/api/roles/2",
             "description": "This request updates a role with valid data. It should return a 200 status with the updated role object."
           },
           "response": [
@@ -1737,11 +1539,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated role description\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles/2",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles", "2"]
-                }
+                "url": "{{baseUrl}}/api/roles/2"
               },
               "status": "OK",
               "code": 200,
@@ -1771,11 +1569,7 @@
               "mode": "raw",
               "raw": "{\n    \"name\": \"Admin\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/roles/2",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles", "2"]
-            },
+            "url": "{{baseUrl}}/api/roles/2",
             "description": "This request tests error handling when trying to update a role with a name that already exists. It should return a 409 Conflict status."
           },
           "response": [
@@ -1793,11 +1587,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"name\": \"Admin\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles/2",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles", "2"]
-                }
+                "url": "{{baseUrl}}/api/roles/2"
               },
               "status": "Conflict",
               "code": 409,
@@ -1827,11 +1617,7 @@
               "mode": "raw",
               "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated role description\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/roles/999",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles", "999"]
-            },
+            "url": "{{baseUrl}}/api/roles/999",
             "description": "This request tests error handling when trying to update a non-existent role. It should return a 404 Not Found status."
           },
           "response": [
@@ -1849,11 +1635,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"name\": \"Updated Role\",\n    \"description\": \"Updated role description\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles/999",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles", "999"]
-                }
+                "url": "{{baseUrl}}/api/roles/999"
               },
               "status": "Not Found",
               "code": 404,
@@ -1874,12 +1656,8 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/roles/3",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles", "3"]
-            },
-            "description": "This request soft deletes a role that is not associated with any users. It should return a 200 status with the deleted role object."
+            "url": "{{baseUrl}}/api/roles/9edcfd0f-ab12-448f-b969-5793bd12a92c",
+            "description": "This request hard deletes a role that is not associated with any users. It should return a 200 status with the deleted role object."
           },
           "response": [
             {
@@ -1887,11 +1665,7 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles/3",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles", "3"]
-                }
+                "url": "{{baseUrl}}/api/roles/3"
               },
               "status": "OK",
               "code": 200,
@@ -1903,7 +1677,37 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 3,\n        \"name\": \"Manager\",\n        \"description\": \"Department manager with specialized access\",\n        \"createdAt\": \"2023-04-21T11:45:05.306Z\",\n        \"updatedAt\": \"2023-04-21T12:30:05.306Z\",\n        \"deletedAt\": \"2023-04-21T12:30:05.306Z\"\n    }\n}"
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 3,\n        \"name\": \"Manager\",\n        \"description\": \"Department manager with specialized access\",\n        \"createdAt\": \"2023-04-21T11:45:05.306Z\",\n        \"updatedAt\": \"2023-04-21T12:30:05.306Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Role - With Archived Users",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/roles/4",
+            "description": "This request tests hard deleting a role that has only archived users associated with it. It should succeed and automatically set the roleId to null for all archived users that were associated with this role."
+          },
+          "response": [
+            {
+              "name": "Successful Delete with Archived Users",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/roles/4"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": 4,\n        \"name\": \"Supervisor\",\n        \"description\": \"Team supervisor with moderate access\",\n        \"createdAt\": \"2023-04-21T11:45:05.306Z\",\n        \"updatedAt\": \"2023-04-21T12:30:05.306Z\"\n    }\n}"
             }
           ]
         },
@@ -1912,12 +1716,8 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/roles/1",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles", "1"]
-            },
-            "description": "This request tests error handling when trying to delete a role that is associated with users. It should return a 409 Conflict status."
+            "url": "{{baseUrl}}/api/roles/66c73e27-b3ca-4061-8ae9-9263c339dc25",
+            "description": "This request tests error handling when trying to delete a role that is associated with active users. It should return a 409 Conflict status."
           },
           "response": [
             {
@@ -1925,11 +1725,7 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles/1",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles", "1"]
-                }
+                "url": "{{baseUrl}}/api/roles/1"
               },
               "status": "Conflict",
               "code": 409,
@@ -1941,7 +1737,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n    \"message\": \"Role is associated with 2 users and cannot be deleted\",\n    \"errorCode\": \"ROLE_IN_USE\"\n}"
+              "body": "{\n    \"message\": \"Cannot delete role. It is currently assigned to 2 active users. Please reassign or archive these users first.\",\n    \"errorCode\": \"ROLE_IN_USE\"\n}"
             }
           ]
         },
@@ -1950,11 +1746,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/roles/999",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "roles", "999"]
-            },
+            "url": "{{baseUrl}}/api/roles/999",
             "description": "This request tests error handling when trying to delete a non-existent role. It should return a 404 Not Found status."
           },
           "response": [
@@ -1963,11 +1755,7 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/roles/999",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "roles", "999"]
-                }
+                "url": "{{baseUrl}}/api/roles/999"
               },
               "status": "Not Found",
               "code": 404,
@@ -1990,30 +1778,10 @@
       "item": [
         {
           "name": "Login - Valid Credentials",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
-            },
-            "description": "This request tests successful login with valid credentials. It should return a 200 status with user information and authentication tokens."
-          },
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
                   "// Check if login was successful",
                   "if (pm.response.code === 200) {",
@@ -2038,10 +1806,27 @@
                   "} else {",
                   "    console.error('Login failed with status code: ' + pm.response.code);",
                   "}"
-                ]
+                ],
+                "type": "text/javascript",
+                "packages": {}
               }
             }
           ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "This request tests successful login with valid credentials. It should return a 200 status with user information and authentication tokens."
+          },
           "response": [
             {
               "name": "Valid Login Response",
@@ -2057,11 +1842,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/auth/login",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "auth", "login"]
-                }
+                "url": "{{baseUrl}}/api/auth/login"
               },
               "status": "OK",
               "code": 200,
@@ -2091,11 +1872,7 @@
               "mode": "raw",
               "raw": "{\n    \"email\": \"invalid-email\",\n    \"password\": \"password123\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
-            },
+            "url": "{{baseUrl}}/api/auth/login",
             "description": "This request tests login validation with an invalid email format. It should trigger the Joi validation middleware and return a 400 status with error details."
           },
           "response": [
@@ -2113,11 +1890,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"email\": \"invalid-email\",\n    \"password\": \"password123\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/auth/login",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "auth", "login"]
-                }
+                "url": "{{baseUrl}}/api/auth/login"
               },
               "status": "Bad Request",
               "code": 400,
@@ -2147,11 +1920,7 @@
               "mode": "raw",
               "raw": "{\n    \"email\": \"test@example.com\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
-            },
+            "url": "{{baseUrl}}/api/auth/login",
             "description": "This request tests login validation with missing required fields. It should trigger the Joi validation middleware and return a 400 status with error details about the missing password."
           },
           "response": [
@@ -2169,11 +1938,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"email\": \"test@example.com\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/auth/login",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "auth", "login"]
-                }
+                "url": "{{baseUrl}}/api/auth/login"
               },
               "status": "Bad Request",
               "code": 400,
@@ -2203,11 +1968,7 @@
               "mode": "raw",
               "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"wrongpassword\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
-            },
+            "url": "{{baseUrl}}/api/auth/login",
             "description": "This request tests login with a valid email but incorrect password. It should return a 401 Unauthorized status with a generic error message."
           },
           "response": [
@@ -2225,11 +1986,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"wrongpassword\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/auth/login",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "auth", "login"]
-                }
+                "url": "{{baseUrl}}/api/auth/login"
               },
               "status": "Unauthorized",
               "code": 401,
@@ -2259,11 +2016,7 @@
               "mode": "raw",
               "raw": "{\n    \"email\": \"nonexistent@example.com\",\n    \"password\": \"password123\"\n}"
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
-            },
+            "url": "{{baseUrl}}/api/auth/login",
             "description": "This request tests login with an email that doesn't exist in the system. It should return a 401 Unauthorized status with a generic error message (same as incorrect password for security)."
           },
           "response": [
@@ -2281,11 +2034,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"email\": \"nonexistent@example.com\",\n    \"password\": \"password123\"\n}"
                 },
-                "url": {
-                  "raw": "{{baseUrl}}/api/auth/login",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "auth", "login"]
-                }
+                "url": "{{baseUrl}}/api/auth/login"
               },
               "status": "Unauthorized",
               "code": 401,

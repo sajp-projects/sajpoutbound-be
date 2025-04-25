@@ -213,4 +213,53 @@ export default {
       total,
     };
   },
+
+  /**
+   * Log when a user's role is unassigned due to role deletion
+   *
+   * @param userId The ID of the user whose role was unassigned
+   * @param roleId The ID of the deleted role
+   * @param roleName The name of the deleted role
+   * @param performedById The ID of the user who deleted the role
+   * @param tx Optional transaction client
+   * @returns The created log entry
+   */
+  async logRoleUnassignment(
+    userId: string,
+    roleId: string,
+    roleName: string,
+    performedById: string,
+    tx?: any,
+  ) {
+    const client = tx || prisma;
+
+    // Get the user data for the log description
+    const user = await client.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        name: true,
+        email: true,
+      },
+    });
+
+    return client.userLog.create({
+      data: {
+        userId,
+        performedById,
+        action: ACTION.UPDATE,
+        entityType: ENTITY_TYPE.USER,
+        oldData: {
+          roleId,
+          roleName,
+        },
+        newData: {
+          roleId: null,
+          roleName: null,
+        },
+        description: `Role '${roleName}' was removed from user ${user?.name || user?.email} because the role was deleted`,
+      },
+    });
+  },
 };

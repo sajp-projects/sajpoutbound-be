@@ -1,4 +1,5 @@
 import prisma from '../config/prisma';
+import userLogService from './userLogService';
 
 /**
  * Role service for handling role-related database operations
@@ -81,43 +82,88 @@ export default {
    * @returns Updated role
    */
   async updateRole(id: string, data: { name?: string; description?: string }) {
-    return prisma.role.update({
-      where: {
-        id,
-      },
-      data,
-    });
-  },
-
-  /**
-   * Delete a role (soft delete)
-   *
-   * @param id Role ID
-   * @returns Deleted role
-   */
-  async deleteRole(id: string) {
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
     return prisma.role.update({
       where: {
         id,
       },
       data: {
-        deletedAt: new Date(),
+        ...data,
+        updatedAt: jakartaTime,
       },
     });
   },
 
   /**
-   * Count users with a specific role
+   * Get the number of active users associated with a role
    *
-   * @param roleId Role ID
-   * @returns Number of users with the role
+   * @param id Role ID
+   * @returns Count of active users with this role
    */
-  async getUsersWithRole(roleId: string) {
+  async getUsersWithRole(id: string) {
     return prisma.user.count({
       where: {
-        roleId,
-        deletedAt: null,
+        roleId: id,
+        deletedAt: null, // Only count active (non-archived) users
       },
+    });
+  },
+
+  /**
+   * Delete a role (hard delete)
+   *
+   * @param id Role ID
+   * @param roleName The name of the role being deleted
+   * @param performedById The ID of the user who is deleting the role
+   * @returns Deleted role
+   */
+  async deleteRole(id: string, roleName: string, performedById: string) {
+    // Use transaction to ensure all operations succeed or fail together
+    return prisma.$transaction(async (tx) => {
+      // Find all archived users with this role for logging
+      const archivedUsers = await tx.user.findMany({
+        where: {
+          roleId: id,
+          deletedAt: {
+            not: null, // Only find archived users
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      // Update any archived users that reference this role to have null roleId
+      await tx.user.updateMany({
+        where: {
+          roleId: id,
+          deletedAt: {
+            not: null, // Only update archived users
+          },
+        },
+        data: {
+          roleId: null,
+        },
+      });
+
+      // Create log entries for each user whose role was unassigned
+      const logPromises = archivedUsers.map((user) =>
+        userLogService.logRoleUnassignment(user.id, id, roleName, performedById, tx),
+      );
+
+      // Wait for all log entries to be created
+      if (logPromises.length > 0) {
+        await Promise.all(logPromises);
+      }
+
+      // Hard delete the role
+      return tx.role.delete({
+        where: {
+          id,
+        },
+      });
     });
   },
 };

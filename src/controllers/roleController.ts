@@ -187,18 +187,30 @@ export default {
         });
       }
 
-      // Check if role is being used by any users
-      const usersWithRole = await roleService.getUsersWithRole(id);
+      // Check if role is being used by any active users
+      const activeUsersWithRole = await roleService.getUsersWithRole(id);
 
-      if (usersWithRole > 0) {
+      if (activeUsersWithRole > 0) {
         throw new CustomError({
-          message: `Role is associated with ${usersWithRole} users and cannot be deleted`,
+          message: `Cannot delete role. It is currently assigned to ${activeUsersWithRole} active users. Please reassign or archive these users first.`,
           errorCode: 'ROLE_IN_USE',
           status: 409,
         });
       }
 
-      const deletedRole = await roleService.deleteRole(id);
+      // Get the ID of the user performing the deletion
+      const performedById = req.user.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
+      // Perform hard delete of the role and update archived users' roleId to null
+      const deletedRole = await roleService.deleteRole(id, existingRole.name, performedById);
 
       res.status(200).json(success(deletedRole));
     } catch (error) {

@@ -11,30 +11,53 @@ export default {
    *
    * @param page The page number (1-based)
    * @param limit The number of items per page
+   * @param search Optional search term
+   * @param roleId Optional role ID
    * @returns Object containing users array and total count
    */
-  async getAllUsers(page: number = 1, limit: number = 10) {
+  async getAllUsers(page: number = 1, limit: number = 10, search?: string, roleId?: string) {
     // Calculate skip value for pagination
     const skip = (page - 1) * limit;
+
+    // Build where conditions
+    const whereConditions: any = {
+      deletedAt: null,
+    };
+
+    // Add search by name condition if search parameter is provided
+    if (search) {
+      whereConditions.OR = [
+        {
+          name: {
+            contains: search,
+          },
+        },
+        {
+          email: {
+            contains: search,
+          },
+        },
+      ];
+    }
+
+    // Add roleId filter if provided
+    if (roleId) {
+      whereConditions.roleId = roleId;
+    }
 
     // Execute both queries in parallel for efficiency
     const [users, total] = await Promise.all([
       // Get paginated users
       prisma.user.findMany({
-        where: {
-          deletedAt: null,
-        },
+        where: whereConditions,
         include: {
           role: {
-            omit: {
-              createdAt: true,
-              updatedAt: true,
-              deletedAt: true,
+            select: {
+              id: true,
+              name: true,
+              description: true,
             },
           },
-        },
-        omit: {
-          password: true,
         },
         skip,
         take: limit,
@@ -45,14 +68,17 @@ export default {
 
       // Get total count for pagination
       prisma.user.count({
-        where: {
-          deletedAt: null,
-        },
+        where: whereConditions,
       }),
     ]);
 
+    // Transform users to exclude password
+    const sanitizedUsers = users.map(
+      ({ password: _password, ...userWithoutPassword }) => userWithoutPassword,
+    );
+
     return {
-      users,
+      users: sanitizedUsers,
       total,
     };
   },
@@ -111,7 +137,6 @@ export default {
     return prisma.user.findFirst({
       where: {
         id,
-        deletedAt: null,
       },
       include: {
         role: true,
@@ -132,8 +157,6 @@ export default {
   async createUser(userData: UserCreateInput, performedById: string) {
     // Use transaction to ensure both operations succeed or fail together
     return prisma.$transaction(async (tx) => {
-      // Create the user in the database
-      console.log(userData, '-------');
       const createdUser = await tx.user.create({
         data: userData,
         include: {
@@ -342,24 +365,13 @@ export default {
         data: {
           deletedAt: jakartaTime,
         },
-        include: {
-          role: true,
-        },
       });
 
       await userLogService.logUserDeletion(id, performedById, userData, tx);
 
-      // Return user without password
-      const userWithoutPassword = {
-        id: deletedUser.id,
-        email: deletedUser.email,
-        name: deletedUser.name,
-        roleId: deletedUser.roleId,
-        role: deletedUser.role,
-        createdAt: deletedUser.createdAt,
-        updatedAt: deletedUser.updatedAt,
-        deletedAt: deletedUser.deletedAt,
-      };
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password: _password, ...userWithoutPassword } = deletedUser;
+
       return userWithoutPassword;
     });
   },
