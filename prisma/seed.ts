@@ -1,5 +1,5 @@
 import {
-  ACTION, ENTITY_TYPE, PrismaClient, 
+  ACTION, ENTITY_TYPE, Permission, PERMISSION_ACTION, PrismaClient, 
 } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -7,9 +7,10 @@ const prisma = new PrismaClient();
 
 async function main() {
   try {
-    console.log(process.env.DATABASE_URL); // Clear existing data to avoid duplicates
-    await prisma.user.deleteMany();
+    await prisma.permission.deleteMany();
+    await prisma.rolePermission.deleteMany();
     await prisma.role.deleteMany();
+    await prisma.user.deleteMany();
 
     console.log('Cleared existing data');
 
@@ -48,6 +49,61 @@ async function main() {
     ]);
 
     console.log('Created 5 roles');
+
+    // Create permissions for different resources and actions
+    const resources = ['user', 'role', 'permission'];
+    const actions = Object.values(PERMISSION_ACTION);
+
+    // Create all possible permissions
+    const permissions: Permission[] = [];
+    for (const resource of resources) {
+      for (const action of actions) {
+        const permission = await prisma.permission.create({
+          data: {
+            name: `${resource}:${action}`,
+            description: `Can ${action.toLowerCase()} ${resource}s`,
+            resource,
+            action,
+          },
+        });
+        permissions.push(permission);
+      }
+    }
+
+    console.log(`Created ${permissions.length} permissions`);
+
+    // Assign all permissions to Admin role
+    const adminPermissionAssignments = await Promise.all(
+      permissions.map((permission) =>
+        prisma.rolePermission.create({
+          data: {
+            roleId: roles[0].id, // Admin role
+            permissionId: permission.id,
+          },
+        }),
+      ),
+    );
+
+    console.log(`Assigned ${adminPermissionAssignments.length} permissions to Admin role`);
+
+    // Assign limited permissions to Manager role
+    // Managers can CREATE, READ, UPDATE all resources, but cannot DELETE any resource
+    const managerPermissions = permissions.filter(
+      (permission) => permission.action !== PERMISSION_ACTION.DELETE,
+    );
+
+    const managerPermissionAssignments = await Promise.all(
+      managerPermissions.map((permission) =>
+        prisma.rolePermission.create({
+          data: {
+            roleId: roles[1].id, // Manager role
+            permissionId: permission.id,
+          },
+        }),
+      ),
+    );
+
+    console.log(`Assigned ${managerPermissionAssignments.length} permissions to Manager role`);
 
     // Create 10 users with different roles
     const defaultPassword = await bcrypt.hash('Password123!', 10);
@@ -187,6 +243,9 @@ async function main() {
     console.log('Seed data created successfully:');
     console.log(`- Roles: ${roles.length}`);
     console.log(`- Users: ${users.length}`);
+    console.log(`- Permissions: ${permissions.length}`);
+    console.log(`- Admin permissions: ${adminPermissionAssignments.length}`);
+    console.log(`- Manager permissions: ${managerPermissionAssignments.length}`);
   } catch (error) {
     console.error('Error seeding database:', error);
   } finally {

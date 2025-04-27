@@ -49,12 +49,14 @@ export default {
       const token = jwt.generateToken({
         id: user.id,
         email: user.email,
+        roleId: user.roleId,
       });
 
       // Generate refresh token
       const refreshToken = jwt.generateRefreshToken({
         id: user.id,
         email: user.email,
+        roleId: user.roleId,
       });
 
       // Return success with tokens

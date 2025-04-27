@@ -4,7 +4,11 @@ import {
 } from 'express';
 import { CustomError } from '../middlewares/error';
 import {
-  createRoleSchema, roleIdSchema, updateRoleSchema, 
+  RoleCreateInput,
+  RoleUpdateInput,
+  createRoleSchema,
+  roleIdSchema,
+  updateRoleSchema,
 } from '../schemas/role';
 import roleService from '../services/roleService';
 import { success } from '../types/response';
@@ -79,7 +83,11 @@ export default {
     }
   },
 
-  async createRole(req: Request, res: Response, next: NextFunction) {
+  async createRole(
+    req: Request<unknown, unknown, RoleCreateInput>,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       const validated = await createRoleSchema.validateAsync(req.body);
 
@@ -113,7 +121,11 @@ export default {
     }
   },
 
-  async updateRole(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+  async updateRole(
+    req: Request<{ id: string }, unknown, RoleUpdateInput>,
+    res: Response,
+    next: NextFunction,
+  ) {
     try {
       // Validate ID parameter
       const { id } = req.params;

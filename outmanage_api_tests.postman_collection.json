@@ -2051,6 +2051,832 @@
           ]
         }
       ]
+    },
+    {
+      "name": "RBAC Management",
+      "item": [
+        {
+          "name": "Permissions",
+          "item": [
+            {
+              "name": "Get All Permissions",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-outmanage-token",
+                    "value": "{{auth_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/permissions?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "permissions"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "Page number (1-based)"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "Number of items per page (1-100)"
+                    }
+                  ]
+                },
+                "description": "This request retrieves all permissions with pagination. Default values: page=1, limit=10."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/permissions?page=1&limit=10",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "permissions"],
+                      "query": [
+                        {
+                          "key": "page",
+                          "value": "1"
+                        },
+                        {
+                          "key": "limit",
+                          "value": "10"
+                        }
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"permissions\": [\n            {\n                \"id\": \"1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\",\n                \"name\": \"user:read\",\n                \"description\": \"Can read user information\",\n                \"resource\": \"user\",\n                \"action\": \"READ\",\n                \"createdAt\": \"2023-06-15T10:30:00.000Z\",\n                \"updatedAt\": \"2023-06-15T10:30:00.000Z\",\n                \"deletedAt\": null\n            },\n            {\n                \"id\": \"2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e\",\n                \"name\": \"user:create\",\n                \"description\": \"Can create users\",\n                \"resource\": \"user\",\n                \"action\": \"CREATE\",\n                \"createdAt\": \"2023-06-15T10:30:00.000Z\",\n                \"updatedAt\": \"2023-06-15T10:30:00.000Z\",\n                \"deletedAt\": null\n            }\n        ],\n        \"total\": 2\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Get Permission By ID",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-outmanage-token",
+                    "value": "{{auth_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/permissions/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "permissions", "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"]
+                },
+                "description": "This request retrieves a specific permission by its ID."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/permissions/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "permissions", "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\",\n        \"name\": \"user:read\",\n        \"description\": \"Can read user information\",\n        \"resource\": \"user\",\n        \"action\": \"READ\",\n        \"createdAt\": \"2023-06-15T10:30:00.000Z\",\n        \"updatedAt\": \"2023-06-15T10:30:00.000Z\",\n        \"deletedAt\": null,\n        \"rolePermissions\": []\n    }\n}"
+                },
+                {
+                  "name": "Not Found Response",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/permissions/invalid-uuid",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "permissions", "invalid-uuid"]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"error\",\n    \"message\": \"Permission not found\",\n    \"errorCode\": \"PERMISSION_NOT_FOUND\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Create Permission - Valid",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-outmanage-token",
+                    "value": "{{auth_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"article:read\",\n    \"description\": \"Can read all articles\",\n    \"resource\": \"article\",\n    \"action\": \"READ\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/permissions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "permissions"]
+                },
+                "description": "This request creates a new permission with valid data."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"article:read\",\n    \"description\": \"Can read all articles\",\n    \"resource\": \"article\",\n    \"action\": \"READ\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/permissions",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "permissions"]
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\",\n        \"name\": \"article:read\",\n        \"description\": \"Can read all articles\",\n        \"resource\": \"article\",\n        \"action\": \"READ\",\n        \"createdAt\": \"2023-06-15T14:25:00.000Z\",\n        \"updatedAt\": \"2023-06-15T14:25:00.000Z\",\n        \"deletedAt\": null\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Create Permission - Invalid",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-outmanage-token",
+                    "value": "{{auth_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"a\",\n    \"description\": \"Invalid permission - name too short\",\n    \"resource\": \"a\",\n    \"action\": \"INVALID_ACTION\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/permissions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "permissions"]
+                },
+                "description": "This request attempts to create a permission with invalid data (name too short, invalid action)."
+              },
+              "response": [
+                {
+                  "name": "Validation Error Response",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"name\": \"a\",\n    \"description\": \"Invalid permission - name too short\",\n    \"resource\": \"a\",\n    \"action\": \"INVALID_ACTION\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/permissions",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "permissions"]
+                    }
+                  },
+                  "status": "Bad Request",
+                  "code": 400,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"error\",\n    \"message\": \"Validation failed\",\n    \"errors\": {\n        \"name\": \"Name must be at least 2 characters long\",\n        \"resource\": \"Resource must be at least 2 characters long\",\n        \"action\": \"Action must be one of: CREATE, READ, UPDATE, DELETE\"\n    },\n    \"errorCode\": \"VALIDATION_ERROR\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Permission - Valid",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "x-outmanage-token",
+                    "value": "{{auth_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"description\": \"Can read all articles and blog posts\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/permissions/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "permissions", "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f"]
+                },
+                "description": "This request updates a permission with valid data (changing description only)."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"description\": \"Can read all articles and blog posts\"\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/permissions/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "permissions", "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f"]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\",\n        \"name\": \"article:read\",\n        \"description\": \"Can read all articles and blog posts\",\n        \"resource\": \"article\",\n        \"action\": \"READ\",\n        \"createdAt\": \"2023-06-15T14:25:00.000Z\",\n        \"updatedAt\": \"2023-06-15T14:30:00.000Z\",\n        \"deletedAt\": null\n    }\n}"
+                }
+              ]
+            },
+            {
+              "name": "Delete Permission",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-outmanage-token",
+                    "value": "{{auth_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/permissions/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "permissions", "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f"]
+                },
+                "description": "This request soft deletes a permission."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/permissions/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "permissions", "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f"]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\",\n        \"name\": \"article:read\",\n        \"description\": \"Can read all articles and blog posts\",\n        \"resource\": \"article\",\n        \"action\": \"READ\",\n        \"createdAt\": \"2023-06-15T14:25:00.000Z\",\n        \"updatedAt\": \"2023-06-15T14:35:00.000Z\",\n        \"deletedAt\": \"2023-06-15T14:35:00.000Z\"\n    }\n}"
+                },
+                {
+                  "name": "Permission In Use Error",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/permissions/1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "permissions", "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"]
+                    }
+                  },
+                  "status": "Conflict",
+                  "code": 409,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"error\",\n    \"message\": \"Cannot delete permission. It is currently assigned to 2 active roles. Please remove it from these roles first.\",\n    \"errorCode\": \"PERMISSION_IN_USE\"\n}"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Role-Permissions",
+          "item": [
+            {
+              "name": "Get Role Permissions",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-outmanage-token",
+                    "value": "{{auth_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/role-permissions/4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "role-permissions", "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a"]
+                },
+                "description": "This request retrieves all permissions assigned to a specific role."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/role-permissions/4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "role-permissions", "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a"]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": \"1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\",\n            \"name\": \"user:read\",\n            \"description\": \"Can read user information\",\n            \"resource\": \"user\",\n            \"action\": \"READ\",\n            \"createdAt\": \"2023-06-15T10:30:00.000Z\",\n            \"updatedAt\": \"2023-06-15T10:30:00.000Z\",\n            \"deletedAt\": null\n        },\n        {\n            \"id\": \"2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e\",\n            \"name\": \"user:create\",\n            \"description\": \"Can create users\",\n            \"resource\": \"user\",\n            \"action\": \"CREATE\",\n            \"createdAt\": \"2023-06-15T10:30:00.000Z\",\n            \"updatedAt\": \"2023-06-15T10:30:00.000Z\",\n            \"deletedAt\": null\n        }\n    ]\n}"
+                },
+                {
+                  "name": "Role Not Found",
+                  "originalRequest": {
+                    "method": "GET",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/role-permissions/invalid-role-id",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "role-permissions", "invalid-role-id"]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"error\",\n    \"message\": \"Role not found\",\n    \"errorCode\": \"ROLE_NOT_FOUND\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Assign Permissions to Role - Valid",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-outmanage-token",
+                    "value": "{{auth_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"roleId\": \"4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a\",\n    \"permissionIds\": [\n        \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\",\n        \"5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b\"\n    ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/role-permissions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "role-permissions"]
+                },
+                "description": "This request assigns multiple permissions to a role."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"roleId\": \"4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a\",\n    \"permissionIds\": [\n        \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\",\n        \"5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b\"\n    ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/role-permissions",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "role-permissions"]
+                    }
+                  },
+                  "status": "Created",
+                  "code": 201,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": \"6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c\",\n            \"roleId\": \"4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a\",\n            \"permissionId\": \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\",\n            \"createdAt\": \"2023-06-15T15:00:00.000Z\",\n            \"updatedAt\": \"2023-06-15T15:00:00.000Z\",\n            \"permission\": {\n                \"id\": \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\",\n                \"name\": \"article:read\",\n                \"resource\": \"article\",\n                \"action\": \"READ\"\n            }\n        },\n        {\n            \"id\": \"7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d\",\n            \"roleId\": \"4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a\",\n            \"permissionId\": \"5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b\",\n            \"createdAt\": \"2023-06-15T15:00:00.000Z\",\n            \"updatedAt\": \"2023-06-15T15:00:00.000Z\",\n            \"permission\": {\n                \"id\": \"5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b\",\n                \"name\": \"article:create\",\n                \"resource\": \"article\",\n                \"action\": \"CREATE\"\n            }\n        }\n    ]\n}"
+                }
+              ]
+            },
+            {
+              "name": "Assign Permissions to Role - Invalid",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-outmanage-token",
+                    "value": "{{auth_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"roleId\": \"4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a\",\n    \"permissionIds\": [\n        \"invalid-permission-id\",\n        \"another-invalid-id\"\n    ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/role-permissions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "role-permissions"]
+                },
+                "description": "This request attempts to assign non-existent permissions to a role."
+              },
+              "response": [
+                {
+                  "name": "Permissions Not Found",
+                  "originalRequest": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"roleId\": \"4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a\",\n    \"permissionIds\": [\n        \"invalid-permission-id\",\n        \"another-invalid-id\"\n    ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/role-permissions",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "role-permissions"]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"error\",\n    \"message\": \"Some permissions not found: invalid-permission-id, another-invalid-id\",\n    \"errorCode\": \"PERMISSIONS_NOT_FOUND\"\n}"
+                }
+              ]
+            },
+            {
+              "name": "Update Role Permissions",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "x-outmanage-token",
+                    "value": "{{auth_token}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"permissionIds\": [\n        \"1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\",\n        \"2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e\",\n        \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\"\n    ]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/role-permissions/4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "role-permissions", "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a"]
+                },
+                "description": "This request replaces all permissions for a role with a new set of permissions."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "originalRequest": {
+                    "method": "PUT",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      },
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json",
+                        "type": "text"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n    \"permissionIds\": [\n        \"1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\",\n        \"2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e\",\n        \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\"\n    ]\n}"
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/role-permissions/4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+                      "host": ["{{baseUrl}}"],
+                      "path": ["api", "role-permissions", "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a"]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": [\n        {\n            \"id\": \"8b9c0d1e-2f3a-4b5c-6d7e-8f9a0b1c2d3e\",\n            \"roleId\": \"4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a\",\n            \"permissionId\": \"1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\",\n            \"createdAt\": \"2023-06-15T15:10:00.000Z\",\n            \"updatedAt\": \"2023-06-15T15:10:00.000Z\",\n            \"permission\": {\n                \"id\": \"1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\",\n                \"name\": \"user:read\",\n                \"resource\": \"user\",\n                \"action\": \"READ\"\n            }\n        },\n        {\n            \"id\": \"9c0d1e2f-3a4b-5c6d-7e8f-9a0b1c2d3e4f\",\n            \"roleId\": \"4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a\",\n            \"permissionId\": \"2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e\",\n            \"createdAt\": \"2023-06-15T15:10:00.000Z\",\n            \"updatedAt\": \"2023-06-15T15:10:00.000Z\",\n            \"permission\": {\n                \"id\": \"2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e\",\n                \"name\": \"user:create\",\n                \"resource\": \"user\",\n                \"action\": \"CREATE\"\n            }\n        },\n        {\n            \"id\": \"0d1e2f3a-4b5c-6d7e-8f9a-0b1c2d3e4f5a\",\n            \"roleId\": \"4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a\",\n            \"permissionId\": \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\",\n            \"createdAt\": \"2023-06-15T15:10:00.000Z\",\n            \"updatedAt\": \"2023-06-15T15:10:00.000Z\",\n            \"permission\": {\n                \"id\": \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\",\n                \"name\": \"article:read\",\n                \"resource\": \"article\",\n                \"action\": \"READ\"\n            }\n        }\n    ]\n}"
+                }
+              ]
+            },
+            {
+              "name": "Remove Permission from Role",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "x-outmanage-token",
+                    "value": "{{auth_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/role-permissions/4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+                  "host": ["{{baseUrl}}"],
+                  "path": [
+                    "api",
+                    "role-permissions",
+                    "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+                    "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f"
+                  ]
+                },
+                "description": "This request removes a specific permission from a role."
+              },
+              "response": [
+                {
+                  "name": "Success Response",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/role-permissions/4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a/3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+                      "host": ["{{baseUrl}}"],
+                      "path": [
+                        "api",
+                        "role-permissions",
+                        "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+                        "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f"
+                      ]
+                    }
+                  },
+                  "status": "OK",
+                  "code": 200,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"removed\": 1\n    }\n}"
+                },
+                {
+                  "name": "Permission Not Assigned",
+                  "originalRequest": {
+                    "method": "DELETE",
+                    "header": [
+                      {
+                        "key": "x-outmanage-token",
+                        "value": "{{auth_token}}",
+                        "type": "text"
+                      }
+                    ],
+                    "url": {
+                      "raw": "{{baseUrl}}/api/role-permissions/4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a/nonexistent-permission-id",
+                      "host": ["{{baseUrl}}"],
+                      "path": [
+                        "api",
+                        "role-permissions",
+                        "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+                        "nonexistent-permission-id"
+                      ]
+                    }
+                  },
+                  "status": "Not Found",
+                  "code": 404,
+                  "_postman_previewlanguage": "json",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json; charset=utf-8"
+                    }
+                  ],
+                  "cookie": [],
+                  "body": "{\n    \"status\": \"error\",\n    \"message\": \"Permission not assigned to role\",\n    \"errorCode\": \"PERMISSION_NOT_ASSIGNED\"\n}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "event": [

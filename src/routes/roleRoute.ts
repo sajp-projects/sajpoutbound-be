@@ -1,16 +1,18 @@
+import { PERMISSION_ACTION } from '@prisma/client';
 import express from 'express';
 import roleController from '../controllers/roleController';
+import { checkPermission } from '../middlewares/permission';
 
 const router = express.Router();
 
-router.get('/', roleController.getAllRoles);
+router.get('/', checkPermission('role', PERMISSION_ACTION.READ), roleController.getAllRoles);
 
-router.get('/:id', roleController.getRoleById);
+router.get('/:id', checkPermission('role', PERMISSION_ACTION.READ), roleController.getRoleById);
 
-router.post('/', roleController.createRole);
+router.post('/', checkPermission('role', PERMISSION_ACTION.CREATE), roleController.createRole);
 
-router.put('/:id', roleController.updateRole);
+router.put('/:id', checkPermission('role', PERMISSION_ACTION.UPDATE), roleController.updateRole);
 
-router.delete('/:id', roleController.deleteRole);
+router.delete('/:id', checkPermission('role', PERMISSION_ACTION.DELETE), roleController.deleteRole);
 
 export default router;

@@ -1,20 +1,53 @@
+import { PERMISSION_ACTION } from '@prisma/client';
 import express from 'express';
 import userController from '../controllers/userController';
+import { authenticateToken } from '../middlewares/authentication';
+import { checkPermission } from '../middlewares/permission';
 
 const router = express.Router();
 
-router.get('/', userController.getAllUsers);
-
-router.get('/archived', userController.getArchivedUsers);
-
-router.patch('/:id/unarchived', userController.unarchiveUser);
-
-router.get('/:id', userController.getUserById);
-
-router.post('/', userController.createUser);
-
-router.put('/:id', userController.updateUser);
-
-router.delete('/:id', userController.deleteUser);
+// Protected routes with permission checks
+router.get(
+  '/',
+  authenticateToken,
+  checkPermission('user', PERMISSION_ACTION.READ),
+  userController.getAllUsers,
+);
+router.get(
+  '/archived',
+  authenticateToken,
+  checkPermission('user', PERMISSION_ACTION.READ),
+  userController.getArchivedUsers,
+);
+router.get(
+  '/:id',
+  authenticateToken,
+  checkPermission('user', PERMISSION_ACTION.READ),
+  userController.getUserById,
+);
+router.post(
+  '/',
+  authenticateToken,
+  checkPermission('user', PERMISSION_ACTION.CREATE),
+  userController.createUser,
+);
+router.put(
+  '/:id',
+  authenticateToken,
+  checkPermission('user', PERMISSION_ACTION.UPDATE),
+  userController.updateUser,
+);
+router.patch(
+  '/:id/unarchived',
+  authenticateToken,
+  checkPermission('user', PERMISSION_ACTION.UPDATE),
+  userController.unarchiveUser,
+);
+router.delete(
+  '/:id',
+  authenticateToken,
+  checkPermission('user', PERMISSION_ACTION.DELETE),
+  userController.deleteUser,
+);
 
 export default router;
