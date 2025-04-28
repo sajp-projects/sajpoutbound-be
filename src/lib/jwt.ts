@@ -70,8 +70,9 @@ export default {
   generateRefreshToken(payload: TokenPayload, expiresIn = '7d'): string {
     // Remove any unnecessary data from refresh token
     const refreshPayload = {
-      userId: payload.userId,
+      id: payload.id,
       email: payload.email,
+      roleId: payload.roleId,
       type: 'refresh',
     };
     // @ts-expect-error - Ignoring type issues with jsonwebtoken

@@ -77,4 +77,59 @@ export default {
       next(error);
     }
   },
+
+  async refreshToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { refreshToken } = req.body;
+
+      // Check if refresh token exists
+      if (!refreshToken) {
+        throw new CustomError({
+          message: 'Refresh token is required',
+          errorCode: 'REFRESH_TOKEN_REQUIRED',
+          status: 400,
+        });
+      }
+
+      // Verify the refresh token
+      const decoded = jwt.verifyToken(refreshToken);
+
+      if (!decoded || decoded.type !== 'refresh') {
+        throw new CustomError({
+          message: 'Invalid refresh token',
+          errorCode: 'INVALID_REFRESH_TOKEN',
+          status: 401,
+        });
+      }
+
+      // Find user by id from the token
+      const user = await userService.getUserById(decoded.id);
+
+      if (!user) {
+        throw new CustomError({
+          message: 'User not found',
+          errorCode: 'USER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Generate new access token
+      const newAccessToken = jwt.generateToken({
+        id: user.id,
+        email: user.email,
+        roleId: user.roleId,
+      });
+
+      // Return success with new access token
+      res.status(200).json(
+        success({
+          tokens: {
+            accessToken: newAccessToken,
+          },
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
 };

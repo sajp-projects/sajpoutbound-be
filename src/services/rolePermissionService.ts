@@ -1,106 +1,102 @@
 import prisma from '../config/prisma';
-import { RolePermissionsAssignInput } from '../schemas/rolePermission';
+import {
+  RolePermissionCreateDeleteInput,
+  RolePermissionsAssignInput,
+} from '../schemas/rolePermission';
 
 export default {
   /**
-   * Assign multiple permissions to a role
+   * Assign a single permission to a role
    *
-   * @param data Object containing roleId and array of permissionIds
-   * @returns Array of created role-permission associations
+   * @param data Object containing roleId and permissionId
+   * @returns Created role-permission association
    */
-  async assignPermissions(data: RolePermissionsAssignInput) {
-    const { roleId, permissionIds } = data;
-
-    // Start a transaction to ensure data consistency
-    return prisma.$transaction(async (prisma) => {
-      // Create role-permission associations for each permissionId
-      const rolePermissions = await Promise.all(
-        permissionIds.map((permissionId) =>
-          prisma.rolePermission.create({
-            data: {
-              roleId,
-              permissionId,
-            },
-            include: {
-              permission: true,
-            },
-          }),
-        ),
-      );
-
-      // Return the created associations
-      return rolePermissions;
+  async assignRolePermission(data: RolePermissionCreateDeleteInput) {
+    const { roleId, permissionId } = data;
+    return prisma.rolePermission.create({
+      data: {
+        roleId,
+        permissionId,
+      },
+      include: {
+        permission: true,
+      },
     });
   },
 
   /**
    * Remove a permission from a role
    *
-   * @param roleId Role ID
-   * @param permissionId Permission ID
-   * @returns Number of removed associations
+   * @param data Object containing roleId and permissionId
+   * @returns Removed role-permission association or null if not found
    */
-  async removePermission(roleId: string, permissionId: string) {
-    const result = await prisma.rolePermission.deleteMany({
-      where: {
-        roleId,
-        permissionId,
-      },
-    });
-
-    return result.count;
-  },
-
-  /**
-   * Remove all permissions from a role
-   *
-   * @param roleId Role ID
-   * @returns Number of removed associations
-   */
-  async removeAllPermissions(roleId: string) {
-    const result = await prisma.rolePermission.deleteMany({
-      where: {
-        roleId,
-      },
-    });
-
-    return result.count;
-  },
-
-  /**
-   * Update a role's permissions by removing all existing ones and adding new ones
-   *
-   * @param data Object containing roleId and array of permissionIds
-   * @returns Array of created role-permission associations
-   */
-  async updateRolePermissions(data: RolePermissionsAssignInput) {
-    const { roleId, permissionIds } = data;
-
-    // Start a transaction to ensure data consistency
-    return prisma.$transaction(async (prisma) => {
-      // First, remove all existing permissions for this role
-      await prisma.rolePermission.deleteMany({
+  async removeRolePermission(data: RolePermissionCreateDeleteInput) {
+    const { roleId, permissionId } = data;
+    // Use a transaction to find and delete the role permission
+    return await prisma.$transaction(async (tx) => {
+      // Find the role-permission by the composite of roleId and permissionId
+      const rolePermission = await tx.rolePermission.findFirst({
         where: {
           roleId,
+          permissionId,
         },
       });
 
-      // Then create new role-permission associations
-      const rolePermissions = await Promise.all(
-        permissionIds.map((permissionId) =>
-          prisma.rolePermission.create({
-            data: {
-              roleId,
-              permissionId,
-            },
-            include: {
-              permission: true,
-            },
-          }),
-        ),
-      );
+      if (!rolePermission) {
+        return null;
+      }
 
-      return rolePermissions;
+      // Delete by ID which is guaranteed to be unique
+      return tx.rolePermission.delete({
+        where: {
+          id: rolePermission.id,
+        },
+      });
+    });
+  },
+
+  /**
+   * Toggle permissions for a role based on provided IDs
+   * For each permission ID, add it if it doesn't exist or remove it if it already exists
+   *
+   * @param data Object containing roleId and array of permissionIds to toggle
+   * @returns Array of permissions for the role after update
+   */
+  async differentialUpdateRolePermissions(data: RolePermissionsAssignInput) {
+    const { roleId, permissionIds } = data;
+
+    // Start a transaction to ensure data consistency
+    return prisma.$transaction(async () => {
+      // Get existing role permissions
+      const existingPermissions = await this.getRolePermissions(roleId);
+      const existingPermissionIds = existingPermissions.map((permission) => permission.id);
+
+      // For each permissionId in the input:
+      // - If it exists: remove it
+      // - If it doesn't exist: add it
+      const operations = permissionIds.map(async (permissionId) => {
+        const hasPermission = existingPermissionIds.includes(permissionId);
+
+        if (hasPermission) {
+          // Permission exists, so remove it
+          return this.removeRolePermission({
+            roleId,
+            permissionId,
+          });
+        } else {
+          // Permission doesn't exist, so add it
+          return this.assignRolePermission({
+            roleId,
+            permissionId,
+          });
+        }
+      });
+
+      // Execute all operations
+      await Promise.all(operations);
+
+      // Get updated permissions
+      return this.getRolePermissions(roleId);
     });
   },
 

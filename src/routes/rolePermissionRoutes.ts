@@ -5,25 +5,17 @@ import { checkPermission } from '../middlewares/permission';
 
 const router = express.Router();
 
-// Role-Permission routes
-router.post(
-  '/',
-  checkPermission('role', PERMISSION_ACTION.UPDATE),
-  rolePermissionController.assignPermissions,
-);
-router.delete(
-  '/:roleId/:permissionId',
-  checkPermission('role', PERMISSION_ACTION.UPDATE),
-  rolePermissionController.removePermission,
-);
+// Toggle permissions for a role (add if not assigned, remove if already assigned)
 router.put(
-  '/:roleId',
-  checkPermission('role', PERMISSION_ACTION.UPDATE),
+  '/:roleId/update-all',
+  checkPermission('permission', PERMISSION_ACTION.UPDATE),
   rolePermissionController.updateRolePermissions,
 );
+
+// Get permissions for a specific role
 router.get(
   '/:roleId',
-  checkPermission('role', PERMISSION_ACTION.READ),
+  checkPermission('permission', PERMISSION_ACTION.READ),
   rolePermissionController.getRolePermissions,
 );
 

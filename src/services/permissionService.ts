@@ -1,6 +1,5 @@
 import { PERMISSION_ACTION } from '@prisma/client';
 import prisma from '../config/prisma';
-import { PermissionCreateInput, PermissionUpdateInput } from '../schemas/permission';
 
 /**
  * Permission service for handling permission-related database operations
@@ -68,88 +67,6 @@ export default {
   },
 
   /**
-   * Get permissions by resource
-   *
-   * @param resource Resource name
-   * @returns Array of permissions for the specified resource
-   */
-  async getPermissionsByResource(resource: string) {
-    return prisma.permission.findMany({
-      where: {
-        resource,
-        deletedAt: null,
-      },
-      orderBy: {
-        action: 'asc',
-      },
-    });
-  },
-
-  /**
-   * Create a new permission
-   *
-   * @param data Permission data
-   * @returns Created permission
-   */
-  async createPermission(data: PermissionCreateInput) {
-    return prisma.permission.create({
-      data,
-    });
-  },
-
-  /**
-   * Update a permission
-   *
-   * @param id Permission ID
-   * @param data Updated permission data
-   * @returns Updated permission
-   */
-  async updatePermission(id: string, data: PermissionUpdateInput) {
-    return prisma.permission.update({
-      where: {
-        id,
-      },
-      data,
-    });
-  },
-
-  /**
-   * Soft delete a permission
-   *
-   * @param id Permission ID
-   * @returns Deleted permission
-   */
-  async deletePermission(id: string) {
-    return prisma.permission.update({
-      where: {
-        id,
-      },
-      data: {
-        deletedAt: new Date(),
-      },
-    });
-  },
-
-  /**
-   * Check if a permission with given resource and action exists
-   *
-   * @param resource Resource name
-   * @param action Permission action
-   * @returns Boolean indicating if permission exists
-   */
-  async hasPermission(resource: string, action: PERMISSION_ACTION) {
-    const count = await prisma.permission.count({
-      where: {
-        resource,
-        action,
-        deletedAt: null,
-      },
-    });
-
-    return count > 0;
-  },
-
-  /**
    * Find a permission by resource and action
    *
    * @param resource Resource name
@@ -162,23 +79,6 @@ export default {
         resource,
         action,
         deletedAt: null,
-      },
-    });
-  },
-
-  /**
-   * Get count of roles using a specific permission
-   *
-   * @param permissionId Permission ID
-   * @returns Count of roles using the permission
-   */
-  async getRolesWithPermission(permissionId: string) {
-    return prisma.rolePermission.count({
-      where: {
-        permissionId,
-        role: {
-          deletedAt: null,
-        },
       },
     });
   },

@@ -61,7 +61,7 @@ async function main() {
         const permission = await prisma.permission.create({
           data: {
             name: `${resource}:${action}`,
-            description: `Can ${action.toLowerCase()} ${resource}s`,
+            description: `Bisa ${action.toLowerCase()} ${resource}`,
             resource,
             action,
           },
