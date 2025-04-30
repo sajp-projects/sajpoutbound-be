@@ -66,6 +66,8 @@ export default {
             id: user.id,
             email: user.email,
             name: user.name,
+            roleId: user.roleId,
+            role: user.role,
           },
           tokens: {
             accessToken: token,

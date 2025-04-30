@@ -6,42 +6,59 @@ import userLogService from './userLogService';
  */
 export default {
   /**
-   * Get all roles with pagination
+   * Get all roles with optional pagination
    *
-   * @param page The page number (1-based)
-   * @param limit The number of items per page
+   * @param page The page number (1-based), or null to return all roles
+   * @param limit The number of items per page, or null to return all roles
    * @returns Object containing roles array and total count
    */
-  async getAllRoles(page: number = 1, limit: number = 10) {
-    // Calculate skip value for pagination
-    const skip = (page - 1) * limit;
-
-    // Execute both queries in parallel for efficiency
-    const [roles, total] = await Promise.all([
-      // Get paginated roles
-      prisma.role.findMany({
+  async getAllRoles(page: number | null = 1, limit: number | null = 10) {
+    // Execute queries based on whether pagination is requested
+    if (page === null || limit === null) {
+      // Return all roles without pagination
+      const roles = await prisma.role.findMany({
         where: {
           deletedAt: null,
         },
-        skip,
-        take: limit,
         orderBy: {
           createdAt: 'desc',
         },
-      }),
+      });
 
-      // Get total count for pagination
-      prisma.role.count({
-        where: {
-          deletedAt: null,
-        },
-      }),
-    ]);
+      return {
+        roles,
+      };
+    } else {
+      // Calculate skip value for pagination
+      const skip = (page - 1) * limit;
 
-    return {
-      roles,
-      total,
-    };
+      // Execute both queries in parallel for efficiency
+      const [roles, total] = await Promise.all([
+        // Get paginated roles
+        prisma.role.findMany({
+          where: {
+            deletedAt: null,
+          },
+          skip,
+          take: limit,
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+
+        // Get total count for pagination
+        prisma.role.count({
+          where: {
+            deletedAt: null,
+          },
+        }),
+      ]);
+
+      return {
+        roles,
+        total,
+      };
+    }
   },
 
   /**
