@@ -10,6 +10,7 @@ async function main() {
     await prisma.permission.deleteMany();
     await prisma.rolePermission.deleteMany();
     await prisma.role.deleteMany();
+    await prisma.warehouse.deleteMany();
     await prisma.user.deleteMany();
 
     console.log('Cleared existing data');
@@ -51,7 +52,7 @@ async function main() {
     console.log('Created 5 roles');
 
     // Create permissions for different resources and actions
-    const resources = ['user', 'role', 'permission'];
+    const resources = ['user', 'role', 'permission', 'warehouse'];
     const actions = Object.values(PERMISSION_ACTION);
 
     // Create all possible permissions
@@ -71,6 +72,38 @@ async function main() {
     }
 
     console.log(`Created ${permissions.length} permissions`);
+
+    // Create warehouses
+    const warehouses = await Promise.all([
+      // Admin's warehouse
+      prisma.warehouse.create({
+        data: {
+          name: 'Gudang Pusat',
+          description: 'Gudang utama untuk administrasi',
+        },
+      }),
+      // Additional warehouses (unassigned)
+      prisma.warehouse.create({
+        data: {
+          name: 'Gudang Wilayah Timur',
+          description: 'Fasilitas penyimpanan untuk distribusi wilayah timur',
+        },
+      }),
+      prisma.warehouse.create({
+        data: {
+          name: 'Gudang Wilayah Barat',
+          description: 'Fasilitas penyimpanan untuk distribusi wilayah barat',
+        },
+      }),
+      prisma.warehouse.create({
+        data: {
+          name: 'Gudang Sentral',
+          description: 'Fasilitas penyimpanan dan distribusi pusat',
+        },
+      }),
+    ]);
+
+    console.log(`Created ${warehouses.length} warehouses`);
 
     // Assign all permissions to Admin role
     const adminPermissionAssignments = await Promise.all(
@@ -108,17 +141,18 @@ async function main() {
     // Create 10 users with different roles
     const defaultPassword = await bcrypt.hash('Password123!', 10);
 
-    // Create an admin user first
+    // Create an admin user first with warehouse
     const adminUser = await prisma.user.create({
       data: {
         email: 'admin@example.com',
         name: 'Admin User',
         password: defaultPassword,
         roleId: roles[0].id,
+        warehouseId: warehouses[0].id, // Assign only the first warehouse to admin
       },
     });
 
-    // Create other users
+    // Create other users (without warehouses)
     const users = await Promise.all([
       // Admin user already created
       adminUser,
@@ -246,6 +280,7 @@ async function main() {
     console.log(`- Permissions: ${permissions.length}`);
     console.log(`- Admin permissions: ${adminPermissionAssignments.length}`);
     console.log(`- Manager permissions: ${managerPermissionAssignments.length}`);
+    console.log(`- Warehouses: ${warehouses.length}`);
   } catch (error) {
     console.error('Error seeding database:', error);
   } finally {

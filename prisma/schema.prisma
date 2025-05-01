@@ -17,6 +17,9 @@ model User {
   deletedAt     DateTime?
   roleId        String?
   role          Role?     @relation(fields: [roleId], references: [id])
+  warehouseId   String?   @unique
+  warehouse     Warehouse? @relation(fields: [warehouseId], references: [id])
+  warehouseLogs WarehouseLog[] @relation("PerformedWarehouseLogs")
   performedLogs UserLog[] @relation("PerformedLogs")
   userLogs      UserLog[] @relation("UserLogs")
 
@@ -79,6 +82,35 @@ model RolePermission {
   @@index([permissionId], map: "RolePermission_permissionId_fkey")
 }
 
+model Warehouse {
+  id            String          @id @default(uuid())
+  name          String
+  description   String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
+  user          User?
+  warehouseLogs WarehouseLog[]
+}
+
+model WarehouseLog {
+  id            String      @id @default(uuid())
+  warehouseId   String
+  performedById String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  action        ACTION
+  entityType    ENTITY_TYPE
+  oldData       Json?
+  newData       Json?
+  description   String?
+  performedBy   User        @relation("PerformedWarehouseLogs", fields: [performedById], references: [id])
+  warehouse     Warehouse   @relation(fields: [warehouseId], references: [id])
+
+  @@index([performedById], map: "WarehouseLog_performedById_fkey")
+  @@index([warehouseId], map: "WarehouseLog_warehouseId_fkey")
+}
+
 enum ACTION {
   CREATE
   UPDATE
@@ -90,6 +122,7 @@ enum ENTITY_TYPE {
   USER
   ROLE
   PERMISSION
+  WAREHOUSE
 }
 
 enum PERMISSION_ACTION {

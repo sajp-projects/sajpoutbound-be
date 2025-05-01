@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "22a80d82-6f2d-466f-9f8b-5ab4dab88f45",
+    "_postman_id": "da7c1166-4ef3-426f-8039-7533377a3367",
     "name": "Outmanage API Tests",
     "description": "Test collection for Outmanage API with valid and invalid request examples to test error handling and logging",
     "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
@@ -2129,6 +2129,482 @@
                 "description": "Update permissions for a role (add/remove permissions)"
               },
               "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Warehouse Management",
+      "item": [
+        {
+          "name": "Get All Warehouses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/warehouses?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "warehouses"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (1-based)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                },
+                {
+                  "key": "search",
+                  "value": "gudang",
+                  "description": "Search term for warehouse name or description",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "This request retrieves all warehouses with pagination and optional search. Default values: page=1, limit=10."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/warehouses?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "warehouses"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"warehouses\": [\n            {\n                \"id\": \"1\",\n                \"name\": \"Gudang Utama\",\n                \"description\": \"Gudang pusat penyimpanan\",\n                \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n                \"updatedAt\": \"2024-03-21T10:45:05.306Z\",\n                \"user\": {\n                    \"id\": \"1\",\n                    \"name\": \"Admin User\",\n                    \"email\": \"admin@example.com\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            },
+            {
+              "name": "Invalid Page Parameter",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/warehouses?page=invalid&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "warehouses"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "invalid"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Page must be a positive integer\",\n    \"errorCode\": \"INVALID_PAGINATION\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Warehouse by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/warehouses/8c3ac1f3-1725-4ba5-9be1-faf35e9e77a3",
+            "description": "This request retrieves a specific warehouse by ID with its user details."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/warehouses/8c3ac1f3-1725-4ba5-9be1-faf35e9e77a3",
+                "description": "This request retrieves a specific warehouse by ID with its user details."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"Gudang Utama\",\n        \"description\": \"Gudang pusat penyimpanan\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T10:45:05.306Z\",\n        \"user\": {\n            \"id\": \"1\",\n            \"name\": \"Admin User\",\n            \"email\": \"admin@example.com\"\n        }\n    }\n}"
+            },
+            {
+              "name": "Not Found Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/warehouses/8c3ac1f3-1725-4ba5-9be1-faf35e9e77a3",
+                "description": "This request retrieves a specific warehouse by ID with its user details."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Warehouse not found\",\n    \"errorCode\": \"WAREHOUSE_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Warehouse",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"kedua\",\n    \"description\": \"Gudang untuk penyimpanan barang baru\"\n}"
+            },
+            "url": "{{baseUrl}}/api/warehouses",
+            "description": "This request creates a new warehouse with optional user assignment."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"kedua\",\n    \"description\": \"Gudang untuk penyimpanan barang baru\"\n}"
+                },
+                "url": "{{baseUrl}}/api/warehouses",
+                "description": "This request creates a new warehouse with optional user assignment."
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"Gudang Baru\",\n        \"description\": \"Gudang untuk penyimpanan barang baru\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T10:45:05.306Z\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"Admin User\",\n            \"email\": \"admin@example.com\"\n        }\n    }\n}"
+            },
+            {
+              "name": "Validation Error Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"kedua\",\n    \"description\": \"Gudang untuk penyimpanan barang baru\"\n}"
+                },
+                "url": "{{baseUrl}}/api/warehouses",
+                "description": "This request creates a new warehouse with optional user assignment."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Name is required\",\n            \"path\": [\"name\"],\n            \"type\": \"any.required\"\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Warehouse",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"tes update\",\n    \"description\": \"Deskripsi gudang yang diupdate\",\n    \"userId\": \"79d8c216-0d50-448e-b4e2-62b00cc20d0b\"\n}"
+            },
+            "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+            "description": "This request updates an existing warehouse."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"tes update\",\n    \"description\": \"Deskripsi gudang yang diupdate\",\n    \"userId\": \"79d8c216-0d50-448e-b4e2-62b00cc20d0b\"\n}"
+                },
+                "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+                "description": "This request updates an existing warehouse."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"Gudang Updated\",\n        \"description\": \"Deskripsi gudang yang diupdate\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T11:45:05.306Z\",\n        \"user\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"Admin User\",\n            \"email\": \"admin@example.com\"\n        }\n    }\n}"
+            },
+            {
+              "name": "Not Found Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"tes update\",\n    \"description\": \"Deskripsi gudang yang diupdate\",\n    \"userId\": \"79d8c216-0d50-448e-b4e2-62b00cc20d0b\"\n}"
+                },
+                "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+                "description": "This request updates an existing warehouse."
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Warehouse not found\",\n    \"errorCode\": \"WAREHOUSE_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Warehouse",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+            "description": "This request deletes a warehouse. The warehouse must not be assigned to any user."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+                "description": "This request deletes a warehouse. The warehouse must not be assigned to any user."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"Gudang Updated\",\n        \"description\": \"Deskripsi gudang yang diupdate\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T11:45:05.306Z\"\n    }\n}"
+            },
+            {
+              "name": "Warehouse In Use Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+                "description": "This request deletes a warehouse. The warehouse must not be assigned to any user."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Cannot delete warehouse as it is still assigned to a user\",\n    \"errorCode\": \"WAREHOUSE_IN_USE\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Warehouse Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/warehouses/logs?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "warehouses", "logs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (1-based)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                }
+              ]
+            },
+            "description": "This request retrieves all warehouse logs with pagination."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/warehouses/logs?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "warehouses", "logs"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1",
+                      "description": "Page number (1-based)"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10",
+                      "description": "Number of items per page (1-100)"
+                    }
+                  ]
+                },
+                "description": "This request retrieves all warehouse logs with pagination."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"logs\": [\n            {\n                \"id\": \"1\",\n                \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\",\n                \"performedById\": \"1\",\n                \"action\": \"CREATE\",\n                \"entityType\": \"WAREHOUSE\",\n                \"oldData\": null,\n                \"newData\": {\n                    \"name\": \"Gudang Baru\",\n                    \"description\": \"Gudang untuk penyimpanan barang baru\"\n                },\n                \"description\": \"Membuat gudang baru: Gudang Baru\",\n                \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n                \"warehouse\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n                    \"name\": \"Gudang Baru\"\n                },\n                \"performedBy\": {\n                    \"id\": \"1\",\n                    \"name\": \"Admin User\",\n                    \"email\": \"admin@example.com\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Warehouse Logs by Warehouse ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/warehouses/logs/8c3ac1f3-1725-4ba5-9be1-faf35e9e77a3",
+            "description": "This request retrieves logs for a specific warehouse with pagination."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/warehouses/logs/8c3ac1f3-1725-4ba5-9be1-faf35e9e77a3",
+                "description": "This request retrieves logs for a specific warehouse with pagination."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"logs\": [\n            {\n                \"id\": \"1\",\n                \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\",\n                \"performedById\": \"1\",\n                \"action\": \"UPDATE\",\n                \"entityType\": \"WAREHOUSE\",\n                \"oldData\": {\n                    \"name\": \"Gudang Baru\",\n                    \"description\": \"Gudang untuk penyimpanan barang baru\"\n                },\n                \"newData\": {\n                    \"name\": \"Gudang Updated\",\n                    \"description\": \"Deskripsi gudang yang diupdate\"\n                },\n                \"description\": \"Mengubah informasi gudang\",\n                \"createdAt\": \"2024-03-21T11:45:05.306Z\",\n                \"warehouse\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n                    \"name\": \"Gudang Updated\"\n                },\n                \"performedBy\": {\n                    \"id\": \"1\",\n                    \"name\": \"Admin User\",\n                    \"email\": \"admin@example.com\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            },
+            {
+              "name": "Invalid Warehouse ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/warehouses/logs/8c3ac1f3-1725-4ba5-9be1-faf35e9e77a3",
+                "description": "This request retrieves logs for a specific warehouse with pagination."
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Invalid warehouse ID\",\n    \"errorCode\": \"INVALID_WAREHOUSE_ID\"\n}"
             }
           ]
         }

@@ -4,8 +4,8 @@ import authRoutes from './authRoute';
 import permissionRoutes from './permissionRoutes';
 import rolePermissionRoutes from './rolePermissionRoutes';
 import roleRoutes from './roleRoute';
-import userLogRoutes from './userLogRoute';
 import userRoutes from './userRoute';
+import warehouseRoutes from './warehouseRoute';
 
 const router = express.Router();
 
@@ -19,13 +19,13 @@ router.use('/users', userRoutes);
 // Role routes
 router.use('/roles', roleRoutes);
 
-// User logs routes
-router.use('/logs', userLogRoutes);
-
 // Permission routes
 router.use('/permissions', permissionRoutes);
 
 // Role-Permission routes
 router.use('/role-permissions', rolePermissionRoutes);
+
+// Warehouse routes
+router.use('/warehouses', warehouseRoutes);
 
 export default router;
