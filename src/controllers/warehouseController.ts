@@ -207,7 +207,17 @@ export default {
         });
       }
 
-      const deletedWarehouse = await warehouseService.deleteWarehouse(id);
+      const performedById = req.user?.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
+      const deletedWarehouse = await warehouseService.deleteWarehouse(id, performedById);
 
       res.status(200).json(success(deletedWarehouse));
     } catch (error) {

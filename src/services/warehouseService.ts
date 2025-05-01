@@ -90,9 +90,13 @@ export default {
     const { userId, ...warehouseData } = data;
 
     return prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
       const warehouse = await tx.warehouse.create({
         data: {
           ...warehouseData,
+          createdAt: jakartaTime,
           user: userId
             ? {
               connect: {
@@ -112,7 +116,18 @@ export default {
         },
       });
 
-      await warehouseLogService.logWarehouseCreation(warehouse.id, performedById, warehouse, tx);
+      const warehouseDataToLog = {
+        id: warehouse.id,
+        name: warehouse.name,
+        description: warehouse.description,
+      };
+
+      await warehouseLogService.logWarehouseCreation(
+        warehouse.id,
+        performedById,
+        warehouseDataToLog,
+        tx,
+      );
 
       return warehouse;
     });
@@ -125,11 +140,17 @@ export default {
     const { userId, ...warehouseData } = data;
 
     return prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
       const oldWarehouse = await tx.warehouse.findUnique({
         where: {
           id,
         },
-        include: {
+        select: {
+          name: true,
+          description: true,
           user: {
             select: {
               id: true,
@@ -150,6 +171,7 @@ export default {
         },
         data: {
           ...warehouseData,
+          updatedAt: jakartaTime,
           user:
             userId === null
               ? {
@@ -174,13 +196,34 @@ export default {
         },
       });
 
-      await warehouseLogService.logWarehouseUpdate(
-        warehouse.id,
-        performedById,
-        oldWarehouse,
-        warehouse,
-        tx,
-      );
+      // Create log entry - only include changed fields
+      const changedFields: Record<string, any> = {};
+      Object.keys(warehouseData).forEach((key) => {
+        if (
+          oldWarehouse &&
+          oldWarehouse[key as keyof typeof oldWarehouse] !==
+            warehouseData[key as keyof typeof warehouseData]
+        ) {
+          changedFields[key] = warehouseData[key as keyof typeof warehouseData];
+        }
+      });
+
+      // Add userId changes if any
+      if (userId === null && oldWarehouse.user) {
+        changedFields.userId = null;
+      } else if (userId && oldWarehouse.user?.id !== userId) {
+        changedFields.userId = userId;
+      }
+
+      if (Object.keys(changedFields).length > 0) {
+        await warehouseLogService.logWarehouseUpdate(
+          warehouse.id,
+          performedById,
+          oldWarehouse,
+          changedFields,
+          tx,
+        );
+      }
 
       return warehouse;
     });
@@ -188,9 +231,9 @@ export default {
 
   /**
    * Delete a warehouse (hard delete)
-   * This will also delete all associated warehouse logs
+   * The warehouse logs will be kept with warehouseId set to null
    */
-  async deleteWarehouse(id: string) {
+  async deleteWarehouse(id: string, performedById: string) {
     return prisma.$transaction(async (tx) => {
       const oldWarehouse = await tx.warehouse.findUnique({
         where: {
@@ -215,14 +258,16 @@ export default {
         throw new Error('Cannot delete warehouse as it is still assigned to a user');
       }
 
-      // Delete all warehouse logs first
-      await tx.warehouseLog.deleteMany({
-        where: {
-          warehouseId: id,
-        },
-      });
+      const warehouseDataToLog = {
+        id: oldWarehouse.id,
+        name: oldWarehouse.name,
+        description: oldWarehouse.description,
+      };
 
-      // Then delete the warehouse
+      // Log the deletion before actually deleting
+      await warehouseLogService.logWarehouseDeletion(performedById, warehouseDataToLog, tx);
+
+      // Delete the warehouse
       await tx.warehouse.delete({
         where: {
           id,
