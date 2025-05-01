@@ -213,7 +213,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/users/4773be52-94f1-4618-9aa8-95fabb61aceb",
+            "url": "{{baseUrl}}/api/users/6163d07b-ad31-4613-9234-80369cab7db6",
             "description": "This request retrieves a specific user by ID with their role details. It should return a 200 status with the user object."
           },
           "response": [
@@ -358,7 +358,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": 1\n}"
+              "raw": "{\n    \"email\": \"test1@example.com\",\n    \"name\": \"Test User\",\n    \"password\": \"password123\",\n    \"roleId\": \"c5b713f5-bbf6-486a-b8b6-1e7155d78878\"\n}"
             },
             "url": "{{baseUrl}}/api/users",
             "description": "This request tests successful user creation with valid data. It should pass validation and return a 201 status with the created user object."
@@ -735,7 +735,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/api/users/1",
+            "url": "{{baseUrl}}/api/users/b83efb06-0055-4f2c-bf86-401e7708b347",
             "description": "This request soft deletes a user by ID. It should return a 200 status with a success message."
           },
           "response": [
@@ -911,14 +911,14 @@
           ]
         },
         {
-          "name": "Get User Logs",
+          "name": "Get User Logs by User ID",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/logs/user/{{userId}}?page=1&limit=10",
+              "raw": "{{baseUrl}}/api/users/logs/{{userId}}?page=1&limit=10",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "logs", "user", "{{userId}}"],
+              "path": ["api", "users", "logs", "{{userId}}"],
               "query": [
                 {
                   "key": "page",
@@ -971,84 +971,26 @@
           ]
         },
         {
-          "name": "Get Logs By Performer",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/logs/performer/{{userId}}?page=1&limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "logs", "performer", "{{userId}}"],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "1",
-                  "description": "Page number (default: 1)"
-                },
-                {
-                  "key": "limit",
-                  "value": "10",
-                  "description": "Items per page (default: 10, max: 100)"
-                }
-              ]
-            },
-            "description": "This request retrieves logs of actions performed by a specific user with pagination. It returns a 200 status with an array of log entries and pagination metadata."
-          },
-          "response": [
-            {
-              "name": "Success Response",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/logs/performer/{{userId}}?page=1&limit=10",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "logs", "performer", "{{userId}}"],
-                  "query": [
-                    {
-                      "key": "page",
-                      "value": "1"
-                    },
-                    {
-                      "key": "limit",
-                      "value": "10"
-                    }
-                  ]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"logs\": [\n            {\n                \"id\": 2,\n                \"userId\": \"2\",\n                \"performedById\": \"1\",\n                \"action\": \"CREATE\",\n                \"entityType\": \"USER\",\n                \"oldData\": null,\n                \"newData\": {\n                    \"name\": \"New User\",\n                    \"email\": \"new@example.com\",\n                    \"roleId\": 2\n                },\n                \"description\": \"Created new user account: New User\",\n                \"createdAt\": \"2023-04-21T11:45:05.306Z\",\n                \"user\": {\n                    \"id\": \"2\",\n                    \"name\": \"New User\",\n                    \"email\": \"new@example.com\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 3,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
-            }
-          ]
-        },
-        {
           "name": "Search All Logs",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/logs/search?page=1&limit=10",
+              "raw": "{{baseUrl}}/api/users/logs",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "logs", "search"],
+              "path": ["api", "users", "logs"],
               "query": [
                 {
                   "key": "page",
                   "value": "1",
-                  "description": "Page number (default: 1)"
+                  "description": "Page number (default: 1)",
+                  "disabled": true
                 },
                 {
                   "key": "limit",
                   "value": "10",
-                  "description": "Items per page (default: 10, max: 100)"
+                  "description": "Items per page (default: 10, max: 100)",
+                  "disabled": true
                 }
               ]
             },
@@ -1060,21 +1002,7 @@
               "originalRequest": {
                 "method": "GET",
                 "header": [],
-                "url": {
-                  "raw": "{{baseUrl}}/api/logs/search?page=1&limit=10",
-                  "host": ["{{baseUrl}}"],
-                  "path": ["api", "logs", "search"],
-                  "query": [
-                    {
-                      "key": "page",
-                      "value": "1"
-                    },
-                    {
-                      "key": "limit",
-                      "value": "10"
-                    }
-                  ]
-                }
+                "url": "{{baseUrl}}/api/users/logs"
               },
               "status": "OK",
               "code": 200,
@@ -1087,25 +1015,6 @@
               ],
               "cookie": [],
               "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"logs\": [\n            {\n                \"id\": 1,\n                \"userId\": \"1\",\n                \"performedById\": \"2\",\n                \"action\": \"UPDATE\",\n                \"entityType\": \"USER\",\n                \"description\": \"Updated user information\",\n                \"createdAt\": \"2023-04-21T10:45:05.306Z\"\n            },\n            {\n                \"id\": 2,\n                \"userId\": \"2\",\n                \"performedById\": \"1\",\n                \"action\": \"CREATE\",\n                \"entityType\": \"USER\",\n                \"description\": \"Created new user account\",\n                \"createdAt\": \"2023-04-21T11:45:05.306Z\"\n            }\n        ],\n        \"pagination\": {\n            \"total\": 8,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
-            },
-            {
-              "name": "Not Implemented Response",
-              "originalRequest": {
-                "method": "GET",
-                "header": [],
-                "url": "{{baseUrl}}/api/logs/search"
-              },
-              "status": "Not Implemented",
-              "code": 501,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"message\": \"Log search functionality not implemented yet\",\n    \"errorCode\": \"NOT_IMPLEMENTED\"\n}"
             }
           ]
         }
@@ -1822,7 +1731,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"john.manager@example.com\",\n    \"password\": \"Password123!\"\n}"
+              "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"Password123!\"\n}"
             },
             "url": "{{baseUrl}}/api/auth/login",
             "description": "This request tests successful login with valid credentials. It should return a 200 status with user information and authentication tokens."
@@ -2299,7 +2208,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"kedua\",\n    \"description\": \"Gudang untuk penyimpanan barang baru\"\n}"
+              "raw": "{\n    \"name\": \"ketiga\",\n    \"description\": \"Gudang untuk penyimpanan barang hehe\"\n}"
             },
             "url": "{{baseUrl}}/api/warehouses",
             "description": "This request creates a new warehouse with optional user assignment."
@@ -2317,7 +2226,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"name\": \"kedua\",\n    \"description\": \"Gudang untuk penyimpanan barang baru\"\n}"
+                  "raw": "{\n    \"name\": \"ketiga\",\n    \"description\": \"Gudang untuk penyimpanan barang hehe\"\n}"
                 },
                 "url": "{{baseUrl}}/api/warehouses",
                 "description": "This request creates a new warehouse with optional user assignment."
@@ -2346,7 +2255,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n    \"name\": \"kedua\",\n    \"description\": \"Gudang untuk penyimpanan barang baru\"\n}"
+                  "raw": "{\n    \"name\": \"ketiga\",\n    \"description\": \"Gudang untuk penyimpanan barang hehe\"\n}"
                 },
                 "url": "{{baseUrl}}/api/warehouses",
                 "description": "This request creates a new warehouse with optional user assignment."
@@ -2379,7 +2288,7 @@
               "mode": "raw",
               "raw": "{\n    \"name\": \"tes update\",\n    \"description\": \"Deskripsi gudang yang diupdate\",\n    \"userId\": \"79d8c216-0d50-448e-b4e2-62b00cc20d0b\"\n}"
             },
-            "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+            "url": "{{baseUrl}}/api/warehouses/929ac6fe-6af1-4b42-8c07-3bb1bd562e81",
             "description": "This request updates an existing warehouse."
           },
           "response": [
@@ -2397,7 +2306,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"name\": \"tes update\",\n    \"description\": \"Deskripsi gudang yang diupdate\",\n    \"userId\": \"79d8c216-0d50-448e-b4e2-62b00cc20d0b\"\n}"
                 },
-                "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+                "url": "{{baseUrl}}/api/warehouses/929ac6fe-6af1-4b42-8c07-3bb1bd562e81",
                 "description": "This request updates an existing warehouse."
               },
               "status": "OK",
@@ -2426,7 +2335,7 @@
                   "mode": "raw",
                   "raw": "{\n    \"name\": \"tes update\",\n    \"description\": \"Deskripsi gudang yang diupdate\",\n    \"userId\": \"79d8c216-0d50-448e-b4e2-62b00cc20d0b\"\n}"
                 },
-                "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+                "url": "{{baseUrl}}/api/warehouses/929ac6fe-6af1-4b42-8c07-3bb1bd562e81",
                 "description": "This request updates an existing warehouse."
               },
               "status": "Not Found",
@@ -2448,7 +2357,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+            "url": "{{baseUrl}}/api/warehouses/54c77da0-45f9-47d7-b108-17c9a559a440",
             "description": "This request deletes a warehouse. The warehouse must not be assigned to any user."
           },
           "response": [
@@ -2457,7 +2366,7 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+                "url": "{{baseUrl}}/api/warehouses/54c77da0-45f9-47d7-b108-17c9a559a440",
                 "description": "This request deletes a warehouse. The warehouse must not be assigned to any user."
               },
               "status": "OK",
@@ -2477,7 +2386,7 @@
               "originalRequest": {
                 "method": "DELETE",
                 "header": [],
-                "url": "{{baseUrl}}/api/warehouses/8be1feec-b9dc-4644-bd15-33350fe6ad72",
+                "url": "{{baseUrl}}/api/warehouses/54c77da0-45f9-47d7-b108-17c9a559a440",
                 "description": "This request deletes a warehouse. The warehouse must not be assigned to any user."
               },
               "status": "Bad Request",
