@@ -157,8 +157,16 @@ export default {
   async createUser(userData: UserCreateInput, performedById: string) {
     // Use transaction to ensure both operations succeed or fail together
     return prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
       const createdUser = await tx.user.create({
-        data: userData,
+        data: {
+          ...userData,
+          createdAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
         include: {
           role: true,
         },

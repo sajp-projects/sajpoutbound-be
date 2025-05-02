@@ -13,6 +13,10 @@ export default {
    */
   async logUserCreation(userId: string, performedById: string, userData: any, tx?: any) {
     const client = tx || prisma;
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
     return client.userLog.create({
       data: {
         userId,
@@ -21,6 +25,8 @@ export default {
         entityType: ENTITY_TYPE.USER,
         newData: userData,
         description: `Created new user account: ${userData.name || userData.email}`,
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
       },
     });
   },
@@ -45,6 +51,10 @@ export default {
     description?: string,
   ) {
     const client = tx || prisma;
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
     return client.userLog.create({
       data: {
         userId,
@@ -54,6 +64,8 @@ export default {
         oldData,
         newData,
         description: description || 'Updated user information',
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
       },
     });
   },
@@ -86,6 +98,8 @@ export default {
           deletedAt: jakartaTime,
         },
         description: `Archived user account: ${userData.name || userData.email}`,
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
       },
     });
   },
@@ -101,6 +115,10 @@ export default {
    */
   async logUserRestoration(userId: string, performedById: string, userData: any, tx?: any) {
     const client = tx || prisma;
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
     return client.userLog.create({
       data: {
         userId,
@@ -114,8 +132,53 @@ export default {
           deletedAt: null,
         },
         description: `Restored user account: ${userData.name || userData.email}`,
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
       },
     });
+  },
+
+  /**
+   * Get all user logs with pagination
+   *
+   * @param page The page number (1-based)
+   * @param limit The number of items per page
+   * @returns Object containing logs array and total count
+   */
+  async getAllUserLogs(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      prisma.userLog.findMany({
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          performedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      prisma.userLog.count(),
+    ]);
+
+    return {
+      logs,
+      total,
+    };
   },
 
   /**
@@ -127,17 +190,21 @@ export default {
    * @returns Object containing logs array and total count
    */
   async getUserLogs(userId: string, page: number = 1, limit: number = 10) {
-    // Calculate skip value for pagination
     const skip = (page - 1) * limit;
 
-    // Execute both queries in parallel for efficiency
     const [logs, total] = await Promise.all([
-      // Get paginated logs
       prisma.userLog.findMany({
         where: {
           userId,
         },
         include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
           performedBy: {
             select: {
               id: true,
@@ -152,58 +219,9 @@ export default {
         skip,
         take: limit,
       }),
-
-      // Get total count for pagination
       prisma.userLog.count({
         where: {
           userId,
-        },
-      }),
-    ]);
-
-    return {
-      logs,
-      total,
-    };
-  },
-
-  /**
-   * Get all logs performed by a specific user
-   *
-   * @param performedById The ID of the user who performed the actions
-   * @param page The page number (1-based)
-   * @param limit The number of items per page
-   * @returns Object containing logs array and total count
-   */
-  async getLogsByPerformer(performedById: string, page: number = 1, limit: number = 10) {
-    // Calculate skip value for pagination
-    const skip = (page - 1) * limit;
-
-    // Execute both queries in parallel for efficiency
-    const [logs, total] = await Promise.all([
-      // Get paginated logs
-      prisma.userLog.findMany({
-        where: {
-          performedById,
-        },
-        include: {
-          user: {
-            omit: {
-              password: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        skip,
-        take: limit,
-      }),
-
-      // Get total count for pagination
-      prisma.userLog.count({
-        where: {
-          performedById,
         },
       }),
     ]);
@@ -232,6 +250,9 @@ export default {
     tx?: any,
   ) {
     const client = tx || prisma;
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
 
     // Get the user data for the log description
     const user = await client.user.findUnique({
@@ -259,6 +280,8 @@ export default {
           roleName: null,
         },
         description: `Role '${roleName}' was removed from user ${user?.name || user?.email} because the role was deleted`,
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
       },
     });
   },

@@ -1,5 +1,5 @@
 import {
-  ACTION, ENTITY_TYPE, Permission, PERMISSION_ACTION, PrismaClient, 
+  Permission, PERMISSION_ACTION, PrismaClient, 
 } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
@@ -7,6 +7,8 @@ const prisma = new PrismaClient();
 
 async function main() {
   try {
+    await prisma.userLog.deleteMany();
+    await prisma.warehouseLog.deleteMany();
     await prisma.permission.deleteMany();
     await prisma.rolePermission.deleteMany();
     await prisma.role.deleteMany();
@@ -236,42 +238,6 @@ async function main() {
         },
       }),
     ]);
-
-    // Create some example UserLog entries
-    await prisma.userLog.create({
-      data: {
-        userId: users[8].id, // customer1
-        performedById: adminUser.id, // admin user
-        action: ACTION.CREATE,
-        entityType: ENTITY_TYPE.USER,
-        newData: {
-          email: 'customer1@example.com',
-          name: 'James Wilson',
-          roleId: roles[4].id,
-        },
-        description: 'Created new customer account',
-      },
-    });
-
-    await prisma.userLog.create({
-      data: {
-        userId: users[7].id, // robert.accountant
-        performedById: adminUser.id,
-        action: ACTION.DELETE,
-        entityType: ENTITY_TYPE.USER,
-        oldData: {
-          email: 'robert.accountant@example.com',
-          name: 'Robert Taylor',
-          deletedAt: null,
-        },
-        newData: {
-          deletedAt: new Date().toISOString(),
-        },
-        description: 'Archived accountant user',
-      },
-    });
-
-    console.log('Created 10 users with roles and sample user logs');
 
     // Log summary of created data
     console.log('Seed data created successfully:');
