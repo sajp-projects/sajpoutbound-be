@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "da7c1166-4ef3-426f-8039-7533377a3367",
+    "_postman_id": "4649bd08-8a5e-4031-b077-d96da4f2f9b8",
     "name": "Outmanage API Tests",
     "description": "Test collection for Outmanage API with valid and invalid request examples to test error handling and logging",
     "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
@@ -2630,7 +2630,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"New Test Product\",\n    \"sku\": \"NTP-001\",\n    \"description\": \"A new test product for inventory\",\n    \"price\": 29.99,\n    \"quantity\": 50,\n    \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\"\n}"
+              "raw": "{\n    \"name\": \"tes2\",\n    \"sku\": \"NTP-002\",\n    \"description\": \"A new test product for inventory\",\n    \"price\": 29.99,\n    \"quantity\": 50\n}"
             },
             "url": "{{baseUrl}}/api/products",
             "description": "This request creates a new product with the specified details."
@@ -2721,7 +2721,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/api/products/550e8400-e29b-41d4-a716-446655440000",
+            "url": "{{baseUrl}}/api/products/84399e48-fc4c-4d6f-8b6b-27aaf688cdde",
             "description": "This request deletes a product by ID."
           },
           "response": [
