@@ -54,7 +54,7 @@ async function main() {
     console.log('Created 5 roles');
 
     // Create permissions for different resources and actions
-    const resources = ['user', 'role', 'permission', 'warehouse'];
+    const resources = ['user', 'role', 'permission', 'warehouse', 'product'];
     const actions = Object.values(PERMISSION_ACTION);
 
     // Create all possible permissions

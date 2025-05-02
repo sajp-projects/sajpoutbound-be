@@ -22,6 +22,7 @@ model User {
   performedLogs UserLog[]      @relation("PerformedLogs")
   userLogs      UserLog[]      @relation("UserLogs")
   warehouseLogs WarehouseLog[] @relation("PerformedWarehouseLogs")
+  productLogs   ProductLog[]   @relation("PerformedProductLogs")
 
   @@index([roleId], map: "User_roleId_fkey")
 }
@@ -91,6 +92,7 @@ model Warehouse {
   deletedAt     DateTime?
   user          User?
   warehouseLogs WarehouseLog[]
+  products      Product[]
 }
 
 model WarehouseLog {
@@ -111,6 +113,41 @@ model WarehouseLog {
   @@index([warehouseId], map: "WarehouseLog_warehouseId_fkey")
 }
 
+model Product {
+  id            String         @id @default(uuid())
+  name          String
+  sku           String         @unique
+  description   String?
+  price         Decimal?       @db.Decimal(10, 2)
+  quantity      Int            @default(0)
+  warehouseId   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  warehouse     Warehouse?     @relation(fields: [warehouseId], references: [id])
+  productLogs   ProductLog[]
+
+  @@index([warehouseId], map: "Product_warehouseId_fkey")
+}
+
+model ProductLog {
+  id            String         @id @default(uuid())
+  productId     String?
+  performedById String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  action        ACTION
+  entityType    ENTITY_TYPE
+  oldData       Json?
+  newData       Json?
+  description   String?
+  performedBy   User           @relation("PerformedProductLogs", fields: [performedById], references: [id])
+  product       Product?       @relation(fields: [productId], references: [id])
+
+  @@index([performedById], map: "ProductLog_performedById_fkey")
+  @@index([productId], map: "ProductLog_productId_fkey")
+}
+
 enum ACTION {
   CREATE
   UPDATE
@@ -123,6 +160,7 @@ enum ENTITY_TYPE {
   ROLE
   PERMISSION
   WAREHOUSE
+  PRODUCT
 }
 
 enum PERMISSION_ACTION {

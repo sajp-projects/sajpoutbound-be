@@ -2518,6 +2518,361 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Product Management",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?page=1&limit=10&search=test",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (1-based)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                },
+                {
+                  "key": "search",
+                  "value": "test",
+                  "description": "Search term for product name or SKU"
+                }
+              ]
+            },
+            "description": "This request retrieves all products with pagination and optional search filter. Default values: page=1, limit=10."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/products?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "products"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"products\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"name\": \"Test Product\",\n                \"sku\": \"TST-001\",\n                \"description\": \"This is a test product\",\n                \"price\": 19.99,\n                \"quantity\": 100,\n                \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\",\n                \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n                \"updatedAt\": \"2024-03-21T10:45:05.306Z\",\n                \"warehouse\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n                    \"name\": \"Main Warehouse\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/550e8400-e29b-41d4-a716-446655440000",
+            "description": "This request retrieves a specific product by ID with its warehouse details."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/products/550e8400-e29b-41d4-a716-446655440000",
+                "description": "This request retrieves a specific product by ID with its warehouse details."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"Test Product\",\n        \"sku\": \"TST-001\",\n        \"description\": \"This is a test product\",\n        \"price\": 19.99,\n        \"quantity\": 100,\n        \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T10:45:05.306Z\",\n        \"warehouse\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"Main Warehouse\"\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"New Test Product\",\n    \"sku\": \"NTP-001\",\n    \"description\": \"A new test product for inventory\",\n    \"price\": 29.99,\n    \"quantity\": 50,\n    \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\"\n}"
+            },
+            "url": "{{baseUrl}}/api/products",
+            "description": "This request creates a new product with the specified details."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"New Test Product\",\n    \"sku\": \"NTP-001\",\n    \"description\": \"A new test product for inventory\",\n    \"price\": 29.99,\n    \"quantity\": 50,\n    \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\"\n}"
+                },
+                "url": "{{baseUrl}}/api/products",
+                "description": "This request creates a new product with the specified details."
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n        \"name\": \"New Test Product\",\n        \"sku\": \"NTP-001\",\n        \"description\": \"A new test product for inventory\",\n        \"price\": 29.99,\n        \"quantity\": 50,\n        \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T10:45:05.306Z\",\n        \"warehouse\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"Main Warehouse\"\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Product Name\",\n    \"description\": \"Updated product description\",\n    \"price\": 39.99,\n    \"quantity\": 75\n}"
+            },
+            "url": "{{baseUrl}}/api/products/550e8400-e29b-41d4-a716-446655440000",
+            "description": "This request updates an existing product with the specified details."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"Updated Product Name\",\n    \"description\": \"Updated product description\",\n    \"price\": 39.99,\n    \"quantity\": 75\n}"
+                },
+                "url": "{{baseUrl}}/api/products/550e8400-e29b-41d4-a716-446655440000",
+                "description": "This request updates an existing product with the specified details."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"Updated Product Name\",\n        \"sku\": \"TST-001\",\n        \"description\": \"Updated product description\",\n        \"price\": 39.99,\n        \"quantity\": 75,\n        \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T11:30:05.306Z\",\n        \"warehouse\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"name\": \"Main Warehouse\"\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/550e8400-e29b-41d4-a716-446655440000",
+            "description": "This request deletes a product by ID."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/products/550e8400-e29b-41d4-a716-446655440000",
+                "description": "This request deletes a product by ID."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"Updated Product Name\",\n        \"sku\": \"TST-001\",\n        \"description\": \"Updated product description\",\n        \"price\": 39.99,\n        \"quantity\": 75,\n        \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T11:30:05.306Z\"\n    }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Product Log Management",
+      "item": [
+        {
+          "name": "Get All Product Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/logs?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "logs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (1-based)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                }
+              ]
+            },
+            "description": "This request retrieves all product logs with pagination."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/products/logs?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "products", "logs"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"logs\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n                \"productId\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"performedById\": \"550e8400-e29b-41d4-a716-446655440004\",\n                \"action\": \"CREATE\",\n                \"entityType\": \"PRODUCT\",\n                \"oldData\": null,\n                \"newData\": {\n                    \"name\": \"Test Product\",\n                    \"sku\": \"TST-001\",\n                    \"description\": \"This is a test product\",\n                    \"price\": 19.99,\n                    \"quantity\": 100,\n                    \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\",\n                    \"warehouseName\": \"Main Warehouse\"\n                },\n                \"description\": \"Created new product: Test Product\",\n                \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n                \"product\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"Test Product\",\n                    \"sku\": \"TST-001\"\n                },\n                \"performedBy\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440004\",\n                    \"name\": \"Admin User\",\n                    \"email\": \"admin@example.com\"\n                }\n            },\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440005\",\n                \"productId\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"performedById\": \"550e8400-e29b-41d4-a716-446655440004\",\n                \"action\": \"UPDATE\",\n                \"entityType\": \"PRODUCT\",\n                \"oldData\": {\n                    \"name\": \"Test Product\",\n                    \"description\": \"This is a test product\",\n                    \"price\": 19.99,\n                    \"quantity\": 100\n                },\n                \"newData\": {\n                    \"name\": \"Updated Product Name\",\n                    \"description\": \"Updated product description\",\n                    \"price\": 39.99,\n                    \"quantity\": 75\n                },\n                \"description\": \"Updated product: Updated Product Name\",\n                \"createdAt\": \"2024-03-21T11:30:05.306Z\",\n                \"product\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"Updated Product Name\",\n                    \"sku\": \"TST-001\"\n                },\n                \"performedBy\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440004\",\n                    \"name\": \"Admin User\",\n                    \"email\": \"admin@example.com\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 2,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Product Logs by Product ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/logs/550e8400-e29b-41d4-a716-446655440000?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "logs", "550e8400-e29b-41d4-a716-446655440000"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (1-based)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                }
+              ]
+            },
+            "description": "This request retrieves logs for a specific product with pagination."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/products/logs/550e8400-e29b-41d4-a716-446655440000?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "products", "logs", "550e8400-e29b-41d4-a716-446655440000"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"logs\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n                \"productId\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"performedById\": \"550e8400-e29b-41d4-a716-446655440004\",\n                \"action\": \"CREATE\",\n                \"entityType\": \"PRODUCT\",\n                \"oldData\": null,\n                \"newData\": {\n                    \"name\": \"Test Product\",\n                    \"sku\": \"TST-001\",\n                    \"description\": \"This is a test product\",\n                    \"price\": 19.99,\n                    \"quantity\": 100,\n                    \"warehouseId\": \"550e8400-e29b-41d4-a716-446655440001\",\n                    \"warehouseName\": \"Main Warehouse\"\n                },\n                \"description\": \"Created new product: Test Product\",\n                \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n                \"product\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"Test Product\",\n                    \"sku\": \"TST-001\"\n                },\n                \"performedBy\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440004\",\n                    \"name\": \"Admin User\",\n                    \"email\": \"admin@example.com\"\n                }\n            },\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440005\",\n                \"productId\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"performedById\": \"550e8400-e29b-41d4-a716-446655440004\",\n                \"action\": \"UPDATE\",\n                \"entityType\": \"PRODUCT\",\n                \"oldData\": {\n                    \"name\": \"Test Product\",\n                    \"description\": \"This is a test product\",\n                    \"price\": 19.99,\n                    \"quantity\": 100\n                },\n                \"newData\": {\n                    \"name\": \"Updated Product Name\",\n                    \"description\": \"Updated product description\",\n                    \"price\": 39.99,\n                    \"quantity\": 75\n                },\n                \"description\": \"Updated product: Updated Product Name\",\n                \"createdAt\": \"2024-03-21T11:30:05.306Z\",\n                \"product\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"Updated Product Name\",\n                    \"sku\": \"TST-001\"\n                },\n                \"performedBy\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440004\",\n                    \"name\": \"Admin User\",\n                    \"email\": \"admin@example.com\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 2,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            }
+          ]
+        }
+      ]
     }
   ],
   "event": [
