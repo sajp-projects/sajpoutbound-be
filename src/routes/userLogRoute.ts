@@ -10,7 +10,7 @@ router.get('/', checkPermission('user', PERMISSION_ACTION.READ), userLogControll
 
 // Get logs for a specific user
 router.get(
-  '/user/:userId',
+  '/:userId',
   checkPermission('user', PERMISSION_ACTION.READ),
   userLogController.getUserLogs,
 );
