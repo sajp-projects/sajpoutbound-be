@@ -223,27 +223,6 @@ export default {
         });
       }
 
-      // Check if warehouseId exists
-      if (existingProduct.warehouseId) {
-        const warehouse = await warehouseService.getWarehouseById(existingProduct.warehouseId);
-
-        if (!warehouse) {
-          throw new CustomError({
-            message: 'Warehouse not found',
-            errorCode: 'WAREHOUSE_NOT_FOUND',
-            status: 404,
-          });
-        }
-
-        // Product is associated with a warehouse, prevent deletion
-        throw new CustomError({
-          message:
-            'Cannot delete product as it is associated with a warehouse. Update the product to remove warehouse association first.',
-          errorCode: 'PRODUCT_WAREHOUSE_ASSOCIATION',
-          status: 400,
-        });
-      }
-
       const performedById = req.user?.id;
 
       if (!performedById) {
