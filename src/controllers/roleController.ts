@@ -16,57 +16,44 @@ import { success } from '../types/response';
 export default {
   async getAllRoles(req: Request, res: Response, next: NextFunction) {
     try {
-      // Check if pagination is requested
-      const usePagination = req.query.page !== undefined || req.query.limit !== undefined;
+      // Extract pagination parameters from query
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const search = req.query.search as string | undefined;
 
-      if (usePagination) {
-        // Extract pagination parameters from query
-        const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-        const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
-
-        // Validate pagination parameters
-        if (isNaN(page) || page < 1) {
-          throw new CustomError({
-            message: 'Page must be a positive integer',
-            errorCode: 'INVALID_PAGINATION',
-            status: 400,
-          });
-        }
-
-        if (isNaN(limit) || limit < 1 || limit > 100) {
-          throw new CustomError({
-            message: 'Limit must be a positive integer between 1 and 100',
-            errorCode: 'INVALID_PAGINATION',
-            status: 400,
-          });
-        }
-
-        // Get paginated roles
-        const result = await roleService.getAllRoles(page, limit);
-
-        res.status(200).json(
-          success({
-            roles: result.roles,
-            pagination: {
-              total: result.total,
-              page,
-              limit,
-              totalPages: Math.ceil(result.total! / limit),
-              hasNext: page * limit < result.total!,
-              hasPrev: page > 1,
-            },
-          }),
-        );
-      } else {
-        // Get all roles without pagination
-        const result = await roleService.getAllRoles(null, null);
-
-        res.status(200).json(
-          success({
-            roles: result.roles,
-          }),
-        );
+      if (isNaN(page) || page < 1) {
+        throw new CustomError({
+          message: 'Page must be a positive integer',
+          errorCode: 'INVALID_PAGINATION',
+          status: 400,
+        });
       }
+
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new CustomError({
+          message: 'Limit must be a positive integer between 1 and 100',
+          errorCode: 'INVALID_PAGINATION',
+          status: 400,
+        });
+      }
+
+      // Get paginated roles with search
+      const result = await roleService.getAllRoles(page, limit, search);
+      const total = result.total || 0;
+
+      res.status(200).json(
+        success({
+          roles: result.roles,
+          pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+            hasNext: page * limit < total,
+            hasPrev: page > 1,
+          },
+        }),
+      );
     } catch (error) {
       next(error);
     }

@@ -10,16 +10,31 @@ export default {
    *
    * @param page The page number (1-based), or null to return all roles
    * @param limit The number of items per page, or null to return all roles
+   * @param search Optional search term for role name or description
    * @returns Object containing roles array and total count
    */
-  async getAllRoles(page: number | null = 1, limit: number | null = 10) {
+  async getAllRoles(page: number | null = 1, limit: number | null = 10, search?: string) {
+    // Build where conditions
+    const whereConditions: any = {
+      deletedAt: null,
+    };
+
+    // Add search condition if search parameter is provided
+    if (search) {
+      whereConditions.OR = [
+        {
+          name: {
+            contains: search,
+          },
+        },
+      ];
+    }
+
     // Execute queries based on whether pagination is requested
     if (page === null || limit === null) {
       // Return all roles without pagination
       const roles = await prisma.role.findMany({
-        where: {
-          deletedAt: null,
-        },
+        where: whereConditions,
         orderBy: {
           createdAt: 'desc',
         },
@@ -36,9 +51,7 @@ export default {
       const [roles, total] = await Promise.all([
         // Get paginated roles
         prisma.role.findMany({
-          where: {
-            deletedAt: null,
-          },
+          where: whereConditions,
           skip,
           take: limit,
           orderBy: {
@@ -48,9 +61,7 @@ export default {
 
         // Get total count for pagination
         prisma.role.count({
-          where: {
-            deletedAt: null,
-          },
+          where: whereConditions,
         }),
       ]);
 
