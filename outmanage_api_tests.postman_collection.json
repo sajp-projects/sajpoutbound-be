@@ -2150,7 +2150,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/warehouses/8c3ac1f3-1725-4ba5-9be1-faf35e9e77a3",
+            "url": "{{baseUrl}}/api/warehouses/2867f20f-6610-4250-a9d3-6522a0fb27a6",
             "description": "This request retrieves a specific warehouse by ID with its user details."
           },
           "response": [
@@ -2208,7 +2208,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"ketiga\",\n    \"description\": \"Gudang untuk penyimpanan barang hehe\"\n}"
+              "raw": "{\n    \"name\": \"tes\",\n    \"description\": \"Gudang untuk penyimpanan barang hehe\",\n    \"userId\": \"22a9487a-2cf9-4963-85e8-22f76affc69d\"\n}"
             },
             "url": "{{baseUrl}}/api/warehouses",
             "description": "This request creates a new warehouse with optional user assignment."
@@ -2286,9 +2286,9 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"tes update\",\n    \"description\": \"Deskripsi gudang yang diupdate\",\n    \"userId\": \"79d8c216-0d50-448e-b4e2-62b00cc20d0b\"\n}"
+              "raw": "{\n    \"name\": \"tes update\",\n    \"description\": \"Deskripsi gudang yang diupdate\",\n    \"userId\": null\n}"
             },
-            "url": "{{baseUrl}}/api/warehouses/929ac6fe-6af1-4b42-8c07-3bb1bd562e81",
+            "url": "{{baseUrl}}/api/warehouses/47cd7de1-3195-4ba8-824f-81496a213441",
             "description": "This request updates an existing warehouse."
           },
           "response": [
@@ -2592,7 +2592,7 @@
           "request": {
             "method": "GET",
             "header": [],
-            "url": "{{baseUrl}}/api/products/550e8400-e29b-41d4-a716-446655440000",
+            "url": "{{baseUrl}}/api/products/d8f91a49-e9e1-4f73-a953-4b1d7a395a41",
             "description": "This request retrieves a specific product by ID with its warehouse details."
           },
           "response": [
@@ -2630,7 +2630,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"tes2\",\n    \"sku\": \"NTP-002\",\n    \"description\": \"A new test product for inventory\",\n    \"price\": 29.99,\n    \"quantity\": 50\n}"
+              "raw": "{\n    \"name\": \"tes barang\",\n    \"id_sl\": \"NTP-002\",\n    \"description\": \"A new test product for inventory\",\n    \"warehouseId\": \"47cd7de1-3195-4ba8-824f-81496a213441\"\n}"
             },
             "url": "{{baseUrl}}/api/products",
             "description": "This request creates a new product with the specified details."
@@ -2679,9 +2679,9 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"name\": \"Updated Product Name\",\n    \"description\": \"Updated product description\",\n    \"price\": 39.99,\n    \"quantity\": 75\n}"
+              "raw": "{\n    \"name\": \"Updated Product Name\",\n    \"description\": \"Updated product description\",\n    \"id_sl\": \"NTP-002\"\n}"
             },
-            "url": "{{baseUrl}}/api/products/550e8400-e29b-41d4-a716-446655440000",
+            "url": "{{baseUrl}}/api/products/d8f91a49-e9e1-4f73-a953-4b1d7a395a41",
             "description": "This request updates an existing product with the specified details."
           },
           "response": [
@@ -2721,7 +2721,7 @@
           "request": {
             "method": "DELETE",
             "header": [],
-            "url": "{{baseUrl}}/api/products/84399e48-fc4c-4d6f-8b6b-27aaf688cdde",
+            "url": "{{baseUrl}}/api/products/d8f91a49-e9e1-4f73-a953-4b1d7a395a41",
             "description": "This request deletes a product by ID."
           },
           "response": [

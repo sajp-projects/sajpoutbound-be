@@ -8,7 +8,7 @@ interface RawProductLog extends ProductLog {
   product: {
     id: string | null;
     name: string | null;
-    sku: string | null;
+    id_sl: string | null;
     description: string | null;
   };
   performedBy: {
@@ -149,7 +149,7 @@ export default {
           JSON_OBJECT(
             'id', p.id,
             'name', p.name,
-            'sku', p.sku,
+            'id_sl', p.id_sl,
             'description', p.description
           ) as product,
           JSON_OBJECT(
@@ -194,7 +194,7 @@ export default {
           JSON_OBJECT(
             'id', p.id,
             'name', p.name,
-            'sku', p.sku,
+            'id_sl', p.id_sl,
             'description', p.description
           ) as product,
           JSON_OBJECT(

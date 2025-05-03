@@ -89,16 +89,15 @@ export default {
     try {
       const validated = await createProductSchema.validateAsync(req.body);
 
-      if (validated.warehouseId) {
-        const warehouse = await warehouseService.getWarehouseById(validated.warehouseId);
+      // Validate warehouse existence
+      const warehouse = await warehouseService.getWarehouseById(validated.warehouseId);
 
-        if (!warehouse) {
-          throw new CustomError({
-            message: 'Warehouse not found',
-            errorCode: 'WAREHOUSE_NOT_FOUND',
-            status: 404,
-          });
-        }
+      if (!warehouse) {
+        throw new CustomError({
+          message: 'Warehouse not found',
+          errorCode: 'WAREHOUSE_NOT_FOUND',
+          status: 404,
+        });
       }
 
       const performedById = req.user?.id;
@@ -118,8 +117,8 @@ export default {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new CustomError({
-            message: 'Product with this SKU already exists',
-            errorCode: 'PRODUCT_SKU_DUPLICATE',
+            message: 'Product with this ID SL already exists',
+            errorCode: 'PRODUCT_ID_SL_DUPLICATE',
             status: 409,
           });
         }
@@ -159,6 +158,19 @@ export default {
 
       const validated = await updateProductSchema.validateAsync(req.body);
 
+      // If warehouseId is included, validate that it exists
+      if (validated.warehouseId) {
+        const warehouse = await warehouseService.getWarehouseById(validated.warehouseId);
+
+        if (!warehouse) {
+          throw new CustomError({
+            message: 'Warehouse not found',
+            errorCode: 'WAREHOUSE_NOT_FOUND',
+            status: 404,
+          });
+        }
+      }
+
       const performedById = req.user?.id;
 
       if (!performedById) {
@@ -176,8 +188,8 @@ export default {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new CustomError({
-            message: 'Product with this SKU already exists',
-            errorCode: 'PRODUCT_SKU_DUPLICATE',
+            message: 'Product with this ID SL already exists',
+            errorCode: 'PRODUCT_ID_SL_DUPLICATE',
             status: 409,
           });
         }
@@ -211,9 +223,22 @@ export default {
         });
       }
 
-      if (existingProduct.warehouseId || existingProduct.warehouse) {
+      // Check if warehouseId exists
+      if (existingProduct.warehouseId) {
+        const warehouse = await warehouseService.getWarehouseById(existingProduct.warehouseId);
+
+        if (!warehouse) {
+          throw new CustomError({
+            message: 'Warehouse not found',
+            errorCode: 'WAREHOUSE_NOT_FOUND',
+            status: 404,
+          });
+        }
+
+        // Product is associated with a warehouse, prevent deletion
         throw new CustomError({
-          message: 'Cannot delete product as it is still assigned to warehouse',
+          message:
+            'Cannot delete product as it is associated with a warehouse. Update the product to remove warehouse association first.',
           errorCode: 'PRODUCT_WAREHOUSE_ASSOCIATION',
           status: 400,
         });

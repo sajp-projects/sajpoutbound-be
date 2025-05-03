@@ -17,7 +17,10 @@ export default {
   async getAllProducts(page: number = 1, limit: number = 10, search?: string) {
     const skip = (page - 1) * limit;
 
-    const whereConditions: any = {};
+    const whereConditions: any = {
+      // Only include non-deleted products
+      deletedAt: null,
+    };
 
     if (search) {
       whereConditions.OR = [
@@ -27,12 +30,19 @@ export default {
           },
         },
         {
-          sku: {
+          id_sl: {
             contains: search,
           },
         },
       ];
     }
+
+    // Debug: Log the query parameters
+    console.log('Query parameters:', {
+      skip,
+      limit,
+      whereConditions,
+    });
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -56,6 +66,9 @@ export default {
         where: whereConditions,
       }),
     ]);
+
+    // Debug: Log the query results
+    console.log(`Found ${products.length} products out of ${total} total`);
 
     return {
       products,
@@ -100,13 +113,11 @@ export default {
           ...productData,
           createdAt: jakartaTime,
           updatedAt: jakartaTime,
-          warehouse: warehouseId
-            ? {
-              connect: {
-                id: warehouseId,
-              },
-            }
-            : undefined,
+          warehouse: {
+            connect: {
+              id: warehouseId,
+            },
+          },
         },
         include: {
           warehouse: {
@@ -122,10 +133,8 @@ export default {
       const productDataToLog = {
         id: product.id,
         name: product.name,
-        sku: product.sku,
+        id_sl: product.id_sl,
         description: product.description,
-        price: product.price,
-        quantity: product.quantity,
         warehouseId: product.warehouseId,
       };
 
@@ -168,10 +177,8 @@ export default {
         },
         select: {
           name: true,
-          sku: true,
+          id_sl: true,
           description: true,
-          price: true,
-          quantity: true,
           warehouseId: true,
           warehouse: {
             select: {
@@ -194,18 +201,13 @@ export default {
         data: {
           ...productData,
           updatedAt: jakartaTime,
-          warehouse:
-            warehouseId === null
-              ? {
-                disconnect: true,
-              }
-              : warehouseId
-                ? {
-                  connect: {
-                    id: warehouseId,
-                  },
-                }
-                : undefined,
+          warehouse: warehouseId
+            ? {
+              connect: {
+                id: warehouseId,
+              },
+            }
+            : undefined,
         },
         include: {
           warehouse: {
@@ -234,10 +236,7 @@ export default {
       });
 
       // Add warehouseId changes if any
-      if (warehouseId === null && oldProduct.warehouseId) {
-        changedFields.warehouseId = null;
-        oldDataChanges.warehouseId = oldProduct.warehouseId;
-      } else if (warehouseId && oldProduct.warehouseId !== warehouseId) {
+      if (warehouseId && oldProduct.warehouseId !== warehouseId) {
         changedFields.warehouseId = warehouseId;
         oldDataChanges.warehouseId = oldProduct.warehouseId;
       }
@@ -269,10 +268,8 @@ export default {
         select: {
           id: true,
           name: true,
-          sku: true,
+          id_sl: true,
           description: true,
-          price: true,
-          quantity: true,
           warehouseId: true,
           warehouse: {
             select: {
@@ -292,25 +289,14 @@ export default {
         throw new Error('Product not found');
       }
 
-      // Check if product is associated with a warehouse - prevent deletion if it is
-      if (oldProduct.warehouseId || oldProduct.warehouse) {
-        throw new Error(
-          `Cannot delete product as it is still assigned to warehouse: ${
-            oldProduct.warehouse?.name || oldProduct.warehouseId
-          }`,
-        );
-      }
-
       // Create minimal product data for logging
       const productDataToLog = {
         id: oldProduct.id,
         name: oldProduct.name,
-        sku: oldProduct.sku,
+        id_sl: oldProduct.id_sl,
         description: oldProduct.description,
-        price: oldProduct.price,
-        quantity: oldProduct.quantity,
         warehouseId: oldProduct.warehouseId,
-        warehouseName: (oldProduct.warehouse as { id: string; name: string } | null)?.name,
+        warehouseName: (oldProduct.warehouse as { id: string; name: string })?.name,
       };
 
       // Log the deletion before actually deleting
