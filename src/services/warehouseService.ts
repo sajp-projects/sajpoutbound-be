@@ -45,6 +45,11 @@ export default {
               email: true,
             },
           },
+          _count: {
+            select: {
+              products: true,
+            },
+          },
         },
         skip,
         take: limit,
@@ -58,7 +63,14 @@ export default {
     ]);
 
     return {
-      warehouses,
+      warehouses: warehouses.map((warehouse) => {
+        // Destructure to remove _count from the returned object but add productsCount
+        const { _count, ...rest } = warehouse;
+        return {
+          ...rest,
+          productsCount: _count.products,
+        };
+      }),
       total,
     };
   },
@@ -67,7 +79,7 @@ export default {
    * Get a warehouse by ID
    */
   async getWarehouseById(id: string) {
-    return prisma.warehouse.findFirst({
+    const warehouse = await prisma.warehouse.findFirst({
       where: {
         id,
       },
@@ -79,8 +91,35 @@ export default {
             email: true,
           },
         },
+        _count: {
+          select: {
+            products: true,
+          },
+        },
       },
     });
+
+    if (!warehouse) return null;
+
+    // Destructure to remove _count from the returned object but add productsCount
+    const { _count, ...rest } = warehouse;
+    return {
+      ...rest,
+      productsCount: _count.products,
+    };
+  },
+
+  /**
+   * Get count of products associated with a warehouse
+   */
+  async getWarehouseProductsCount(warehouseId: string): Promise<number> {
+    const result = await prisma.product.count({
+      where: {
+        warehouseId,
+      },
+    });
+
+    return result;
   },
 
   /**
@@ -129,7 +168,10 @@ export default {
         tx,
       );
 
-      return warehouse;
+      return {
+        ...warehouse,
+        productsCount: 0,
+      };
     });
   },
 
@@ -156,6 +198,11 @@ export default {
               id: true,
               name: true,
               email: true,
+            },
+          },
+          _count: {
+            select: {
+              products: true,
             },
           },
         },
@@ -193,6 +240,11 @@ export default {
               email: true,
             },
           },
+          _count: {
+            select: {
+              products: true,
+            },
+          },
         },
       });
 
@@ -225,7 +277,12 @@ export default {
         );
       }
 
-      return warehouse;
+      // Destructure to remove _count from the returned object but add productsCount
+      const { _count, ...rest } = warehouse;
+      return {
+        ...rest,
+        productsCount: _count.products,
+      };
     });
   },
 
@@ -247,6 +304,11 @@ export default {
               email: true,
             },
           },
+          _count: {
+            select: {
+              products: true,
+            },
+          },
         },
       });
 
@@ -256,6 +318,10 @@ export default {
 
       if (oldWarehouse.user) {
         throw new Error('Cannot delete warehouse as it is still assigned to a user');
+      }
+
+      if (oldWarehouse._count.products > 0) {
+        throw new Error('Cannot delete warehouse as it still has associated products');
       }
 
       const warehouseDataToLog = {
@@ -274,7 +340,12 @@ export default {
         },
       });
 
-      return oldWarehouse;
+      // Destructure to remove _count from the returned object but add productsCount
+      const { _count, ...rest } = oldWarehouse;
+      return {
+        ...rest,
+        productsCount: _count.products,
+      };
     });
   },
 };

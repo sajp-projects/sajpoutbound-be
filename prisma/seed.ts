@@ -9,9 +9,11 @@ async function main() {
   try {
     await prisma.userLog.deleteMany();
     await prisma.warehouseLog.deleteMany();
+    await prisma.productLog.deleteMany();
     await prisma.permission.deleteMany();
     await prisma.rolePermission.deleteMany();
     await prisma.role.deleteMany();
+    await prisma.product.deleteMany();
     await prisma.warehouse.deleteMany();
     await prisma.user.deleteMany();
 

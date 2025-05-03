@@ -207,6 +207,16 @@ export default {
         });
       }
 
+      // Check if warehouse has any associated products
+      const productsCount = await warehouseService.getWarehouseProductsCount(id);
+      if (productsCount > 0) {
+        throw new CustomError({
+          message: 'Cannot delete warehouse as it still has associated products',
+          errorCode: 'WAREHOUSE_HAS_PRODUCTS',
+          status: 400,
+        });
+      }
+
       const performedById = req.user?.id;
 
       if (!performedById) {

@@ -116,15 +116,13 @@ model WarehouseLog {
 model Product {
   id            String         @id @default(uuid())
   name          String
-  sku           String         @unique
+  id_sl         String         @unique
   description   String?
-  price         Decimal?       @db.Decimal(10, 2)
-  quantity      Int            @default(0)
-  warehouseId   String?
+  warehouseId   String
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   deletedAt     DateTime?
-  warehouse     Warehouse?     @relation(fields: [warehouseId], references: [id])
+  warehouse     Warehouse      @relation(fields: [warehouseId], references: [id])
   productLogs   ProductLog[]
 
   @@index([warehouseId], map: "Product_warehouseId_fkey")
