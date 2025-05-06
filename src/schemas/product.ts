@@ -4,11 +4,11 @@ import { createResourceIdSchema } from './base';
 
 export type ProductCreateInput = Pick<
   ProductModel,
-  'name' | 'id_sl' | 'description' | 'warehouseId'
+  'name' | 'id_sl' | 'description' | 'warehouseId' | 'satuan'
 >;
 
 export type ProductUpdateInput = Partial<
-  Pick<ProductModel, 'name' | 'id_sl' | 'description' | 'warehouseId'>
+  Pick<ProductModel, 'name' | 'id_sl' | 'description' | 'warehouseId' | 'satuan'>
 >;
 
 export const createProductSchema = Joi.object<ProductCreateInput>({
@@ -25,6 +25,11 @@ export const createProductSchema = Joi.object<ProductCreateInput>({
   }),
   description: Joi.string().optional().allow('').max(500).messages({
     'string.max': 'Description cannot exceed {#limit} characters',
+  }),
+  satuan: Joi.string().required().max(20).messages({
+    'string.empty': 'Satuan is required',
+    'string.max': 'Satuan cannot exceed {#limit} characters',
+    'any.required': 'Satuan is required',
   }),
   warehouseId: Joi.string().uuid().required().messages({
     'string.empty': 'Warehouse ID is required',
@@ -43,6 +48,9 @@ export const updateProductSchema = Joi.object<ProductUpdateInput>({
   }),
   description: Joi.string().allow('').max(500).messages({
     'string.max': 'Description cannot exceed {#limit} characters',
+  }),
+  satuan: Joi.string().allow('').max(20).messages({
+    'string.max': 'Unit of measurement cannot exceed {#limit} characters',
   }),
   warehouseId: Joi.string().uuid().messages({
     'string.uuid': 'Warehouse ID must be a valid UUID',

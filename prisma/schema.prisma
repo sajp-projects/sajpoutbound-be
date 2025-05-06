@@ -113,89 +113,90 @@ model WarehouseLog {
 }
 
 model Product {
-  id            String         @id @default(uuid())
-  name          String
-  id_sl         String?         @unique
-  description   String?
-  warehouseId   String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  warehouse     Warehouse      @relation(fields: [warehouseId], references: [id])
-  productLogs   ProductLog[]
+  id          String       @id @default(uuid())
+  name        String
+  id_sl       String?      @unique
+  description String?
+  satuan      String       // Unit of measurement (kg, m, ton, l, etc.)
+  warehouseId String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  warehouse   Warehouse    @relation(fields: [warehouseId], references: [id])
+  productLogs ProductLog[]
 
   @@index([warehouseId], map: "Product_warehouseId_fkey")
 }
 
 model ProductLog {
-  id            String         @id @default(uuid())
+  id            String      @id @default(uuid())
   productId     String?
   performedById String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   action        ACTION
   entityType    ENTITY_TYPE
   oldData       Json?
   newData       Json?
   description   String?
-  performedBy   User           @relation("PerformedProductLogs", fields: [performedById], references: [id])
-  product       Product?       @relation(fields: [productId], references: [id])
+  performedBy   User        @relation("PerformedProductLogs", fields: [performedById], references: [id])
+  product       Product?    @relation(fields: [productId], references: [id])
 
   @@index([performedById], map: "ProductLog_performedById_fkey")
   @@index([productId], map: "ProductLog_productId_fkey")
 }
 
 model Customer {
-  id            String         @id @default(uuid())
-  name          String         @unique
-  id_sl         String?         @unique
-  address       String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  customerLogs  CustomerLog[]
+  id           String        @id @default(uuid())
+  name         String        @unique
+  id_sl        String?       @unique
+  address      String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  customerLogs CustomerLog[]
 }
 
 model CustomerLog {
-  id            String         @id @default(uuid())
+  id            String      @id @default(uuid())
   customerId    String?
   performedById String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   action        ACTION
   entityType    ENTITY_TYPE
   oldData       Json?
   newData       Json?
   description   String?
-  performedBy   User           @relation("PerformedCustomerLogs", fields: [performedById], references: [id])
-  customer      Customer?      @relation(fields: [customerId], references: [id])
+  performedBy   User        @relation("PerformedCustomerLogs", fields: [performedById], references: [id])
+  customer      Customer?   @relation(fields: [customerId], references: [id])
 
   @@index([performedById], map: "CustomerLog_performedById_fkey")
   @@index([customerId], map: "CustomerLog_customerId_fkey")
 }
 
 model Armada {
-  id            String         @id @default(uuid())
-  model         String
-  id_sl         String?        @unique
-  plateNumber   String?        @unique
-  description   String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  armadaLogs    ArmadaLog[]
+  id          String      @id @default(uuid())
+  model       String
+  id_sl       String?     @unique
+  plateNumber String?     @unique
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  armadaLogs  ArmadaLog[]
 }
 
 model ArmadaLog {
-  id            String         @id @default(uuid())
+  id            String      @id @default(uuid())
   armadaId      String?
   performedById String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   action        ACTION
   entityType    ENTITY_TYPE
   oldData       Json?
   newData       Json?
   description   String?
-  performedBy   User           @relation("PerformedArmadaLogs", fields: [performedById], references: [id])
-  armada        Armada?        @relation(fields: [armadaId], references: [id])
+  performedBy   User        @relation("PerformedArmadaLogs", fields: [performedById], references: [id])
+  armada        Armada?     @relation(fields: [armadaId], references: [id])
 
   @@index([performedById], map: "ArmadaLog_performedById_fkey")
   @@index([armadaId], map: "ArmadaLog_armadaId_fkey")

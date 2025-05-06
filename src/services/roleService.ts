@@ -15,9 +15,7 @@ export default {
    */
   async getAllRoles(page: number | null = 1, limit: number | null = 10, search?: string) {
     // Build where conditions
-    const whereConditions: any = {
-      deletedAt: null,
-    };
+    const whereConditions: any = {};
 
     // Add search condition if search parameter is provided
     if (search) {
@@ -82,7 +80,6 @@ export default {
     return prisma.role.findFirst({
       where: {
         id,
-        deletedAt: null,
       },
       include: {
         users: true,

@@ -17,10 +17,7 @@ export default {
   async getAllProducts(page: number = 1, limit: number = 10, search?: string) {
     const skip = (page - 1) * limit;
 
-    const whereConditions: any = {
-      // Only include non-deleted products
-      deletedAt: null,
-    };
+    const whereConditions: any = {};
 
     if (search) {
       whereConditions.OR = [
@@ -34,15 +31,13 @@ export default {
             contains: search,
           },
         },
+        {
+          satuan: {
+            contains: search,
+          },
+        },
       ];
     }
-
-    // Debug: Log the query parameters
-    console.log('Query parameters:', {
-      skip,
-      limit,
-      whereConditions,
-    });
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -135,6 +130,7 @@ export default {
         name: product.name,
         id_sl: product.id_sl,
         description: product.description,
+        satuan: product.satuan,
         warehouseId: product.warehouseId,
       };
 
@@ -179,6 +175,7 @@ export default {
           name: true,
           id_sl: true,
           description: true,
+          satuan: true,
           warehouseId: true,
           warehouse: {
             select: {
@@ -270,6 +267,7 @@ export default {
           name: true,
           id_sl: true,
           description: true,
+          satuan: true,
           warehouseId: true,
           warehouse: {
             select: {
@@ -295,8 +293,9 @@ export default {
         name: oldProduct.name,
         id_sl: oldProduct.id_sl,
         description: oldProduct.description,
+        satuan: oldProduct.satuan,
         warehouseId: oldProduct.warehouseId,
-        warehouseName: (oldProduct.warehouse as { id: string; name: string })?.name,
+        warehouseName: oldProduct.warehouse?.name,
       };
 
       // Log the deletion before actually deleting

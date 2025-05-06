@@ -2632,7 +2632,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/products?page=1&limit=10&search=test",
+							"raw": "{{baseUrl}}/api/products?page=1&limit=10",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -2654,7 +2654,8 @@
 								{
 									"key": "search",
 									"value": "test",
-									"description": "Search term for product name or SKU"
+									"description": "Search term for product name or SKU",
+									"disabled": true
 								}
 							]
 						},
@@ -2744,7 +2745,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"name\": \"tes barang\",\n    \"id_sl\": \"NTP-002\",\n    \"description\": \"A new test product for inventory\",\n    \"warehouseId\": \"47cd7de1-3195-4ba8-824f-81496a213441\"\n}"
+							"raw": "{\n    \"name\": \"tes barang\",\n    \"id_sl\": \"NTP-003\",\n    \"description\": \"A new test product for inventory\",\n    \"warehouseId\": \"5ae12e5a-9557-45ba-b76e-0fcfb5fa7756\"\n}"
 						},
 						"url": "{{baseUrl}}/api/products",
 						"description": "This request creates a new product with the specified details."

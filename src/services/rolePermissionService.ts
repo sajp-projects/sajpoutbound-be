@@ -110,9 +110,6 @@ export default {
     const rolePermissions = await prisma.rolePermission.findMany({
       where: {
         roleId,
-        permission: {
-          deletedAt: null,
-        },
       },
       include: {
         permission: true,
