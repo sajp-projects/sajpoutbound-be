@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../middlewares/authentication';
 import authRoutes from './authRoute';
+import customerRoutes from './customerRoute';
 import permissionRoutes from './permissionRoutes';
 import productRoutes from './productRoute';
 import rolePermissionRoutes from './rolePermissionRoutes';
@@ -31,5 +32,8 @@ router.use('/warehouses', warehouseRoutes);
 
 // Product routes
 router.use('/products', productRoutes);
+
+// Customer routes
+router.use('/customers', customerRoutes);
 
 export default router;

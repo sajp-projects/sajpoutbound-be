@@ -20,9 +20,6 @@ export default {
     const [permissions, total] = await Promise.all([
       // Get paginated permissions
       prisma.permission.findMany({
-        where: {
-          deletedAt: null,
-        },
         skip,
         take: limit,
         orderBy: {
@@ -31,11 +28,7 @@ export default {
       }),
 
       // Get total count for pagination
-      prisma.permission.count({
-        where: {
-          deletedAt: null,
-        },
-      }),
+      prisma.permission.count(),
     ]);
 
     return {
@@ -54,7 +47,6 @@ export default {
     return prisma.permission.findFirst({
       where: {
         id,
-        deletedAt: null,
       },
       include: {
         rolePermissions: {
@@ -78,7 +70,6 @@ export default {
       where: {
         resource,
         action,
-        deletedAt: null,
       },
     });
   },

@@ -2873,6 +2873,533 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Customer Management",
+      "item": [
+        {
+          "name": "Get All Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers?page=1&limit=10&search=pelanggan",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "customers"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (1-based)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                },
+                {
+                  "key": "search",
+                  "value": "pelanggan",
+                  "description": "Search term for customer name, ID SL, or address"
+                }
+              ]
+            },
+            "description": "This request retrieves all customers with pagination and optional search filter. Default values: page=1, limit=10."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/customers?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "customers"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"customers\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"name\": \"PT Sukses Makmur\",\n                \"id_sl\": \"CUST-001\",\n                \"address\": \"Jl. Gatot Subroto No. 123\",\n                \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n                \"updatedAt\": \"2024-03-21T10:45:05.306Z\"\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Customer by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/customers/550e8400-e29b-41d4-a716-446655440000",
+            "description": "This request retrieves a specific customer by ID."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/customers/550e8400-e29b-41d4-a716-446655440000"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"name\": \"PT Sukses Makmur\",\n        \"id_sl\": \"CUST-001\",\n        \"address\": \"Jl. Gatot Subroto No. 123\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T10:45:05.306Z\"\n    }\n}"
+            },
+            {
+              "name": "Not Found Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/customers/550e8400-e29b-41d4-a716-446655440999"
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Customer not found\",\n    \"errorCode\": \"CUSTOMER_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"PT Abadi Jaya\",\n    \"id_sl\": \"CUST-002\",\n    \"address\": \"Jl. Sudirman No. 45, Jakarta Selatan\"\n}"
+            },
+            "url": "{{baseUrl}}/api/customers",
+            "description": "This request creates a new customer with the specified details."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"PT Abadi Jaya\",\n    \"id_sl\": \"CUST-002\",\n    \"address\": \"Jl. Sudirman No. 45, Jakarta Selatan\"\n}"
+                },
+                "url": "{{baseUrl}}/api/customers"
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"PT Abadi Jaya\",\n        \"id_sl\": \"CUST-002\",\n        \"address\": \"Jl. Sudirman No. 45, Jakarta Selatan\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T10:45:05.306Z\"\n    }\n}"
+            },
+            {
+              "name": "Validation Error Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"address\": \"Jl. Sudirman No. 45, Jakarta Selatan\"\n}"
+                },
+                "url": "{{baseUrl}}/api/customers"
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Name is required\",\n            \"path\": [\"name\"],\n            \"type\": \"any.required\"\n        },\n        {\n            \"message\": \"ID SL is required\",\n            \"path\": [\"id_sl\"],\n            \"type\": \"any.required\"\n        }\n    ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"PT Abadi Jaya Updated\",\n    \"address\": \"Jl. Sudirman No. 50, Jakarta Selatan\"\n}"
+            },
+            "url": "{{baseUrl}}/api/customers/550e8400-e29b-41d4-a716-446655440001",
+            "description": "This request updates an existing customer with the specified details."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"PT Abadi Jaya Updated\",\n    \"address\": \"Jl. Sudirman No. 50, Jakarta Selatan\"\n}"
+                },
+                "url": "{{baseUrl}}/api/customers/550e8400-e29b-41d4-a716-446655440001"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"PT Abadi Jaya Updated\",\n        \"id_sl\": \"CUST-002\",\n        \"address\": \"Jl. Sudirman No. 50, Jakarta Selatan\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T11:30:05.306Z\"\n    }\n}"
+            },
+            {
+              "name": "Not Found Response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"name\": \"PT Abadi Jaya Updated\",\n    \"address\": \"Jl. Sudirman No. 50, Jakarta Selatan\"\n}"
+                },
+                "url": "{{baseUrl}}/api/customers/550e8400-e29b-41d4-a716-446655440999"
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Customer not found\",\n    \"errorCode\": \"CUSTOMER_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/customers/550e8400-e29b-41d4-a716-446655440001",
+            "description": "This request deletes a customer by ID. This is a hard delete, but customer logs will be preserved with customerId set to null."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/customers/550e8400-e29b-41d4-a716-446655440001"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"name\": \"PT Abadi Jaya Updated\",\n        \"id_sl\": \"CUST-002\",\n        \"address\": \"Jl. Sudirman No. 50, Jakarta Selatan\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"updatedAt\": \"2024-03-21T11:30:05.306Z\"\n    }\n}"
+            },
+            {
+              "name": "Not Found Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": "{{baseUrl}}/api/customers/550e8400-e29b-41d4-a716-446655440999"
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Customer not found\",\n    \"errorCode\": \"CUSTOMER_NOT_FOUND\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Customer Log Management",
+      "item": [
+        {
+          "name": "Get All Customer Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/logs?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "customers", "logs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (1-based)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                }
+              ]
+            },
+            "description": "This request retrieves all customer logs with pagination."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/customers/logs?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "customers", "logs"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"customerLogs\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n                \"customerId\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"performedById\": \"550e8400-e29b-41d4-a716-446655440004\",\n                \"action\": \"CREATE\",\n                \"entityType\": \"CUSTOMER\",\n                \"oldData\": null,\n                \"newData\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"PT Sukses Makmur\",\n                    \"id_sl\": \"CUST-001\",\n                    \"address\": \"Jl. Gatot Subroto No. 123\"\n                },\n                \"description\": \"Membuat pelanggan baru: PT Sukses Makmur\",\n                \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n                \"customer\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"PT Sukses Makmur\",\n                    \"id_sl\": \"CUST-001\",\n                    \"address\": \"Jl. Gatot Subroto No. 123\"\n                },\n                \"performedBy\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440004\",\n                    \"name\": \"Admin User\",\n                    \"email\": \"admin@example.com\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Customer Log by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/customers/logs/550e8400-e29b-41d4-a716-446655440003",
+            "description": "This request retrieves a specific customer log by ID."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/customers/logs/550e8400-e29b-41d4-a716-446655440003"
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n        \"customerId\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"performedById\": \"550e8400-e29b-41d4-a716-446655440004\",\n        \"action\": \"CREATE\",\n        \"entityType\": \"CUSTOMER\",\n        \"oldData\": null,\n        \"newData\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"PT Sukses Makmur\",\n            \"id_sl\": \"CUST-001\",\n            \"address\": \"Jl. Gatot Subroto No. 123\"\n        },\n        \"description\": \"Membuat pelanggan baru: PT Sukses Makmur\",\n        \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n        \"customer\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n            \"name\": \"PT Sukses Makmur\",\n            \"id_sl\": \"CUST-001\",\n            \"address\": \"Jl. Gatot Subroto No. 123\"\n        },\n        \"performedBy\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440004\",\n            \"name\": \"Admin User\",\n            \"email\": \"admin@example.com\"\n        }\n    }\n}"
+            },
+            {
+              "name": "Not Found Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{baseUrl}}/api/customers/logs/550e8400-e29b-41d4-a716-446655440999"
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Customer log not found\",\n    \"errorCode\": \"CUSTOMER_LOG_NOT_FOUND\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Customer Logs by Customer ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/550e8400-e29b-41d4-a716-446655440000/logs?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "customers", "550e8400-e29b-41d4-a716-446655440000", "logs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (1-based)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                }
+              ]
+            },
+            "description": "This request retrieves logs for a specific customer with pagination."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/customers/550e8400-e29b-41d4-a716-446655440000/logs?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "customers", "550e8400-e29b-41d4-a716-446655440000", "logs"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"customerLogs\": [\n            {\n                \"id\": \"550e8400-e29b-41d4-a716-446655440003\",\n                \"customerId\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"performedById\": \"550e8400-e29b-41d4-a716-446655440004\",\n                \"action\": \"CREATE\",\n                \"entityType\": \"CUSTOMER\",\n                \"oldData\": null,\n                \"newData\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"PT Sukses Makmur\",\n                    \"id_sl\": \"CUST-001\",\n                    \"address\": \"Jl. Gatot Subroto No. 123\"\n                },\n                \"description\": \"Membuat pelanggan baru: PT Sukses Makmur\",\n                \"createdAt\": \"2024-03-21T10:45:05.306Z\",\n                \"customer\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n                    \"name\": \"PT Sukses Makmur\",\n                    \"id_sl\": \"CUST-001\",\n                    \"address\": \"Jl. Gatot Subroto No. 123\"\n                },\n                \"performedBy\": {\n                    \"id\": \"550e8400-e29b-41d4-a716-446655440004\",\n                    \"name\": \"Admin User\",\n                    \"email\": \"admin@example.com\"\n                }\n            }\n        ],\n        \"pagination\": {\n            \"total\": 1,\n            \"page\": 1,\n            \"limit\": 10,\n            \"totalPages\": 1,\n            \"hasNext\": false,\n            \"hasPrev\": false\n        }\n    }\n}"
+            },
+            {
+              "name": "Invalid Customer ID",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/customers/invalid-id/logs?page=1&limit=10",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "customers", "invalid-id", "logs"],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Customer ID must be a valid UUID\",\n    \"errorCode\": \"INVALID_CUSTOMER_ID\"\n}"
+            }
+          ]
+        }
+      ]
     }
   ],
   "event": [

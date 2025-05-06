@@ -23,6 +23,7 @@ model User {
   userLogs      UserLog[]      @relation("UserLogs")
   warehouseLogs WarehouseLog[] @relation("PerformedWarehouseLogs")
   productLogs   ProductLog[]   @relation("PerformedProductLogs")
+  customerLogs  CustomerLog[]  @relation("PerformedCustomerLogs")
 
   @@index([roleId], map: "User_roleId_fkey")
 }
@@ -51,7 +52,6 @@ model Role {
   description     String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  deletedAt       DateTime?
   rolePermissions RolePermission[]
   users           User[]
 }
@@ -64,7 +64,6 @@ model Permission {
   action          PERMISSION_ACTION
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
-  deletedAt       DateTime?
   rolePermissions RolePermission[]
 
   @@unique([resource, action], name: "permission_resource_action")
@@ -89,7 +88,6 @@ model Warehouse {
   description   String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  deletedAt     DateTime?
   user          User?
   warehouseLogs WarehouseLog[]
   products      Product[]
@@ -116,12 +114,11 @@ model WarehouseLog {
 model Product {
   id            String         @id @default(uuid())
   name          String
-  id_sl         String         @unique
+  id_sl         String?         @unique
   description   String?
   warehouseId   String
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  deletedAt     DateTime?
   warehouse     Warehouse      @relation(fields: [warehouseId], references: [id])
   productLogs   ProductLog[]
 
@@ -146,6 +143,34 @@ model ProductLog {
   @@index([productId], map: "ProductLog_productId_fkey")
 }
 
+model Customer {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  id_sl         String?         @unique
+  address       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  customerLogs  CustomerLog[]
+}
+
+model CustomerLog {
+  id            String         @id @default(uuid())
+  customerId    String?
+  performedById String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  action        ACTION
+  entityType    ENTITY_TYPE
+  oldData       Json?
+  newData       Json?
+  description   String?
+  performedBy   User           @relation("PerformedCustomerLogs", fields: [performedById], references: [id])
+  customer      Customer?      @relation(fields: [customerId], references: [id])
+
+  @@index([performedById], map: "CustomerLog_performedById_fkey")
+  @@index([customerId], map: "CustomerLog_customerId_fkey")
+}
+
 enum ACTION {
   CREATE
   UPDATE
@@ -159,6 +184,7 @@ enum ENTITY_TYPE {
   PERMISSION
   WAREHOUSE
   PRODUCT
+  CUSTOMER
 }
 
 enum PERMISSION_ACTION {
