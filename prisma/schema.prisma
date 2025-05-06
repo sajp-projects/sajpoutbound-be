@@ -24,6 +24,7 @@ model User {
   warehouseLogs WarehouseLog[] @relation("PerformedWarehouseLogs")
   productLogs   ProductLog[]   @relation("PerformedProductLogs")
   customerLogs  CustomerLog[]  @relation("PerformedCustomerLogs")
+  armadaLogs    ArmadaLog[]    @relation("PerformedArmadaLogs")
 
   @@index([roleId], map: "User_roleId_fkey")
 }
@@ -171,6 +172,35 @@ model CustomerLog {
   @@index([customerId], map: "CustomerLog_customerId_fkey")
 }
 
+model Armada {
+  id            String         @id @default(uuid())
+  model         String
+  id_sl         String?        @unique
+  plateNumber   String?        @unique
+  description   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  armadaLogs    ArmadaLog[]
+}
+
+model ArmadaLog {
+  id            String         @id @default(uuid())
+  armadaId      String?
+  performedById String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  action        ACTION
+  entityType    ENTITY_TYPE
+  oldData       Json?
+  newData       Json?
+  description   String?
+  performedBy   User           @relation("PerformedArmadaLogs", fields: [performedById], references: [id])
+  armada        Armada?        @relation(fields: [armadaId], references: [id])
+
+  @@index([performedById], map: "ArmadaLog_performedById_fkey")
+  @@index([armadaId], map: "ArmadaLog_armadaId_fkey")
+}
+
 enum ACTION {
   CREATE
   UPDATE
@@ -185,6 +215,7 @@ enum ENTITY_TYPE {
   WAREHOUSE
   PRODUCT
   CUSTOMER
+  ARMADA
 }
 
 enum PERMISSION_ACTION {

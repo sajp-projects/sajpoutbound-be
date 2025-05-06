@@ -7,12 +7,16 @@ const prisma = new PrismaClient();
 
 async function main() {
   try {
+    await prisma.armadaLog.deleteMany();
+    await prisma.customerLog.deleteMany();
+    await prisma.productLog.deleteMany();
     await prisma.userLog.deleteMany();
     await prisma.warehouseLog.deleteMany();
-    await prisma.productLog.deleteMany();
     await prisma.permission.deleteMany();
     await prisma.rolePermission.deleteMany();
     await prisma.role.deleteMany();
+    await prisma.armada.deleteMany();
+    await prisma.customer.deleteMany();
     await prisma.product.deleteMany();
     await prisma.warehouse.deleteMany();
     await prisma.user.deleteMany();
@@ -56,7 +60,7 @@ async function main() {
     console.log('Created 5 roles');
 
     // Create permissions for different resources and actions
-    const resources = ['user', 'role', 'permission', 'warehouse', 'product', 'customer'];
+    const resources = ['user', 'role', 'permission', 'warehouse', 'product', 'customer', 'armada'];
     const actions = Object.values(PERMISSION_ACTION);
 
     // Create all possible permissions
