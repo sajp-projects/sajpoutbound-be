@@ -45,11 +45,7 @@ export default {
               email: true,
             },
           },
-          _count: {
-            select: {
-              products: true,
-            },
-          },
+          products: true,
         },
         skip,
         take: limit,
@@ -63,14 +59,7 @@ export default {
     ]);
 
     return {
-      warehouses: warehouses.map((warehouse) => {
-        // Destructure to remove _count from the returned object but add productsCount
-        const { _count, ...rest } = warehouse;
-        return {
-          ...rest,
-          productsCount: _count.products,
-        };
-      }),
+      warehouses,
       total,
     };
   },
@@ -91,22 +80,13 @@ export default {
             email: true,
           },
         },
-        _count: {
-          select: {
-            products: true,
-          },
-        },
+        products: true,
       },
     });
 
     if (!warehouse) return null;
 
-    // Destructure to remove _count from the returned object but add productsCount
-    const { _count, ...rest } = warehouse;
-    return {
-      ...rest,
-      productsCount: _count.products,
-    };
+    return warehouse;
   },
 
   /**
@@ -170,7 +150,6 @@ export default {
 
       return {
         ...warehouse,
-        productsCount: 0,
       };
     });
   },
@@ -198,11 +177,6 @@ export default {
               id: true,
               name: true,
               email: true,
-            },
-          },
-          _count: {
-            select: {
-              products: true,
             },
           },
         },
@@ -240,11 +214,6 @@ export default {
               email: true,
             },
           },
-          _count: {
-            select: {
-              products: true,
-            },
-          },
         },
       });
 
@@ -263,25 +232,30 @@ export default {
       // Add userId changes if any
       if (userId === null && oldWarehouse.user) {
         changedFields.userId = null;
+        changedFields.user = null;
       } else if (userId && oldWarehouse.user?.id !== userId) {
         changedFields.userId = userId;
+        changedFields.user = warehouse.user;
       }
 
       if (Object.keys(changedFields).length > 0) {
+        const oldDataForLog = {
+          name: oldWarehouse.name,
+          description: oldWarehouse.description,
+          user: oldWarehouse.user,
+        };
+
         await warehouseLogService.logWarehouseUpdate(
           warehouse.id,
           performedById,
-          oldWarehouse,
+          oldDataForLog,
           changedFields,
           tx,
         );
       }
 
-      // Destructure to remove _count from the returned object but add productsCount
-      const { _count, ...rest } = warehouse;
       return {
-        ...rest,
-        productsCount: _count.products,
+        ...warehouse,
       };
     });
   },
@@ -304,11 +278,6 @@ export default {
               email: true,
             },
           },
-          _count: {
-            select: {
-              products: true,
-            },
-          },
         },
       });
 
@@ -318,10 +287,6 @@ export default {
 
       if (oldWarehouse.user) {
         throw new Error('Cannot delete warehouse as it is still assigned to a user');
-      }
-
-      if (oldWarehouse._count.products > 0) {
-        throw new Error('Cannot delete warehouse as it still has associated products');
       }
 
       const warehouseDataToLog = {
@@ -340,11 +305,8 @@ export default {
         },
       });
 
-      // Destructure to remove _count from the returned object but add productsCount
-      const { _count, ...rest } = oldWarehouse;
       return {
-        ...rest,
-        productsCount: _count.products,
+        ...oldWarehouse,
       };
     });
   },

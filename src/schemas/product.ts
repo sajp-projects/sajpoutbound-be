@@ -18,10 +18,8 @@ export const createProductSchema = Joi.object<ProductCreateInput>({
     'string.max': 'Name cannot exceed {#limit} characters',
     'any.required': 'Name is required',
   }),
-  id_sl: Joi.string().required().max(50).messages({
-    'string.empty': 'ID SL is required',
+  id_sl: Joi.string().optional().allow('').max(50).messages({
     'string.max': 'ID SL cannot exceed {#limit} characters',
-    'any.required': 'ID SL is required',
   }),
   description: Joi.string().optional().allow('').max(500).messages({
     'string.max': 'Description cannot exceed {#limit} characters',

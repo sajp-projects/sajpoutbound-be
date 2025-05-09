@@ -16,6 +16,17 @@ interface RawWarehouseLog extends WarehouseLog {
   };
 }
 
+// Type for safely handling JSON data
+interface UserData {
+  userId?: string;
+  user?: {
+    id?: string;
+    name?: string;
+    email?: string;
+  };
+  [key: string]: any;
+}
+
 export default {
   /**
    * Log a warehouse creation event
@@ -75,6 +86,26 @@ export default {
     const jakartaTime = new Date();
     jakartaTime.setHours(jakartaTime.getHours() + 7);
 
+    // If userId has changed, get the user information for the new userId
+    const enhancedNewData = {
+      ...newData,
+    };
+    if (newData.userId) {
+      const newUser = await client.user.findUnique({
+        where: {
+          id: newData.userId,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      });
+      if (newUser) {
+        enhancedNewData.user = newUser;
+      }
+    }
+
     return client.warehouseLog.create({
       data: {
         warehouseId,
@@ -82,7 +113,7 @@ export default {
         action: ACTION.UPDATE,
         entityType: ENTITY_TYPE.WAREHOUSE,
         oldData,
-        newData,
+        newData: enhancedNewData,
         description: description || 'Mengubah informasi gudang',
         createdAt: jakartaTime,
         updatedAt: jakartaTime,
@@ -153,11 +184,27 @@ export default {
     ]);
 
     return {
-      logs: logs.map((log: RawWarehouseLog) => ({
-        ...log,
-        warehouse: log.warehouse.id ? log.warehouse : null,
-        performedBy: log.performedBy.id ? log.performedBy : null,
-      })),
+      logs: logs.map((log: RawWarehouseLog) => {
+        // Process logs for better display of information
+        const processedLog = {
+          ...log,
+          warehouse: log.warehouse.id ? log.warehouse : null,
+          performedBy: log.performedBy.id ? log.performedBy : null,
+        };
+
+        // Ensure oldData and newData include user information clearly
+        if (log.newData) {
+          const userData = JSON.parse(JSON.stringify(log.newData)) as UserData;
+          if (userData.user && userData.userId) {
+            processedLog.newData = {
+              ...userData,
+              userName: userData.user.name || 'Unknown',
+            };
+          }
+        }
+
+        return processedLog;
+      }),
       total,
     };
   },
@@ -202,11 +249,31 @@ export default {
     ]);
 
     return {
-      logs: logs.map((log: RawWarehouseLog) => ({
-        ...log,
-        warehouse: log.warehouse.id ? log.warehouse : null,
-        performedBy: log.performedBy.id ? log.performedBy : null,
-      })),
+      logs: logs.map((log: RawWarehouseLog) => {
+        // Process logs for better display of information
+        const processedLog = {
+          ...log,
+          warehouse: log.warehouse.id ? log.warehouse : null,
+          performedBy: log.performedBy.id ? log.performedBy : null,
+        };
+
+        // Ensure oldData and newData include user information clearly
+        if (log.newData) {
+          try {
+            const userData = JSON.parse(JSON.stringify(log.newData)) as UserData;
+            if (userData.user && userData.userId) {
+              processedLog.newData = {
+                ...userData,
+                userName: userData.user.name || 'Unknown',
+              };
+            }
+          } catch (e) {
+            // Handle JSON parsing errors silently
+          }
+        }
+
+        return processedLog;
+      }),
       total,
     };
   },
