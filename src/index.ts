@@ -19,7 +19,7 @@ const server = http.createServer(app);
 // Middleware
 app.use(
   cors({
-    origin: ['https://www.outmanage-frontend.vercel.app', 'http://localhost:5173'],
+    origin: ['https://www.outmanage.vercel.app', 'http://localhost:5173'],
     credentials: true,
   }),
 );
