@@ -17,7 +17,12 @@ const port = process.env.PORT || 3000;
 const server = http.createServer(app);
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ['https://www.outmanage-frontend.vercel.app', 'http://localhost:5173'],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(
   bodyParser.urlencoded({
