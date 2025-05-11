@@ -9,6 +9,9 @@ const router = express.Router();
 // Warehouse logs routes
 router.use('/logs', warehouseLogRoutes);
 
+// Get all warehouses for options
+router.get('/options', warehouseController.getAllWarehouses);
+
 // Get all warehouses
 router.get(
   '/',

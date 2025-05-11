@@ -5,6 +5,8 @@ import { checkPermission } from '../middlewares/permission';
 
 const router = express.Router();
 
+router.get('/options', roleController.getAllRoles);
+
 router.get('/', checkPermission('role', PERMISSION_ACTION.READ), roleController.getAllRoles);
 
 router.get('/:id', checkPermission('role', PERMISSION_ACTION.READ), roleController.getRoleById);
