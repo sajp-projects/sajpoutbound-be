@@ -2,8 +2,11 @@ import { User as UserModel } from '@prisma/client';
 import Joi from 'joi';
 import { createResourceIdSchema } from './base';
 
-export type UserCreateInput = Pick<UserModel, 'email' | 'name' | 'roleId' | 'password'>;
-export type UserUpdateInput = Partial<Pick<UserModel, 'email' | 'name' | 'roleId'>>;
+export type UserCreateInput = Pick<
+  UserModel,
+  'email' | 'name' | 'roleId' | 'password' | 'warehouseId'
+>;
+export type UserUpdateInput = Partial<Pick<UserModel, 'email' | 'name' | 'roleId' | 'warehouseId'>>;
 export type UserLoginInput = Pick<UserModel, 'email' | 'password'>;
 
 export const createUserSchema = Joi.object<UserCreateInput>({
@@ -24,6 +27,9 @@ export const createUserSchema = Joi.object<UserCreateInput>({
     'string.base': 'Role ID must be a valid type',
     'any.required': 'Role ID is required',
   }),
+  warehouseId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'Warehouse ID must be a valid UUID',
+  }),
 });
 
 export const updateUserSchema = Joi.object<UserUpdateInput>({
@@ -37,6 +43,9 @@ export const updateUserSchema = Joi.object<UserUpdateInput>({
   roleId: Joi.string().required().messages({
     'string.base': 'Role ID must be a valid type',
     'any.required': 'Role ID is required',
+  }),
+  warehouseId: Joi.string().uuid().allow(null).optional().messages({
+    'string.uuid': 'Warehouse ID must be a valid UUID',
   }),
 })
   .min(1)

@@ -16,7 +16,7 @@ model User {
   updatedAt     DateTime       @updatedAt
   deletedAt     DateTime?
   roleId        String?
-  warehouseId   String?        @unique
+  warehouseId   String?
   role          Role?          @relation(fields: [roleId], references: [id])
   warehouse     Warehouse?     @relation(fields: [warehouseId], references: [id])
   performedLogs UserLog[]      @relation("PerformedLogs")
@@ -27,6 +27,7 @@ model User {
   armadaLogs    ArmadaLog[]    @relation("PerformedArmadaLogs")
 
   @@index([roleId], map: "User_roleId_fkey")
+  @@index([warehouseId], map: "User_warehouseId_fkey")
 }
 
 model UserLog {
@@ -89,7 +90,7 @@ model Warehouse {
   description   String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  user          User?
+  users         User[]
   warehouseLogs WarehouseLog[]
   products      Product[]
 }

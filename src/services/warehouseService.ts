@@ -38,7 +38,7 @@ export default {
       prisma.warehouse.findMany({
         where: whereConditions,
         include: {
-          user: {
+          users: {
             select: {
               id: true,
               name: true,
@@ -73,7 +73,7 @@ export default {
         id,
       },
       include: {
-        user: {
+        users: {
           select: {
             id: true,
             name: true,
@@ -106,26 +106,18 @@ export default {
    * Create a new warehouse
    */
   async createWarehouse(data: WarehouseCreateInput, performedById: string) {
-    const { userId, ...warehouseData } = data;
-
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
+
       const warehouse = await tx.warehouse.create({
         data: {
-          ...warehouseData,
+          ...data,
           createdAt: jakartaTime,
-          user: userId
-            ? {
-              connect: {
-                id: userId,
-              },
-            }
-            : undefined,
         },
         include: {
-          user: {
+          users: {
             select: {
               id: true,
               name: true,
@@ -148,9 +140,7 @@ export default {
         tx,
       );
 
-      return {
-        ...warehouse,
-      };
+      return warehouse;
     });
   },
 
@@ -158,8 +148,6 @@ export default {
    * Update warehouse information
    */
   async updateWarehouse(id: string, data: WarehouseUpdateInput, performedById: string) {
-    const { userId, ...warehouseData } = data;
-
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
@@ -172,7 +160,7 @@ export default {
         select: {
           name: true,
           description: true,
-          user: {
+          users: {
             select: {
               id: true,
               name: true,
@@ -191,23 +179,11 @@ export default {
           id,
         },
         data: {
-          ...warehouseData,
+          ...data,
           updatedAt: jakartaTime,
-          user:
-            userId === null
-              ? {
-                disconnect: true,
-              }
-              : userId
-                ? {
-                  connect: {
-                    id: userId,
-                  },
-                }
-                : undefined,
         },
         include: {
-          user: {
+          users: {
             select: {
               id: true,
               name: true,
@@ -219,30 +195,20 @@ export default {
 
       // Create log entry - only include changed fields
       const changedFields: Record<string, any> = {};
-      Object.keys(warehouseData).forEach((key) => {
+      Object.keys(data).forEach((key) => {
         if (
           oldWarehouse &&
-          oldWarehouse[key as keyof typeof oldWarehouse] !==
-            warehouseData[key as keyof typeof warehouseData]
+          oldWarehouse[key as keyof typeof oldWarehouse] !== data[key as keyof typeof data]
         ) {
-          changedFields[key] = warehouseData[key as keyof typeof warehouseData];
+          changedFields[key] = data[key as keyof typeof data];
         }
       });
-
-      // Add userId changes if any
-      if (userId === null && oldWarehouse.user) {
-        changedFields.userId = null;
-        changedFields.user = null;
-      } else if (userId && oldWarehouse.user?.id !== userId) {
-        changedFields.userId = userId;
-        changedFields.user = warehouse.user;
-      }
 
       if (Object.keys(changedFields).length > 0) {
         const oldDataForLog = {
           name: oldWarehouse.name,
           description: oldWarehouse.description,
-          user: oldWarehouse.user,
+          users: oldWarehouse.users,
         };
 
         await warehouseLogService.logWarehouseUpdate(
@@ -254,9 +220,7 @@ export default {
         );
       }
 
-      return {
-        ...warehouse,
-      };
+      return warehouse;
     });
   },
 
@@ -271,7 +235,7 @@ export default {
           id,
         },
         include: {
-          user: {
+          users: {
             select: {
               id: true,
               name: true,
@@ -285,8 +249,8 @@ export default {
         throw new Error('Warehouse not found');
       }
 
-      if (oldWarehouse.user) {
-        throw new Error('Cannot delete warehouse as it is still assigned to a user');
+      if (oldWarehouse.users.length > 0) {
+        throw new Error('Cannot delete warehouse as it is still assigned to users');
       }
 
       const warehouseDataToLog = {
@@ -305,9 +269,176 @@ export default {
         },
       });
 
-      return {
-        ...oldWarehouse,
+      return oldWarehouse;
+    });
+  },
+
+  /**
+   * Assign a user to a warehouse
+   */
+  async assignUserToWarehouse(warehouseId: string, userId: string, performedById: string) {
+    return prisma.$transaction(async (tx) => {
+      // Check if warehouse exists
+      const warehouse = await tx.warehouse.findUnique({
+        where: {
+          id: warehouseId,
+        },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!warehouse) {
+        throw new Error('Warehouse not found');
+      }
+
+      // Check if user exists
+      const user = await tx.user.findUnique({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Update user's warehouse
+      await tx.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          warehouseId: warehouseId,
+        },
+      });
+
+      // Get updated warehouse
+      const updatedWarehouse = await tx.warehouse.findUnique({
+        where: {
+          id: warehouseId,
+        },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      // Log the update
+      const oldData = {
+        users: warehouse.users,
       };
+
+      const newData = {
+        users: updatedWarehouse?.users,
+      };
+
+      await warehouseLogService.logWarehouseUpdate(
+        warehouseId,
+        performedById,
+        oldData,
+        newData,
+        tx,
+      );
+
+      return updatedWarehouse;
+    });
+  },
+
+  /**
+   * Unassign a user from a warehouse
+   */
+  async unassignUserFromWarehouse(warehouseId: string, userId: string, performedById: string) {
+    return prisma.$transaction(async (tx) => {
+      // Check if warehouse exists
+      const warehouse = await tx.warehouse.findUnique({
+        where: {
+          id: warehouseId,
+        },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!warehouse) {
+        throw new Error('Warehouse not found');
+      }
+
+      // Check if user exists and is assigned to this warehouse
+      const user = await tx.user.findFirst({
+        where: {
+          id: userId,
+          warehouseId: warehouseId,
+        },
+      });
+
+      if (!user) {
+        throw new Error('User not found or not assigned to this warehouse');
+      }
+
+      // Update user's warehouse to null
+      await tx.user.update({
+        where: {
+          id: userId,
+        },
+        data: {
+          warehouse: {
+            disconnect: true,
+          },
+        },
+      });
+
+      // Get updated warehouse
+      const updatedWarehouse = await tx.warehouse.findUnique({
+        where: {
+          id: warehouseId,
+        },
+        include: {
+          users: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      // Log the update
+      const oldData = {
+        users: warehouse.users,
+      };
+
+      const newData = {
+        users: updatedWarehouse?.users,
+      };
+
+      await warehouseLogService.logWarehouseUpdate(
+        warehouseId,
+        performedById,
+        oldData,
+        newData,
+        tx,
+      );
+
+      return updatedWarehouse;
     });
   },
 };

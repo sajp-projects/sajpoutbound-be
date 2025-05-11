@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { UserCreateInput, UserUpdateInput } from '../schemas/user';
 import userLogService from './userLogService';
@@ -58,6 +59,7 @@ export default {
               description: true,
             },
           },
+          warehouse: true,
         },
         skip,
         take: limit,
@@ -97,6 +99,7 @@ export default {
       },
       include: {
         role: true,
+        warehouse: true,
       },
       omit: {
         password: true,
@@ -120,6 +123,7 @@ export default {
       },
       include: {
         role: true,
+        warehouse: true,
       },
       omit: {
         password: true,
@@ -140,6 +144,7 @@ export default {
       },
       include: {
         role: true,
+        warehouse: true,
       },
       omit: {
         password: true,
@@ -161,6 +166,7 @@ export default {
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
+      // Create the user with the provided data
       const createdUser = await tx.user.create({
         data: {
           ...userData,
@@ -169,6 +175,13 @@ export default {
         },
         include: {
           role: true,
+          warehouse: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
         },
       });
 
@@ -177,20 +190,13 @@ export default {
         email: userData.email,
         name: userData.name,
         roleId: userData.roleId,
+        warehouseId: userData.warehouseId,
       };
       await userLogService.logUserCreation(createdUser.id, performedById, userDataToLog, tx);
 
       // Return user without password
-      const userWithoutPassword = {
-        id: createdUser.id,
-        email: createdUser.email,
-        name: createdUser.name,
-        roleId: createdUser.roleId,
-        role: createdUser.role,
-        createdAt: createdUser.createdAt,
-        updatedAt: createdUser.updatedAt,
-        deletedAt: createdUser.deletedAt,
-      };
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...userWithoutPassword } = createdUser;
       return userWithoutPassword;
     });
   },
@@ -237,20 +243,60 @@ export default {
           email: true,
           name: true,
           roleId: true,
+          warehouseId: true,
         },
       });
+
+      // Extract relationship IDs and basic fields
+      const {
+        roleId, warehouseId, ...basicFields 
+      } = data;
+
+      // Create update data structure with proper typing
+      const updateData: Prisma.UserUpdateInput = {
+        ...basicFields,
+        updatedAt: jakartaTime,
+      };
+
+      // Handle role relationship if provided
+      if (roleId !== undefined) {
+        updateData.role = {
+          connect: {
+            id: roleId as string,
+          },
+        };
+      }
+
+      // Handle warehouse relationship
+      if (warehouseId === null) {
+        // Disconnect warehouse if null
+        updateData.warehouse = {
+          disconnect: true,
+        };
+      } else if (warehouseId) {
+        // Connect to specified warehouse
+        updateData.warehouse = {
+          connect: {
+            id: warehouseId,
+          },
+        };
+      }
 
       // Update the user in the database
       const updatedUser = await tx.user.update({
         where: {
           id,
         },
-        data: {
-          ...data,
-          updatedAt: jakartaTime,
-        },
+        data: updateData,
         include: {
           role: true,
+          warehouse: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
         },
       });
 
@@ -270,16 +316,8 @@ export default {
       }
 
       // Return user without password
-      const userWithoutPassword = {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        roleId: updatedUser.roleId,
-        role: updatedUser.role,
-        createdAt: updatedUser.createdAt,
-        updatedAt: updatedUser.updatedAt,
-        deletedAt: updatedUser.deletedAt,
-      };
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...userWithoutPassword } = updatedUser;
       return userWithoutPassword;
     });
   },

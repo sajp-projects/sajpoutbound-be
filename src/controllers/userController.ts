@@ -12,6 +12,7 @@ import {
   UserUpdateInput,
 } from '../schemas/user';
 import userService from '../services/userService';
+import warehouseService from '../services/warehouseService';
 import { success } from '../types/response';
 
 export default {
@@ -102,6 +103,18 @@ export default {
       // Validate the request body
       const validated = await createUserSchema.validateAsync(req.body);
 
+      // Validate warehouse if warehouseId is provided
+      if (validated.warehouseId) {
+        const warehouse = await warehouseService.getWarehouseById(validated.warehouseId);
+        if (!warehouse) {
+          throw new CustomError({
+            message: 'Warehouse not found',
+            errorCode: 'WAREHOUSE_NOT_FOUND',
+            status: 404,
+          });
+        }
+      }
+
       // Hash the password before storing it
       const hashedPassword = await bcrypt.hashPassword(validated.password);
 
@@ -141,10 +154,12 @@ export default {
           // Foreign key constraint violation (typically roleId not found)
           const fieldName = ((error.meta?.field_name as string) || '').includes('roleId')
             ? 'Role ID'
-            : 'Foreign key';
+            : ((error.meta?.field_name as string) || '').includes('warehouseId')
+              ? 'Warehouse ID'
+              : 'Foreign key';
 
           throw new CustomError({
-            message: `${fieldName} not found: ${req.body.roleId}`,
+            message: `${fieldName} not found`,
             errorCode: 'FOREIGN_KEY_NOT_FOUND',
             status: 404,
           });
@@ -196,6 +211,18 @@ export default {
         });
       }
 
+      // Validate warehouse if warehouseId is provided and not null
+      if (validated.warehouseId && validated.warehouseId !== null) {
+        const warehouse = await warehouseService.getWarehouseById(validated.warehouseId);
+        if (!warehouse) {
+          throw new CustomError({
+            message: `Warehouse with ID ${validated.warehouseId} not found`,
+            errorCode: 'WAREHOUSE_NOT_FOUND',
+            status: 404,
+          });
+        }
+      }
+
       const performedById = req.user.id;
 
       if (!performedById) {
@@ -221,14 +248,16 @@ export default {
             });
           }
         } else if (error.code === 'P2003') {
-          // Foreign key constraint violation for roleId
+          // Foreign key constraint violation
           const fieldName = ((error.meta?.field_name as string) || '').includes('roleId')
-            ? 'Role'
-            : 'Referenced record';
+            ? 'Role ID'
+            : ((error.meta?.field_name as string) || '').includes('warehouseId')
+              ? 'Warehouse ID'
+              : 'Foreign key';
 
           throw new CustomError({
             message: `${fieldName} not found`,
-            errorCode: 'ROLE_NOT_FOUND',
+            errorCode: 'FOREIGN_KEY_NOT_FOUND',
             status: 404,
           });
         }

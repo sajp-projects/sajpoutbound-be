@@ -44,4 +44,18 @@ router.delete(
   warehouseController.deleteWarehouse,
 );
 
+// Assign user to warehouse
+router.post(
+  '/:id/users',
+  checkPermission('warehouse', PERMISSION_ACTION.UPDATE),
+  warehouseController.assignUserToWarehouse,
+);
+
+// Unassign user from warehouse
+router.delete(
+  '/:id/users/:userId',
+  checkPermission('warehouse', PERMISSION_ACTION.UPDATE),
+  warehouseController.unassignUserFromWarehouse,
+);
+
 export default router;

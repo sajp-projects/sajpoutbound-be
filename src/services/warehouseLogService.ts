@@ -17,13 +17,12 @@ interface RawWarehouseLog extends WarehouseLog {
 }
 
 // Type for safely handling JSON data
-interface UserData {
-  userId?: string;
-  user?: {
+interface UsersData {
+  users?: Array<{
     id?: string;
     name?: string;
     email?: string;
-  };
+  }>;
   [key: string]: any;
 }
 
@@ -86,25 +85,10 @@ export default {
     const jakartaTime = new Date();
     jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-    // If userId has changed, get the user information for the new userId
+    // Prepare enhanced data
     const enhancedNewData = {
       ...newData,
     };
-    if (newData.userId) {
-      const newUser = await client.user.findUnique({
-        where: {
-          id: newData.userId,
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      });
-      if (newUser) {
-        enhancedNewData.user = newUser;
-      }
-    }
 
     return client.warehouseLog.create({
       data: {
@@ -194,11 +178,11 @@ export default {
 
         // Ensure oldData and newData include user information clearly
         if (log.newData) {
-          const userData = JSON.parse(JSON.stringify(log.newData)) as UserData;
-          if (userData.user && userData.userId) {
+          const usersData = JSON.parse(JSON.stringify(log.newData)) as UsersData;
+          if (usersData.users && usersData.users.length > 0) {
             processedLog.newData = {
-              ...userData,
-              userName: userData.user.name || 'Unknown',
+              ...usersData,
+              userCount: usersData.users.length,
             };
           }
         }
@@ -260,11 +244,11 @@ export default {
         // Ensure oldData and newData include user information clearly
         if (log.newData) {
           try {
-            const userData = JSON.parse(JSON.stringify(log.newData)) as UserData;
-            if (userData.user && userData.userId) {
+            const usersData = JSON.parse(JSON.stringify(log.newData)) as UsersData;
+            if (usersData.users && usersData.users.length > 0) {
               processedLog.newData = {
-                ...userData,
-                userName: userData.user.name || 'Unknown',
+                ...usersData,
+                userCount: usersData.users.length,
               };
             }
           } catch (e) {

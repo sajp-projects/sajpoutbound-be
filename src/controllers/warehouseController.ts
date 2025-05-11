@@ -9,7 +9,10 @@ import {
   WarehouseCreateInput,
   warehouseIdSchema,
   WarehouseUpdateInput,
+  WarehouseUserAssignmentInput,
+  warehouseUserAssignmentSchema,
 } from '../schemas/warehouse';
+import userService from '../services/userService';
 import warehouseService from '../services/warehouseService';
 import { success } from '../types/response';
 
@@ -198,8 +201,18 @@ export default {
         });
       }
 
+      const performedById = req.user?.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
       // Check if warehouse is assigned to any user
-      if (existingWarehouse.user) {
+      if (existingWarehouse.users.length > 0) {
         throw new CustomError({
           message: 'Cannot delete warehouse as it is still assigned to a user',
           errorCode: 'WAREHOUSE_IN_USE',
@@ -207,12 +220,134 @@ export default {
         });
       }
 
-      // Check if warehouse has any associated products
+      // Check if warehouse has any products
       const productsCount = await warehouseService.getWarehouseProductsCount(id);
       if (productsCount > 0) {
         throw new CustomError({
-          message: 'Cannot delete warehouse as it still has associated products',
+          message: 'Cannot delete warehouse as it has products associated with it',
           errorCode: 'WAREHOUSE_HAS_PRODUCTS',
+          status: 400,
+        });
+      }
+
+      const deletedWarehouse = await warehouseService.deleteWarehouse(id, performedById);
+
+      res.status(200).json(
+        success({
+          warehouse: deletedWarehouse,
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async assignUserToWarehouse(
+    req: Request<{ id: string }, unknown, WarehouseUserAssignmentInput>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { id: warehouseId } = req.params;
+      const { userId } = req.body;
+
+      await warehouseIdSchema.validateAsync({
+        id: warehouseId,
+      });
+
+      await warehouseUserAssignmentSchema.validateAsync(req.body);
+
+      // Check if warehouse exists
+      const existingWarehouse = await warehouseService.getWarehouseById(warehouseId);
+
+      if (!existingWarehouse) {
+        throw new CustomError({
+          message: 'Warehouse not found',
+          errorCode: 'WAREHOUSE_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Check if user exists
+      const existingUser = await userService.getUserById(userId);
+
+      if (!existingUser) {
+        throw new CustomError({
+          message: 'User not found',
+          errorCode: 'USER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      const performedById = req.user?.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
+      // Assign user to warehouse
+      const updatedWarehouse = await warehouseService.assignUserToWarehouse(
+        warehouseId,
+        userId,
+        performedById,
+      );
+
+      res.status(200).json(success(updatedWarehouse));
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new CustomError({
+          message: error.message || 'Database error occurred',
+          errorCode: `PRISMA_ERROR_${error.code}`,
+          status: 400,
+        });
+      }
+
+      next(error);
+    }
+  },
+
+  async unassignUserFromWarehouse(
+    req: Request<{ id: string; userId: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { id: warehouseId, userId } = req.params;
+
+      await warehouseIdSchema.validateAsync({
+        id: warehouseId,
+      });
+
+      // Check if warehouse exists
+      const existingWarehouse = await warehouseService.getWarehouseById(warehouseId);
+
+      if (!existingWarehouse) {
+        throw new CustomError({
+          message: 'Warehouse not found',
+          errorCode: 'WAREHOUSE_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Check if user exists and is assigned to this warehouse
+      const existingUser = await userService.getUserById(userId);
+
+      if (!existingUser) {
+        throw new CustomError({
+          message: 'User not found',
+          errorCode: 'USER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      if (existingUser.warehouseId !== warehouseId) {
+        throw new CustomError({
+          message: 'User is not assigned to this warehouse',
+          errorCode: 'USER_NOT_ASSIGNED',
           status: 400,
         });
       }
@@ -227,10 +362,23 @@ export default {
         });
       }
 
-      const deletedWarehouse = await warehouseService.deleteWarehouse(id, performedById);
+      // Unassign user from warehouse
+      const updatedWarehouse = await warehouseService.unassignUserFromWarehouse(
+        warehouseId,
+        userId,
+        performedById,
+      );
 
-      res.status(200).json(success(deletedWarehouse));
+      res.status(200).json(success(updatedWarehouse));
     } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new CustomError({
+          message: error.message || 'Database error occurred',
+          errorCode: `PRISMA_ERROR_${error.code}`,
+          status: 400,
+        });
+      }
+
       next(error);
     }
   },
