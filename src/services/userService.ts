@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import prisma from '../config/prisma';
 import { UserCreateInput, UserUpdateInput } from '../schemas/user';
 import userLogService from './userLogService';
@@ -252,42 +251,39 @@ export default {
         roleId, warehouseId, ...basicFields 
       } = data;
 
-      // Create update data structure with proper typing
-      const updateData: Prisma.UserUpdateInput = {
-        ...basicFields,
-        updatedAt: jakartaTime,
-      };
-
-      // Handle role relationship if provided
-      if (roleId !== undefined) {
-        updateData.role = {
-          connect: {
-            id: roleId as string,
-          },
-        };
-      }
-
-      // Handle warehouse relationship
-      if (warehouseId === null) {
-        // Disconnect warehouse if null
-        updateData.warehouse = {
-          disconnect: true,
-        };
-      } else if (warehouseId) {
-        // Connect to specified warehouse
-        updateData.warehouse = {
-          connect: {
-            id: warehouseId,
-          },
-        };
-      }
-
       // Update the user in the database
       const updatedUser = await tx.user.update({
         where: {
           id,
         },
-        data: updateData,
+        data: {
+          ...basicFields,
+          updatedAt: jakartaTime,
+
+          // Handle role relationship if provided - using direct ternary
+          role:
+            roleId !== undefined
+              ? {
+                connect: {
+                  id: roleId as string,
+                },
+              }
+              : undefined,
+
+          // Handle warehouse relationship - three cases with direct ternary
+          warehouse:
+            warehouseId === null
+              ? {
+                disconnect: true,
+              }
+              : warehouseId
+                ? {
+                  connect: {
+                    id: warehouseId,
+                  },
+                }
+                : undefined,
+        },
         include: {
           role: true,
           warehouse: {
