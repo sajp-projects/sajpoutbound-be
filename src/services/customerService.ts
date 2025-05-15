@@ -47,6 +47,23 @@ export default {
         orderBy: {
           createdAt: 'desc',
         },
+        include: {
+          deliveryOrders: {
+            include: {
+              items: {
+                include: {
+                  product: {
+                    select: {
+                      id: true,
+                      name: true,
+                      satuan: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       }),
       prisma.customer.count({
         where: whereConditions,
@@ -66,6 +83,23 @@ export default {
     return prisma.customer.findFirst({
       where: {
         id,
+      },
+      include: {
+        deliveryOrders: {
+          include: {
+            items: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    satuan: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
   },
