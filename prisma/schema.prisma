@@ -25,6 +25,7 @@ model User {
   productLogs   ProductLog[]   @relation("PerformedProductLogs")
   customerLogs  CustomerLog[]  @relation("PerformedCustomerLogs")
   armadaLogs    ArmadaLog[]    @relation("PerformedArmadaLogs")
+  deliveryOrderLogs DeliveryOrderLog[] @relation("PerformedDeliveryOrderLogs")
 
   @@index([roleId], map: "User_roleId_fkey")
   @@index([warehouseId], map: "User_warehouseId_fkey")
@@ -114,16 +115,17 @@ model WarehouseLog {
 }
 
 model Product {
-  id          String       @id @default(uuid())
-  name        String
-  id_sl       String?      @unique
-  description String?
-  satuan      String       // Unit of measurement (kg, m, ton, l, etc.)
-  warehouseId String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  warehouse   Warehouse    @relation(fields: [warehouseId], references: [id])
-  productLogs ProductLog[]
+  id              String            @id @default(uuid())
+  name            String
+  id_sl           String?           @unique
+  description     String?
+  satuan          String       // Unit of measurement (kg, m, ton, l, etc.)
+  warehouseId     String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  warehouse       Warehouse         @relation(fields: [warehouseId], references: [id])
+  productLogs     ProductLog[]
+  deliveryOrderItems DeliveryOrderItem[]
 
   @@index([warehouseId], map: "Product_warehouseId_fkey")
 }
@@ -147,13 +149,14 @@ model ProductLog {
 }
 
 model Customer {
-  id           String        @id @default(uuid())
-  name         String        @unique
-  id_sl        String?       @unique
+  id           String          @id @default(uuid())
+  name         String          @unique
+  id_sl        String?         @unique
   address      String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
   customerLogs CustomerLog[]
+  deliveryOrders DeliveryOrder[]
 }
 
 model CustomerLog {
@@ -203,6 +206,53 @@ model ArmadaLog {
   @@index([armadaId], map: "ArmadaLog_armadaId_fkey")
 }
 
+model DeliveryOrder {
+  id            String            @id @default(uuid())
+  customerId    String
+  address       String?
+  internalNote  String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  deletedAt     DateTime?
+  customer      Customer          @relation(fields: [customerId], references: [id])
+  items         DeliveryOrderItem[]
+  doLogs        DeliveryOrderLog[]
+
+  @@index([customerId], map: "DeliveryOrder_customerId_fkey")
+}
+
+model DeliveryOrderItem {
+  id             String        @id @default(uuid())
+  deliveryOrderId String
+  productId      String
+  quantity       Int
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deliveryOrder  DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
+  product        Product       @relation(fields: [productId], references: [id])
+
+  @@index([deliveryOrderId], map: "DeliveryOrderItem_deliveryOrderId_fkey")
+  @@index([productId], map: "DeliveryOrderItem_productId_fkey")
+}
+
+model DeliveryOrderLog {
+  id              String      @id @default(uuid())
+  deliveryOrderId String?
+  performedById   String
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  action          ACTION
+  entityType      ENTITY_TYPE
+  oldData         Json?
+  newData         Json?
+  description     String?
+  performedBy     User        @relation("PerformedDeliveryOrderLogs", fields: [performedById], references: [id])
+  deliveryOrder   DeliveryOrder? @relation(fields: [deliveryOrderId], references: [id])
+
+  @@index([performedById], map: "DeliveryOrderLog_performedById_fkey")
+  @@index([deliveryOrderId], map: "DeliveryOrderLog_deliveryOrderId_fkey")
+}
+
 enum ACTION {
   CREATE
   UPDATE
@@ -218,6 +268,7 @@ enum ENTITY_TYPE {
   PRODUCT
   CUSTOMER
   ARMADA
+  DELIVERY_ORDER
 }
 
 enum PERMISSION_ACTION {

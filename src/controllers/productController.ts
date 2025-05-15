@@ -10,6 +10,7 @@ import {
   ProductUpdateInput,
   updateProductSchema,
 } from '../schemas/product';
+import deliveryOrderService from '../services/deliveryOrderService';
 import productService from '../services/productService';
 import warehouseService from '../services/warehouseService';
 import { success } from '../types/response';
@@ -223,6 +224,18 @@ export default {
         });
       }
 
+      // Check if product is used in any active delivery order items
+      const deliveryOrderItems = await deliveryOrderService.getProductDeliveryOrderItems(id);
+
+      if (deliveryOrderItems.length > 0) {
+        throw new CustomError({
+          message:
+            'Cannot delete product as it is used in active delivery orders. Please archive the related delivery orders first.',
+          errorCode: 'PRODUCT_IN_USE',
+          status: 409,
+        });
+      }
+
       const performedById = req.user?.id;
 
       if (!performedById) {
@@ -234,7 +247,6 @@ export default {
       }
 
       const deletedProduct = await productService.deleteProduct(id, performedById);
-
       res.status(200).json(success(deletedProduct));
     } catch (error) {
       next(error);

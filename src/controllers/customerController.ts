@@ -11,6 +11,7 @@ import {
   updateCustomerSchema,
 } from '../schemas/customer';
 import customerService from '../services/customerService';
+import deliveryOrderService from '../services/deliveryOrderService';
 import { success } from '../types/response';
 
 export default {
@@ -198,6 +199,18 @@ export default {
         });
       }
 
+      // Check if customer has any active delivery orders
+      const deliveryOrders = await deliveryOrderService.getCustomerDeliveryOrders(id);
+
+      if (deliveryOrders.length > 0) {
+        throw new CustomError({
+          message:
+            'Cannot delete customer as it is associated with active delivery orders. Please archive the delivery orders first.',
+          errorCode: 'CUSTOMER_IN_USE',
+          status: 409,
+        });
+      }
+
       const performedById = req.user?.id;
 
       if (!performedById) {
@@ -209,7 +222,6 @@ export default {
       }
 
       const deletedCustomer = await customerService.deleteCustomer(id, performedById);
-
       res.status(200).json(success(deletedCustomer));
     } catch (error) {
       next(error);

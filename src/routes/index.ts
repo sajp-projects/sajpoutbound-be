@@ -3,6 +3,7 @@ import { authenticateToken } from '../middlewares/authentication';
 import armadaRoutes from './armadaRoute';
 import authRoutes from './authRoute';
 import customerRoutes from './customerRoute';
+import deliveryOrderRoutes from './deliveryOrderRoute';
 import permissionRoutes from './permissionRoutes';
 import productRoutes from './productRoute';
 import rolePermissionRoutes from './rolePermissionRoutes';
@@ -39,5 +40,8 @@ router.use('/customers', customerRoutes);
 
 // Armada routes
 router.use('/armadas', armadaRoutes);
+
+// Delivery Order routes
+router.use('/delivery-orders', deliveryOrderRoutes);
 
 export default router;
