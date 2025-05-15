@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `DeliveryOrder` MODIFY `status` ENUM('PENDING', 'PROSES', 'SELESAI') NOT NULL DEFAULT 'PENDING';

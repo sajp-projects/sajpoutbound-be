@@ -211,6 +211,7 @@ model DeliveryOrder {
   customerId    String
   address       String?
   internalNote  String?
+  status        STATUS            @default(PENDING)
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
   deletedAt     DateTime?
@@ -276,4 +277,10 @@ enum PERMISSION_ACTION {
   READ
   UPDATE
   DELETE
+}
+
+enum STATUS {
+  PENDING
+  PROSES
+  SELESAI
 }
