@@ -19,9 +19,7 @@ export default {
     const skip = (page - 1) * limit;
 
     const whereConditions: any = {
-      deletedAt: {
-        not: null,
-      }, // Only get non-deleted delivery orders
+      deletedAt: null,
     };
 
     if (search) {
