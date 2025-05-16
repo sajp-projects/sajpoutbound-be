@@ -221,6 +221,7 @@ export default {
         id,
         validated,
         performedById,
+        existingDeliveryOrder,
       );
 
       res.status(200).json(success(updatedDeliveryOrder));

@@ -143,53 +143,18 @@ export default {
   /**
    * Update product information
    */
-  async updateProduct(id: string, data: ProductUpdateInput, performedById: string) {
+  async updateProduct(
+    id: string,
+    data: ProductUpdateInput,
+    performedById: string,
+    oldProduct: NonNullable<Awaited<ReturnType<typeof this.getProductById>>>,
+  ) {
     const { warehouseId, ...productData } = data;
 
     return prisma.$transaction(async (tx) => {
-      // Validate warehouse existence if warehouseId is provided
-      if (warehouseId) {
-        const warehouse = await tx.warehouse.findUnique({
-          where: {
-            id: warehouseId,
-          },
-          select: {
-            id: true,
-          },
-        });
-
-        if (!warehouse) {
-          throw new Error(`Warehouse with ID ${warehouseId} not found`);
-        }
-      }
-
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
-
-      const oldProduct = await tx.product.findUnique({
-        where: {
-          id,
-        },
-        select: {
-          name: true,
-          id_sl: true,
-          description: true,
-          satuan: true,
-          warehouseId: true,
-          warehouse: {
-            select: {
-              id: true,
-              name: true,
-              description: true,
-            },
-          },
-        },
-      });
-
-      if (!oldProduct) {
-        throw new Error('Product not found');
-      }
 
       const product = await tx.product.update({
         where: {

@@ -233,7 +233,7 @@ export default {
         });
       }
 
-      const updatedUser = await userService.updateUser(id, validated, performedById);
+      const updatedUser = await userService.updateUser(id, validated, performedById, existingUser);
 
       res.status(200).json(success(updatedUser));
     } catch (error) {

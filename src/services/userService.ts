@@ -226,25 +226,17 @@ export default {
    * @param performedById ID of the user who updated this user
    * @returns Updated user
    */
-  async updateUser(id: string, data: UserUpdateInput, performedById: string) {
+  async updateUser(
+    id: string,
+    data: UserUpdateInput,
+    performedById: string,
+    oldUserData: NonNullable<Awaited<ReturnType<typeof this.getUserById>>>,
+  ) {
     // Use transaction to ensure both operations succeed or fail together
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
-
-      // Get the current user data for logging the changes
-      const oldUserData = await tx.user.findUnique({
-        where: {
-          id,
-        },
-        select: {
-          email: true,
-          name: true,
-          roleId: true,
-          warehouseId: true,
-        },
-      });
 
       // Extract relationship IDs and basic fields
       const {

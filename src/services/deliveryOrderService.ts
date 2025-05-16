@@ -191,25 +191,16 @@ export default {
   /**
    * Update a delivery order
    */
-  async updateDeliveryOrder(id: string, data: DeliveryOrderUpdateInput, performedById: string) {
+  async updateDeliveryOrder(
+    id: string,
+    data: DeliveryOrderUpdateInput,
+    performedById: string,
+    oldDeliveryOrder: NonNullable<Awaited<ReturnType<typeof this.getDeliveryOrderById>>>,
+  ) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
-
-      // Get old delivery order data for comparison
-      const oldDeliveryOrder = await tx.deliveryOrder.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          items: true,
-        },
-      });
-
-      if (!oldDeliveryOrder) {
-        throw new Error('Delivery order not found');
-      }
 
       // Prepare update data and track changes
       const updateData: any = {
@@ -220,13 +211,13 @@ export default {
       const newDataChanges: Record<string, any> = {};
 
       // Update simple fields if provided
-      if (data.address !== undefined) {
+      if (data.address) {
         updateData.address = data.address;
         oldDataChanges.address = oldDeliveryOrder.address;
         newDataChanges.address = data.address;
       }
 
-      if (data.internalNote !== undefined) {
+      if (data.internalNote) {
         updateData.internalNote = data.internalNote;
         oldDataChanges.internalNote = oldDeliveryOrder.internalNote;
         newDataChanges.internalNote = data.internalNote;

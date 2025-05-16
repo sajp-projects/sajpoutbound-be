@@ -12,6 +12,9 @@ async function main() {
     await prisma.productLog.deleteMany();
     await prisma.userLog.deleteMany();
     await prisma.warehouseLog.deleteMany();
+    await prisma.deliveryOrderLog.deleteMany();
+    await prisma.deliveryOrderItem.deleteMany();
+    await prisma.deliveryOrder.deleteMany();
     await prisma.permission.deleteMany();
     await prisma.rolePermission.deleteMany();
     await prisma.role.deleteMany();
@@ -121,6 +124,102 @@ async function main() {
     ]);
 
     console.log(`Created ${warehouses.length} warehouses`);
+
+    // Create products across warehouses
+    const products = await Promise.all([
+      // Products for Gudang Pusat
+      prisma.product.create({
+        data: {
+          name: 'Semen Portland 50kg',
+          id_sl: 'SMN-001',
+          description: 'Semen Portland kualitas konstruksi berat',
+          satuan: 'Sak',
+          warehouseId: warehouses[0].id,
+        },
+      }),
+      prisma.product.create({
+        data: {
+          name: 'Semen Putih 40kg',
+          id_sl: 'SMN-002',
+          description: 'Semen putih untuk finishing dan dekorasi',
+          satuan: 'Sak',
+          warehouseId: warehouses[0].id,
+        },
+      }),
+    ]);
+
+    console.log(`Created ${products.length} products`);
+
+    // Create customers
+    const customers = await Promise.all([
+      prisma.customer.create({
+        data: {
+          name: 'PT Pembangunan Jaya',
+          id_sl: 'CUS-001',
+          address: 'Jl. Gatot Subroto No. 123, Jakarta Selatan',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'CV Maju Bersama',
+          id_sl: 'CUS-002',
+          address: 'Jl. Pahlawan No. 45, Bandung',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'PT Konstruksi Andalan',
+          id_sl: 'CUS-003',
+          address: 'Jl. Ahmad Yani No. 78, Surabaya',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'Toko Bangunan Sejahtera',
+          id_sl: 'CUS-004',
+          address: 'Jl. Diponegoro No. 210, Semarang',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'PT Arsitektur Modern',
+          id_sl: 'CUS-005',
+          address: 'Jl. Sudirman No. 56, Makassar',
+        },
+      }),
+    ]);
+
+    console.log(`Created ${customers.length} customers`);
+
+    // Create armadas (vehicles)
+    const armadas = await Promise.all([
+      prisma.armada.create({
+        data: {
+          model: 'Truk Fuso',
+          id_sl: 'TRK-001',
+          plateNumber: 'B 1234 CD',
+          description: 'Truk besar untuk pengiriman material berat',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup L300',
+          id_sl: 'PU-001',
+          plateNumber: 'B 5678 EF',
+          description: 'Pickup untuk pengiriman cepat dan ringan',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Colt Diesel',
+          id_sl: 'TRK-002',
+          plateNumber: 'B 9012 GH',
+          description: 'Truk sedang untuk distribusi dalam kota',
+        },
+      }),
+    ]);
+
+    console.log(`Created ${armadas.length} armadas`);
 
     // Assign all permissions to Admin role
     const adminPermissionAssignments = await Promise.all(
@@ -262,6 +361,9 @@ async function main() {
     console.log(`- Admin permissions: ${adminPermissionAssignments.length}`);
     console.log(`- Manager permissions: ${managerPermissionAssignments.length}`);
     console.log(`- Warehouses: ${warehouses.length}`);
+    console.log(`- Products: ${products.length}`);
+    console.log(`- Customers: ${customers.length}`);
+    console.log(`- Armadas: ${armadas.length}`);
   } catch (error) {
     console.error('Error seeding database:', error);
   } finally {

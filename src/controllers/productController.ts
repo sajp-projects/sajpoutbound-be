@@ -182,7 +182,12 @@ export default {
         });
       }
 
-      const updatedProduct = await productService.updateProduct(id, validated, performedById);
+      const updatedProduct = await productService.updateProduct(
+        id,
+        validated,
+        performedById,
+        existingProduct,
+      );
 
       res.status(200).json(success(updatedProduct));
     } catch (error) {

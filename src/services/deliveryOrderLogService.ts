@@ -15,6 +15,11 @@ export default {
     tx?: any,
   ) {
     const client = tx || prisma;
+
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
     return client.deliveryOrderLog.create({
       data: {
         deliveryOrderId,
@@ -23,6 +28,8 @@ export default {
         entityType: ENTITY_TYPE.DELIVERY_ORDER,
         newData: deliveryOrderData,
         description: 'Delivery Order created',
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
       },
     });
   },
@@ -38,6 +45,11 @@ export default {
     tx?: any,
   ) {
     const client = tx || prisma;
+
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
     return client.deliveryOrderLog.create({
       data: {
         deliveryOrderId,
@@ -47,6 +59,8 @@ export default {
         oldData,
         newData,
         description: 'Delivery Order updated',
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
       },
     });
   },
@@ -60,6 +74,11 @@ export default {
     tx?: any,
   ) {
     const client = tx || prisma;
+
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
     return client.deliveryOrderLog.create({
       data: {
         performedById,
@@ -67,6 +86,8 @@ export default {
         entityType: ENTITY_TYPE.DELIVERY_ORDER,
         oldData: deliveryOrderData,
         description: 'Delivery Order deleted',
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
       },
     });
   },
