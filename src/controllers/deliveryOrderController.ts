@@ -10,6 +10,7 @@ import {
   DeliveryOrderUpdateInput,
   updateDeliveryOrderSchema,
 } from '../schemas/deliveryOrder';
+import customerService from '../services/customerService';
 import deliveryOrderService from '../services/deliveryOrderService';
 import { success } from '../types/response';
 
@@ -206,6 +207,19 @@ export default {
       }
 
       const validated = await updateDeliveryOrderSchema.validateAsync(req.body);
+
+      // If customerId is provided, check if the customer exists
+      if (validated.customerId) {
+        const customer = await customerService.getCustomerById(validated.customerId);
+
+        if (!customer) {
+          throw new CustomError({
+            message: 'Customer not found',
+            errorCode: 'CUSTOMER_NOT_FOUND',
+            status: 404,
+          });
+        }
+      }
 
       const performedById = req.user?.id;
 

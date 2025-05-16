@@ -211,6 +211,13 @@ export default {
       const newDataChanges: Record<string, any> = {};
 
       // Update simple fields if provided
+      if (data.customerId) {
+        updateData.customerId = data.customerId;
+        oldDataChanges.customerId = oldDeliveryOrder.customerId;
+        oldDataChanges.customerName = oldDeliveryOrder.customer.name;
+        newDataChanges.customerId = data.customerId;
+      }
+
       if (data.address) {
         updateData.address = data.address;
         oldDataChanges.address = oldDeliveryOrder.address;

@@ -12,6 +12,7 @@ export type DeliveryOrderCreateInput = {
 };
 
 export type DeliveryOrderUpdateInput = {
+  customerId?: string;
   address?: string;
   internalNote?: string;
   items?: {
@@ -58,6 +59,10 @@ export const createDeliveryOrderSchema = Joi.object<DeliveryOrderCreateInput>({
 });
 
 export const updateDeliveryOrderSchema = Joi.object<DeliveryOrderUpdateInput>({
+  customerId: Joi.string().uuid().messages({
+    'string.empty': 'Customer ID is required',
+    'string.guid': 'Customer ID must be a valid UUID',
+  }),
   address: Joi.string().allow('').max(500).messages({
     'string.max': 'Address cannot exceed {#limit} characters',
   }),
