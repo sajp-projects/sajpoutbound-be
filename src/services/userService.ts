@@ -290,17 +290,20 @@ export default {
 
       // Create log entry - only include changed fields
       const changedFields: Record<string, any> = {};
+      const oldChangedFields: Record<string, any> = {};
+
       Object.keys(data).forEach((key) => {
         if (
           oldUserData &&
           oldUserData[key as keyof typeof oldUserData] !== data[key as keyof typeof data]
         ) {
           changedFields[key] = data[key as keyof typeof data];
+          oldChangedFields[key] = oldUserData[key as keyof typeof oldUserData];
         }
       });
 
       if (Object.keys(changedFields).length > 0) {
-        await userLogService.logUserUpdate(id, performedById, oldUserData, changedFields, tx);
+        await userLogService.logUserUpdate(id, performedById, oldChangedFields, changedFields, tx);
       }
 
       // Return user without password

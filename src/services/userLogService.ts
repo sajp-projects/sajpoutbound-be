@@ -55,13 +55,21 @@ export default {
     const jakartaTime = new Date();
     jakartaTime.setHours(jakartaTime.getHours() + 7);
 
+    // Filter oldData to only include fields that changed
+    const changedOldData: Record<string, any> = {};
+    Object.keys(newData).forEach((key) => {
+      if (oldData[key] !== undefined) {
+        changedOldData[key] = oldData[key];
+      }
+    });
+
     return client.userLog.create({
       data: {
         userId,
         performedById,
         action: ACTION.UPDATE,
         entityType: ENTITY_TYPE.USER,
-        oldData,
+        oldData: changedOldData,
         newData,
         description: description || 'Updated user information',
         createdAt: jakartaTime,
