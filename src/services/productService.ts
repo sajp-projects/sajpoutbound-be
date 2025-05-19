@@ -218,6 +218,33 @@ export default {
   },
 
   /**
+   * Get multiple products by their IDs in a single query
+   *
+   * @param ids Array of product IDs to retrieve
+   * @returns Array of products matching the provided IDs
+   */
+  async getProductsByIds(ids: string[]) {
+    if (!ids.length) return [];
+
+    return prisma.product.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+      include: {
+        warehouse: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
+      },
+    });
+  },
+
+  /**
    * Delete a product (hard delete)
    * The product logs will be kept with productId set to null
    */

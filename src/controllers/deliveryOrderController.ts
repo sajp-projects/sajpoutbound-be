@@ -12,6 +12,7 @@ import {
 } from '../schemas/deliveryOrder';
 import customerService from '../services/customerService';
 import deliveryOrderService from '../services/deliveryOrderService';
+import productService from '../services/productService';
 import { success } from '../types/response';
 
 export default {
@@ -153,6 +154,50 @@ export default {
         });
       }
 
+      if (validated.customerId) {
+        const customer = await customerService.getCustomerById(validated.customerId);
+
+        if (!customer) {
+          throw new CustomError({
+            message: 'Customer not found',
+            errorCode: 'CUSTOMER_NOT_FOUND',
+            status: 404,
+          });
+        }
+      }
+
+      if (validated.items && validated.items.length > 0) {
+        // Check for duplicate product IDs
+        const productIds = validated.items.map((item) => item.productId);
+        const uniqueProductIds = new Set(productIds);
+
+        if (uniqueProductIds.size !== productIds.length) {
+          const duplicates = productIds.filter((id, index) => productIds.indexOf(id) !== index);
+          throw new CustomError({
+            message: `Duplicate products not allowed. Found duplicate product ID(s): ${duplicates.join(', ')}`,
+            errorCode: 'DUPLICATE_PRODUCTS',
+            status: 400,
+          });
+        }
+
+        // Fetch all products in a single query
+        const products = await productService.getProductsByIds([...uniqueProductIds]);
+
+        // Create a map of product IDs to products for quick lookup
+        const productMap = new Map(products.map((product) => [product.id, product]));
+
+        // Check if all products exist
+        for (const item of validated.items) {
+          if (!productMap.has(item.productId)) {
+            throw new CustomError({
+              message: 'Product not found',
+              errorCode: 'PRODUCT_NOT_FOUND',
+              status: 404,
+            });
+          }
+        }
+      }
+
       const deliveryOrder = await deliveryOrderService.createDeliveryOrder(
         validated,
         performedById,
@@ -218,6 +263,39 @@ export default {
             errorCode: 'CUSTOMER_NOT_FOUND',
             status: 404,
           });
+        }
+      }
+
+      // If items are provided, validate all products exist
+      if (validated.items && validated.items.length > 0) {
+        const productIds = validated.items.map((item) => item.productId);
+        const uniqueProductIds = new Set(productIds);
+
+        if (uniqueProductIds.size !== productIds.length) {
+          // Find the duplicated product IDs
+          const duplicates = productIds.filter((id, index) => productIds.indexOf(id) !== index);
+          throw new CustomError({
+            message: `Duplicate products not allowed. Found duplicate product ID(s): ${duplicates.join(', ')}`,
+            errorCode: 'DUPLICATE_PRODUCTS',
+            status: 400,
+          });
+        }
+
+        // Fetch all products in a single query
+        const products = await productService.getProductsByIds([...uniqueProductIds]);
+
+        // Create a map of product IDs to products for quick lookup
+        const productMap = new Map(products.map((product) => [product.id, product]));
+
+        // Check if all products exist
+        for (const item of validated.items) {
+          if (!productMap.has(item.productId)) {
+            throw new CustomError({
+              message: 'Product not found',
+              errorCode: 'PRODUCT_NOT_FOUND',
+              status: 404,
+            });
+          }
         }
       }
 
