@@ -8,9 +8,6 @@ export type DeliveryOrderCreateInput = {
   items: {
     productId: string;
     quantity: number;
-    pendingQuantity?: number;
-    processingQuantity?: number;
-    completedQuantity?: number;
   }[];
 };
 
@@ -22,9 +19,6 @@ export type DeliveryOrderUpdateInput = {
     id?: string;
     productId: string;
     quantity: number;
-    pendingQuantity?: number;
-    processingQuantity?: number;
-    completedQuantity?: number;
   }[];
 };
 
@@ -53,21 +47,6 @@ export const createDeliveryOrderSchema = Joi.object<DeliveryOrderCreateInput>({
           'number.integer': 'Quantity must be an integer',
           'number.min': 'Quantity must be at least 1',
           'any.required': 'Quantity is required',
-        }),
-        pendingQuantity: Joi.number().integer().min(0).default(Joi.ref('quantity')).messages({
-          'number.base': 'Pending quantity must be a number',
-          'number.integer': 'Pending quantity must be an integer',
-          'number.min': 'Pending quantity cannot be negative',
-        }),
-        processingQuantity: Joi.number().integer().min(0).default(0).messages({
-          'number.base': 'Processing quantity must be a number',
-          'number.integer': 'Processing quantity must be an integer',
-          'number.min': 'Processing quantity cannot be negative',
-        }),
-        completedQuantity: Joi.number().integer().min(0).default(0).messages({
-          'number.base': 'Completed quantity must be a number',
-          'number.integer': 'Completed quantity must be an integer',
-          'number.min': 'Completed quantity cannot be negative',
         }),
       }),
     )
@@ -106,21 +85,6 @@ export const updateDeliveryOrderSchema = Joi.object<DeliveryOrderUpdateInput>({
           'number.integer': 'Quantity must be an integer',
           'number.min': 'Quantity must be at least 1',
           'any.required': 'Quantity is required',
-        }),
-        pendingQuantity: Joi.number().integer().min(0).messages({
-          'number.base': 'Pending quantity must be a number',
-          'number.integer': 'Pending quantity must be an integer',
-          'number.min': 'Pending quantity cannot be negative',
-        }),
-        processingQuantity: Joi.number().integer().min(0).messages({
-          'number.base': 'Processing quantity must be a number',
-          'number.integer': 'Processing quantity must be an integer',
-          'number.min': 'Processing quantity cannot be negative',
-        }),
-        completedQuantity: Joi.number().integer().min(0).messages({
-          'number.base': 'Completed quantity must be a number',
-          'number.integer': 'Completed quantity must be an integer',
-          'number.min': 'Completed quantity cannot be negative',
         }),
       }),
     )

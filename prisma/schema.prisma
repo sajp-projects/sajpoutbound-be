@@ -8,23 +8,23 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  name          String?
-  password      String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  deletedAt     DateTime?
-  roleId        String?
-  warehouseId   String?
-  role          Role?          @relation(fields: [roleId], references: [id])
-  warehouse     Warehouse?     @relation(fields: [warehouseId], references: [id])
-  performedLogs UserLog[]      @relation("PerformedLogs")
-  userLogs      UserLog[]      @relation("UserLogs")
-  warehouseLogs WarehouseLog[] @relation("PerformedWarehouseLogs")
-  productLogs   ProductLog[]   @relation("PerformedProductLogs")
-  customerLogs  CustomerLog[]  @relation("PerformedCustomerLogs")
-  armadaLogs    ArmadaLog[]    @relation("PerformedArmadaLogs")
+  id                String             @id @default(uuid())
+  email             String             @unique
+  name              String?
+  password          String
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  deletedAt         DateTime?
+  roleId            String?
+  warehouseId       String?
+  role              Role?              @relation(fields: [roleId], references: [id])
+  warehouse         Warehouse?         @relation(fields: [warehouseId], references: [id])
+  performedLogs     UserLog[]          @relation("PerformedLogs")
+  userLogs          UserLog[]          @relation("UserLogs")
+  warehouseLogs     WarehouseLog[]     @relation("PerformedWarehouseLogs")
+  productLogs       ProductLog[]       @relation("PerformedProductLogs")
+  customerLogs      CustomerLog[]      @relation("PerformedCustomerLogs")
+  armadaLogs        ArmadaLog[]        @relation("PerformedArmadaLogs")
   deliveryOrderLogs DeliveryOrderLog[] @relation("PerformedDeliveryOrderLogs")
 
   @@index([roleId], map: "User_roleId_fkey")
@@ -115,16 +115,16 @@ model WarehouseLog {
 }
 
 model Product {
-  id              String            @id @default(uuid())
-  name            String
-  id_sl           String?           @unique
-  description     String?
-  satuan          String       // Unit of measurement (kg, m, ton, l, etc.)
-  warehouseId     String
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  warehouse       Warehouse         @relation(fields: [warehouseId], references: [id])
-  productLogs     ProductLog[]
+  id                 String              @id @default(uuid())
+  name               String
+  id_sl              String?             @unique
+  description        String?
+  satuan             String // Unit of measurement (kg, m, ton, l, etc.)
+  warehouseId        String
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  warehouse          Warehouse           @relation(fields: [warehouseId], references: [id])
+  productLogs        ProductLog[]
   deliveryOrderItems DeliveryOrderItem[]
 
   @@index([warehouseId], map: "Product_warehouseId_fkey")
@@ -149,13 +149,13 @@ model ProductLog {
 }
 
 model Customer {
-  id           String          @id @default(uuid())
-  name         String          @unique
-  id_sl        String?         @unique
-  address      String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  customerLogs CustomerLog[]
+  id             String          @id @default(uuid())
+  name           String          @unique
+  id_sl          String?         @unique
+  address        String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  customerLogs   CustomerLog[]
   deliveryOrders DeliveryOrder[]
 }
 
@@ -207,50 +207,50 @@ model ArmadaLog {
 }
 
 model DeliveryOrder {
-  id            String            @id @default(uuid())
-  customerId    String
-  address       String?
-  internalNote  String?
-  status        STATUS            @default(PENDING)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  deletedAt     DateTime?
-  customer      Customer          @relation(fields: [customerId], references: [id])
-  items         DeliveryOrderItem[]
-  doLogs        DeliveryOrderLog[]
+  id           String              @id @default(uuid())
+  customerId   String
+  address      String?
+  internalNote String?
+  status       STATUS              @default(PENDING)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  deletedAt    DateTime?
+  customer     Customer            @relation(fields: [customerId], references: [id])
+  items        DeliveryOrderItem[]
+  doLogs       DeliveryOrderLog[]
 
   @@index([customerId], map: "DeliveryOrder_customerId_fkey")
 }
 
 model DeliveryOrderItem {
-  id             String        @id @default(uuid())
-  deliveryOrderId String
-  productId      String
-  quantity       Int           @default(0)
-  pendingQuantity Int          @default(0)
-  processingQuantity Int       @default(0)
-  completedQuantity Int        @default(0)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  deliveryOrder  DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
-  product        Product       @relation(fields: [productId], references: [id])
+  id                 String        @id @default(uuid())
+  deliveryOrderId    String
+  productId          String
+  quantity           Int           @default(0)
+  pendingQuantity    Int           @default(0)
+  processingQuantity Int           @default(0)
+  completedQuantity  Int           @default(0)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  deliveryOrder      DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
+  product            Product       @relation(fields: [productId], references: [id])
 
   @@index([deliveryOrderId], map: "DeliveryOrderItem_deliveryOrderId_fkey")
   @@index([productId], map: "DeliveryOrderItem_productId_fkey")
 }
 
 model DeliveryOrderLog {
-  id              String      @id @default(uuid())
+  id              String         @id @default(uuid())
   deliveryOrderId String?
   performedById   String
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   action          ACTION
   entityType      ENTITY_TYPE
   oldData         Json?
   newData         Json?
   description     String?
-  performedBy     User        @relation("PerformedDeliveryOrderLogs", fields: [performedById], references: [id])
+  performedBy     User           @relation("PerformedDeliveryOrderLogs", fields: [performedById], references: [id])
   deliveryOrder   DeliveryOrder? @relation(fields: [deliveryOrderId], references: [id])
 
   @@index([performedById], map: "DeliveryOrderLog_performedById_fkey")
