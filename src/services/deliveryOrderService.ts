@@ -239,6 +239,7 @@ export default {
         oldDataChanges.items = oldDeliveryOrder.items.map((item) => ({
           id: item.id,
           productId: item.productId,
+          productName: item.product.name,
           quantity: item.quantity,
         }));
 
@@ -297,17 +298,27 @@ export default {
           });
         }
 
-        // Track new items for logging
-        newDataChanges.items = await tx.deliveryOrderItem.findMany({
+        // Track new items for logging - improved to include product names
+        const updatedItems = await tx.deliveryOrderItem.findMany({
           where: {
             deliveryOrderId: id,
           },
-          select: {
-            id: true,
-            productId: true,
-            quantity: true,
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         });
+
+        newDataChanges.items = updatedItems.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.product.name,
+          quantity: item.quantity,
+        }));
       }
 
       // Update the delivery order
