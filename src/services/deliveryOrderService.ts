@@ -135,6 +135,7 @@ export default {
             create: data.items.map((item) => ({
               productId: item.productId,
               quantity: item.quantity,
+              pendingQuantity: item.pendingQuantity ?? item.quantity,
               createdAt: jakartaTime,
               updatedAt: jakartaTime,
             })),

@@ -226,7 +226,10 @@ model DeliveryOrderItem {
   id             String        @id @default(uuid())
   deliveryOrderId String
   productId      String
-  quantity       Int
+  quantity       Int           @default(0)
+  pendingQuantity Int          @default(0)
+  processingQuantity Int       @default(0)
+  completedQuantity Int        @default(0)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   deliveryOrder  DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
