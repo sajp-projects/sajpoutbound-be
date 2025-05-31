@@ -375,28 +375,33 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/shipments/logs?page=1&limit=10",
+              "raw": "{{baseUrl}}/api/shipments/logs?page=1&limit=10&search=",
               "host": ["{{baseUrl}}"],
               "path": ["api", "shipments", "logs"],
               "query": [
                 {
                   "key": "page",
                   "value": "1",
-                  "description": "Page number (starts from 1)"
+                  "description": "Page number for pagination"
                 },
                 {
                   "key": "limit",
                   "value": "10",
-                  "description": "Number of items per page (1-100)"
+                  "description": "Number of logs per page"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Optional search term to filter logs"
                 }
               ]
             },
-            "description": "This request retrieves all shipment logs across all shipments with pagination."
+            "description": "This request retrieves all shipment logs across all shipments. It supports pagination and optional search filtering. The search parameter can match log descriptions, user names, or shipment plate numbers."
           },
           "response": []
         },
         {
-          "name": "Get Shipment Logs by Shipment ID",
+          "name": "Get Logs for Specific Shipment",
           "request": {
             "method": "GET",
             "header": [],
@@ -408,27 +413,28 @@
                 {
                   "key": "page",
                   "value": "1",
-                  "description": "Page number (starts from 1)"
+                  "description": "Page number for pagination"
                 },
                 {
                   "key": "limit",
                   "value": "10",
-                  "description": "Number of items per page (1-100)"
+                  "description": "Number of logs per page"
                 }
               ],
               "variable": [
                 {
                   "key": "shipmentId",
                   "value": "shipment-uuid-here",
-                  "description": "UUID of the shipment to get logs for"
+                  "description": "UUID of the shipment to retrieve logs for"
                 }
               ]
             },
-            "description": "This request retrieves logs for a specific shipment with pagination."
+            "description": "This request retrieves all logs for a specific shipment. It supports pagination with the page and limit parameters. The response includes the logs and pagination information."
           },
           "response": []
         }
-      ]
+      ],
+      "description": "Endpoints for retrieving shipment activity logs. These provide a chronological record of all actions performed on shipments."
     }
   ],
   "event": [

@@ -192,4 +192,72 @@ export default {
       },
     });
   },
+
+  /**
+   * Get all shipment logs across all shipments
+   */
+  async getAllShipmentLogs(page: number = 1, limit: number = 10, search?: string) {
+    const skip = (page - 1) * limit;
+
+    const whereConditions: any = {};
+
+    if (search) {
+      whereConditions.OR = [
+        {
+          description: {
+            contains: search,
+          },
+        },
+        {
+          performedBy: {
+            name: {
+              contains: search,
+            },
+          },
+        },
+        {
+          shipment: {
+            plateNumber: {
+              contains: search,
+            },
+          },
+        },
+      ];
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.shipmentLog.findMany({
+        where: whereConditions,
+        include: {
+          performedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          shipment: {
+            select: {
+              id: true,
+              plateNumber: true,
+              type: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.shipmentLog.count({
+        where: whereConditions,
+      }),
+    ]);
+
+    return {
+      logs,
+      total,
+    };
+  },
 };
