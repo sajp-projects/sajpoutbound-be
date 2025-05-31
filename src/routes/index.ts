@@ -8,6 +8,7 @@ import permissionRoutes from './permissionRoutes';
 import productRoutes from './productRoute';
 import rolePermissionRoutes from './rolePermissionRoutes';
 import roleRoutes from './roleRoute';
+import shipmentRoutes from './shipmentRoute';
 import userRoutes from './userRoute';
 import warehouseRoutes from './warehouseRoute';
 
@@ -43,5 +44,8 @@ router.use('/armadas', armadaRoutes);
 
 // Delivery Order routes
 router.use('/delivery-orders', deliveryOrderRoutes);
+
+// Shipment routes
+router.use('/shipments', shipmentRoutes);
 
 export default router;

@@ -26,6 +26,7 @@ model User {
   customerLogs      CustomerLog[]      @relation("PerformedCustomerLogs")
   armadaLogs        ArmadaLog[]        @relation("PerformedArmadaLogs")
   deliveryOrderLogs DeliveryOrderLog[] @relation("PerformedDeliveryOrderLogs")
+  shipmentLogs      ShipmentLog[]      @relation("PerformedShipmentLogs")
 
   @@index([roleId], map: "User_roleId_fkey")
   @@index([warehouseId], map: "User_warehouseId_fkey")
@@ -94,6 +95,7 @@ model Warehouse {
   users         User[]
   warehouseLogs WarehouseLog[]
   products      Product[]
+  shipmentItems ShipmentItem[]
 }
 
 model WarehouseLog {
@@ -126,6 +128,7 @@ model Product {
   warehouse          Warehouse           @relation(fields: [warehouseId], references: [id])
   productLogs        ProductLog[]
   deliveryOrderItems DeliveryOrderItem[]
+  shipmentItems      ShipmentItem[]
 
   @@index([warehouseId], map: "Product_warehouseId_fkey")
 }
@@ -186,6 +189,7 @@ model Armada {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   armadaLogs  ArmadaLog[]
+  shipments   Shipment[]
 }
 
 model ArmadaLog {
@@ -207,17 +211,19 @@ model ArmadaLog {
 }
 
 model DeliveryOrder {
-  id           String              @id @default(uuid())
-  customerId   String
-  address      String?
-  internalNote String?
-  status       STATUS              @default(PENDING)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  deletedAt    DateTime?
-  customer     Customer            @relation(fields: [customerId], references: [id])
-  items        DeliveryOrderItem[]
-  doLogs       DeliveryOrderLog[]
+  id            String              @id @default(uuid())
+  customerId    String
+  address       String?
+  internalNote  String?
+  status        STATUS              @default(PENDING)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  deletedAt     DateTime?
+  customer      Customer            @relation(fields: [customerId], references: [id])
+  items         DeliveryOrderItem[]
+  doLogs        DeliveryOrderLog[]
+  shipmentItems ShipmentItem[]
+  spmbs         SPMB[]
 
   @@index([customerId], map: "DeliveryOrder_customerId_fkey")
 }
@@ -257,6 +263,84 @@ model DeliveryOrderLog {
   @@index([deliveryOrderId], map: "DeliveryOrderLog_deliveryOrderId_fkey")
 }
 
+model Shipment {
+  id            String         @id @default(uuid())
+  type          SHIPMENT_TYPE  @default(ANTAR)
+  status        STATUS         @default(PENDING)
+  armadaId      String? // Our armada, used for ANTAR type
+  internalNote  String?
+  plateNumber   String? // Manually input plate number for verification
+  platePhoto    String? // Photo of plate number for verification
+  isVerified    Boolean        @default(false) // Flag for verification status
+  verifiedAt    DateTime? // When the plate was verified
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+  armada        Armada?        @relation(fields: [armadaId], references: [id])
+  shipmentItems ShipmentItem[]
+  spmbs         SPMB[]
+  shipmentLogs  ShipmentLog[]
+
+  @@index([armadaId], map: "Shipment_armadaId_fkey")
+}
+
+model ShipmentItem {
+  id                String               @id @default(uuid())
+  shipmentId        String
+  deliveryOrderId   String
+  productId         String
+  requestedQuantity Int                  @default(0) // Total quantity from DO item
+  weightedQuantity  Float? // Actual weight after weighing process
+  status            SHIPMENT_ITEM_STATUS @default(PENDING)
+  warehouseId       String
+  weighedAt         DateTime? // When the item was weighed
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  shipment          Shipment             @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  deliveryOrder     DeliveryOrder        @relation(fields: [deliveryOrderId], references: [id])
+  product           Product              @relation(fields: [productId], references: [id])
+  warehouse         Warehouse            @relation(fields: [warehouseId], references: [id])
+
+  @@index([shipmentId], map: "ShipmentItem_shipmentId_fkey")
+  @@index([deliveryOrderId], map: "ShipmentItem_deliveryOrderId_fkey")
+  @@index([productId], map: "ShipmentItem_productId_fkey")
+  @@index([warehouseId], map: "ShipmentItem_warehouseId_fkey")
+}
+
+model SPMB {
+  id              String        @id @default(uuid())
+  shipmentId      String
+  deliveryOrderId String
+  code            String        @unique // SPMB document code/number
+  status          SPMB_STATUS   @default(PENDING)
+  documentPath    String? // Optional URL/path to the stored PDF
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  shipment        Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  deliveryOrder   DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
+
+  @@index([shipmentId], map: "SPMB_shipmentId_fkey")
+  @@index([deliveryOrderId], map: "SPMB_deliveryOrderId_fkey")
+}
+
+model ShipmentLog {
+  id            String      @id @default(uuid())
+  shipmentId    String?
+  performedById String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  action        ACTION
+  entityType    ENTITY_TYPE
+  oldData       Json?
+  newData       Json?
+  description   String?
+  performedBy   User        @relation("PerformedShipmentLogs", fields: [performedById], references: [id])
+  shipment      Shipment?   @relation(fields: [shipmentId], references: [id])
+
+  @@index([performedById], map: "ShipmentLog_performedById_fkey")
+  @@index([shipmentId], map: "ShipmentLog_shipmentId_fkey")
+}
+
 enum ACTION {
   CREATE
   UPDATE
@@ -273,6 +357,8 @@ enum ENTITY_TYPE {
   CUSTOMER
   ARMADA
   DELIVERY_ORDER
+  SHIPMENT
+  SPMB
 }
 
 enum PERMISSION_ACTION {
@@ -286,4 +372,20 @@ enum STATUS {
   PENDING
   PROSES
   SELESAI
+}
+
+enum SHIPMENT_ITEM_STATUS {
+  PENDING // Not yet weighed
+  WEIGHING // In weighing process
+  COMPLETED // Weighing completed
+}
+
+enum SPMB_STATUS {
+  PENDING
+  COMPLETED
+}
+
+enum SHIPMENT_TYPE {
+  ANTAR // We use our own armada
+  JEMPUT // Customer uses their own vehicle
 }

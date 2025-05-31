@@ -4060,38 +4060,343 @@
           "response": []
         }
       ]
-    }
-  ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "// Automatically add auth token to all requests if it exists",
-          "const token = pm.environment.get('accessToken') || pm.globals.get('accessToken');",
-          "if (token) {",
-          "    pm.request.headers.upsert({",
-          "        key: 'x-outmanage-token',",
-          "        value: token",
-          "    });",
-          "}"
-        ]
-      }
     },
     {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [""]
-      }
-    }
-  ],
-  "variable": [
+      "name": "Shipment Management",
+      "item": [
+        {
+          "name": "Get All Shipments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments?page=1&limit=10&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (starts from 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search term for filtering results"
+                }
+              ]
+            },
+            "description": "This request retrieves all active shipments with pagination and optional search filter."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Archived Shipments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/archived?page=1&limit=10&search=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", "archived"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (starts from 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search term for filtering results"
+                }
+              ]
+            },
+            "description": "This request retrieves all archived (soft-deleted) shipments with pagination and optional search filter."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Shipment by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to retrieve"
+                }
+              ]
+            },
+            "description": "This request retrieves details of a specific shipment by its ID, including its items, armada details, and SPMB documents."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Shipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"type\": \"ANTAR\",\n    \"armadaId\": \"armada-uuid-here\",\n    \"internalNote\": \"This is a test shipment\",\n    \"plateNumber\": \"B1234CD\",\n    \"items\": [\n        {\n            \"deliveryOrderId\": \"do-uuid-here\",\n            \"productId\": \"product-uuid-here\",\n            \"requestedQuantity\": 50\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/shipments"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Shipment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"type\": \"ANTAR\",\n    \"armadaId\": \"updated-armada-uuid-here\",\n    \"internalNote\": \"Updated: Shipment to Jakarta warehouse\",\n    \"plateNumber\": \"B 5678 EF\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to update"
+                }
+              ]
+            },
+            "description": "This request updates details of an existing shipment. Note that you cannot update shipment items through this endpoint."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Shipment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to delete"
+                }
+              ]
+            },
+            "description": "This request soft-deletes a shipment. The shipment will still exist in the database but will be marked as deleted."
+          },
+          "response": []
+        },
+        {
+          "name": "Restore Shipment",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id/restore",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id", "restore"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to restore"
+                }
+              ]
+            },
+            "description": "This request restores a previously deleted shipment, making it active again."
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Shipment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"platePhoto\": \"base64-encoded-photo-or-image-url\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id", "verify"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to verify"
+                }
+              ]
+            },
+            "description": "This request verifies a shipment and marks it as completed. All items must be weighed before verification can succeed."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Items for Weighing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id/available-items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id", "available-items"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to get available items for"
+                }
+              ]
+            },
+            "description": "This request retrieves all items in a shipment that are available for weighing (items with PENDING status)."
+          },
+          "response": []
+        }
+      ]
+    },
     {
-      "key": "baseUrl",
-      "value": "http://localhost:3000",
-      "type": "string"
+      "name": "Shipment Weighing API",
+      "item": [
+        {
+          "name": "Weigh Shipment Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"shipmentItemId\": \"shipment-item-uuid-here\",\n    \"weightedQuantity\": 48.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/shipments/weigh",
+            "description": "This request weighs a specific shipment item, recording the actual weight. This endpoint will be used by third-party systems."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Shipment Logs",
+      "item": [
+        {
+          "name": "Get All Shipment Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/logs?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", "logs"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (starts from 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                }
+              ]
+            },
+            "description": "This request retrieves all shipment logs across all shipments with pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Shipment Logs by Shipment ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/logs/:shipmentId?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", "logs", ":shipmentId"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (starts from 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of items per page (1-100)"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "shipmentId",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to get logs for"
+                }
+              ]
+            },
+            "description": "This request retrieves logs for a specific shipment with pagination."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

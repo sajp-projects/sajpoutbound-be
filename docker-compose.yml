@@ -37,6 +37,7 @@ services:
         else
           echo 'Resetting and seeding DB...';
           npx prisma migrate reset --force;
+          npm run seed;
           npm run dev;
         fi
       "

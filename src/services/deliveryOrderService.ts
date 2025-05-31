@@ -723,4 +723,37 @@ export default {
       take: 1,
     });
   },
+
+  /**
+   * Get multiple delivery orders by their IDs
+   */
+  async getDeliveryOrdersByIds(ids: string[]) {
+    return prisma.deliveryOrder.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+        deletedAt: null,
+      },
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                satuan: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
 };

@@ -441,4 +441,34 @@ export default {
       return updatedWarehouse;
     });
   },
+
+  /**
+   * Get multiple warehouses by their IDs
+   */
+  async getWarehousesByIds(ids: string[]) {
+    return prisma.warehouse.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+      include: {
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        products: {
+          select: {
+            id: true,
+            name: true,
+            warehouseId: true,
+            satuan: true,
+          },
+        },
+      },
+    });
+  },
 };
