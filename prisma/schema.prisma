@@ -295,6 +295,7 @@ model ShipmentItem {
   requestedQuantity Int                  @default(0) // Total quantity from DO item
   weightedQuantity  Float? // Actual weight after weighing process
   status            SHIPMENT_ITEM_STATUS @default(PENDING)
+  chosenProduct     Boolean              @default(false)
   warehouseId       String
   weighedAt         DateTime? // When the item was weighed
   createdAt         DateTime             @default(now())

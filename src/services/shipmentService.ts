@@ -1058,6 +1058,28 @@ export default {
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
+      // Find the matching shipment item
+      const shipmentItem = await tx.shipmentItem.findFirst({
+        where: {
+          shipmentId: data.shipmentId,
+          deliveryOrderId: data.deliveryOrderId,
+          productId: data.productId,
+        },
+      });
+
+      // Update the shipment item if found to mark it as chosen
+      if (shipmentItem) {
+        await tx.shipmentItem.update({
+          where: {
+            id: shipmentItem.id,
+          },
+          data: {
+            chosenProduct: true,
+            updatedAt: jakartaTime,
+          },
+        });
+      }
+
       // Create a new chosen product record
       const chosenProduct = await tx.shipmentChosenProduct.create({
         data: {
@@ -1149,11 +1171,49 @@ export default {
    * Delete a chosen product from a shipment
    */
   async deleteChosenProduct(shipmentId: string, productId: string) {
-    return prisma.shipmentChosenProduct.deleteMany({
-      where: {
-        shipmentId,
-        productId,
-      },
+    return prisma.$transaction(async (tx) => {
+      // Find all chosen products with this shipment and product ID
+      const chosenProducts = await tx.shipmentChosenProduct.findMany({
+        where: {
+          shipmentId,
+          productId,
+        },
+      });
+
+      // Delete the chosen products
+      const result = await tx.shipmentChosenProduct.deleteMany({
+        where: {
+          shipmentId,
+          productId,
+        },
+      });
+
+      // For each delivery order that had this product chosen, update the shipment item
+      for (const chosenProduct of chosenProducts) {
+        // Find the matching shipment item
+        const shipmentItem = await tx.shipmentItem.findFirst({
+          where: {
+            shipmentId,
+            deliveryOrderId: chosenProduct.deliveryOrderId,
+            productId,
+          },
+        });
+
+        // Update the shipment item if found to mark it as not chosen
+        if (shipmentItem) {
+          await tx.shipmentItem.update({
+            where: {
+              id: shipmentItem.id,
+            },
+            data: {
+              chosenProduct: false,
+              updatedAt: new Date(),
+            },
+          });
+        }
+      }
+
+      return result;
     });
   },
 };
