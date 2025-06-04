@@ -355,7 +355,7 @@ model ShipmentChosenProduct {
   deliveryOrder   DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
   product         Product       @relation(fields: [productId], references: [id])
 
-  @@unique([shipmentId, productId], name: "unique_shipment_product")
+  @@unique([shipmentId, deliveryOrderId, productId], name: "unique_shipment_do_product")
   @@index([shipmentId], map: "ShipmentChosenProduct_shipmentId_fkey")
   @@index([deliveryOrderId], map: "ShipmentChosenProduct_deliveryOrderId_fkey")
   @@index([productId], map: "ShipmentChosenProduct_productId_fkey")

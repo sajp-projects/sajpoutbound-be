@@ -1,0 +1,7 @@
+# Migration to update the unique constraint on ShipmentChosenProduct
+# prisma format: 1
+
+[migration]
+id = "20250604093000_update_unique_constraint"
+checksum = "c94d793f2699f64b6d3a94e39c6c79c8a33f7e5d69c9f5a5d01e12e33f24c9da"
+has_down_step = false
