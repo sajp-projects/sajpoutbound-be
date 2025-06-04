@@ -4,6 +4,7 @@ import {
   ShipmentCreateInput, ShipmentUpdateInput, ShipmentWeighInput, 
 } from '../schemas/shipment';
 import { SPMBCreateInput } from '../schemas/spmb';
+import armadaService from './armadaService';
 import shipmentLogService from './shipmentLogService';
 
 /**
@@ -271,11 +272,19 @@ export default {
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
+      let plateNumberToUse = data.plateNumber;
+      if (data.type === 'ANTAR' && data.armadaId) {
+        const armada = await armadaService.getArmadaById(data.armadaId);
+        if (armada?.plateNumber) {
+          plateNumberToUse = armada.plateNumber;
+        }
+      }
+
       // Prepare shipment creation data
       const shipmentData: any = {
         type: data.type,
         internalNote: data.internalNote,
-        plateNumber: data.plateNumber,
+        plateNumber: plateNumberToUse,
         status: STATUS.PENDING,
         createdAt: jakartaTime,
         updatedAt: jakartaTime,
