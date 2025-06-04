@@ -1,7 +1,11 @@
 import { SHIPMENT_ITEM_STATUS, STATUS } from '@prisma/client';
 import prisma from '../config/prisma';
 import {
-  ShipmentCreateInput, ShipmentUpdateInput, ShipmentWeighInput, 
+  ShipmentChosenProductInput,
+  ShipmentCreateInput,
+  ShipmentItemUpdateInput,
+  ShipmentUpdateInput,
+  ShipmentWeighInput,
 } from '../schemas/shipment';
 import { SPMBCreateInput } from '../schemas/spmb';
 import armadaService from './armadaService';
@@ -421,6 +425,7 @@ export default {
         },
         include: {
           armada: true,
+          shipmentItems: true,
         },
       });
 
@@ -443,6 +448,76 @@ export default {
         updateData.armada = {
           disconnect: true,
         };
+      }
+
+      // If this is a full update with items, make sure the shipment is in PENDING status
+      if ('items' in data && Array.isArray(data.items)) {
+        // Handle items update
+        const items = data.items as unknown as ShipmentItemUpdateInput[];
+
+        // First, get all existing shipment items to determine which to delete
+        const existingItems = existingShipment.shipmentItems;
+        const updatedItemIds = items
+          .filter((item: any) => item.shipmentItemId)
+          .map((item: any) => item.shipmentItemId);
+
+        // Delete items that are not in the update
+        const itemsToDelete = existingItems
+          .filter((item) => !updatedItemIds.includes(item.id))
+          .map((item) => item.id);
+
+        if (itemsToDelete.length > 0) {
+          await tx.shipmentItem.deleteMany({
+            where: {
+              id: {
+                in: itemsToDelete,
+              },
+            },
+          });
+        }
+
+        // Update existing items and create new ones
+        for (const item of items) {
+          if (item.shipmentItemId) {
+            // Update existing item
+            await tx.shipmentItem.update({
+              where: {
+                id: item.shipmentItemId,
+              },
+              data: {
+                deliveryOrderId: item.deliveryOrderId,
+                productId: item.productId,
+                requestedQuantity: item.requestedQuantity,
+                updatedAt: jakartaTime,
+              },
+            });
+          } else {
+            // Get warehouseId from product - product is validated in controller
+            const product = await tx.product.findUnique({
+              where: {
+                id: item.productId,
+              },
+              select: {
+                id: true,
+                warehouseId: true,
+              },
+            });
+
+            // Create new item with the warehouse ID from the product
+            await tx.shipmentItem.create({
+              data: {
+                shipmentId: id,
+                deliveryOrderId: item.deliveryOrderId,
+                productId: item.productId,
+                requestedQuantity: item.requestedQuantity,
+                status: SHIPMENT_ITEM_STATUS.PENDING,
+                warehouseId: product!.warehouseId!,
+                createdAt: jakartaTime,
+                updatedAt: jakartaTime,
+              },
+            });
+          }
+        }
       }
 
       // Update the shipment
@@ -971,6 +1046,128 @@ export default {
       });
 
       return spmb;
+    });
+  },
+
+  /**
+   * Choose a product for a shipment
+   */
+  async chooseProductForShipment(data: ShipmentChosenProductInput) {
+    return prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Check if the product is already chosen for this shipment
+      const existingChosenProduct = await tx.shipmentChosenProduct.findFirst({
+        where: {
+          shipmentId: data.shipmentId,
+          deliveryOrderId: data.deliveryOrderId,
+          productId: data.productId,
+        },
+      });
+
+      if (existingChosenProduct) {
+        // Return the existing record if found
+        return existingChosenProduct;
+      }
+
+      // Create a new chosen product record
+      const chosenProduct = await tx.shipmentChosenProduct.create({
+        data: {
+          shipmentId: data.shipmentId,
+          deliveryOrderId: data.deliveryOrderId,
+          productId: data.productId,
+          createdAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              satuan: true,
+              warehouseId: true,
+              warehouse: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          deliveryOrder: {
+            select: {
+              id: true,
+              customerId: true,
+              customer: {
+                select: {
+                  id: true,
+                  name: true,
+                  address: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return chosenProduct;
+    });
+  },
+
+  /**
+   * Get all chosen products for a shipment
+   */
+  async getChosenProductsForShipment(shipmentId: string) {
+    return prisma.shipmentChosenProduct.findMany({
+      where: {
+        shipmentId,
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            satuan: true,
+            warehouseId: true,
+            warehouse: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        deliveryOrder: {
+          select: {
+            id: true,
+            customerId: true,
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                address: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  },
+
+  /**
+   * Delete a chosen product from a shipment
+   */
+  async deleteChosenProduct(shipmentId: string, productId: string) {
+    return prisma.shipmentChosenProduct.deleteMany({
+      where: {
+        shipmentId,
+        productId,
+      },
     });
   },
 };

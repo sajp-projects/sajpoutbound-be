@@ -1,7 +1,7 @@
 import { PERMISSION_ACTION } from '@prisma/client';
 import express from 'express';
 import shipmentController from '../controllers/shipmentController';
-import { checkPermission } from '../middlewares/permission';
+import { checkPermission, checkWarehouseAccess } from '../middlewares/permission';
 import shipmentLogRoutes from './shipmentLogRoutes';
 
 const router = express.Router();
@@ -28,6 +28,27 @@ router.get(
   '/:id/available-items',
   checkPermission('shipment', PERMISSION_ACTION.READ),
   shipmentController.getAvailableItemsForWeighing,
+);
+
+// Chosen products routes
+router.get(
+  '/:shipmentId/choosen-product',
+  checkPermission('shipment', PERMISSION_ACTION.READ),
+  shipmentController.getChosenProductsForShipment,
+);
+
+router.post(
+  '/:shipmentId/choosen-product',
+  checkPermission('shipment', PERMISSION_ACTION.UPDATE),
+  checkWarehouseAccess(),
+  shipmentController.chooseProductForShipment,
+);
+
+router.delete(
+  '/:shipmentId/choosen-product/:productId',
+  checkPermission('shipment', PERMISSION_ACTION.UPDATE),
+  checkWarehouseAccess(),
+  shipmentController.deleteChosenProduct,
 );
 
 // Get shipment by ID

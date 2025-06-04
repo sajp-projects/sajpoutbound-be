@@ -3,7 +3,9 @@ import {
   NextFunction, Request, Response, 
 } from 'express';
 import permissionService from '../services/permissionService';
+import productService from '../services/productService';
 import rolePermissionService from '../services/rolePermissionService';
+import userService from '../services/userService';
 import { CustomError } from './error';
 
 /**
@@ -135,6 +137,90 @@ export const checkAnyPermission = (
         errorCode: 'PERMISSION_DENIED',
         status: 403,
       });
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+/**
+ * Higher-order middleware that checks if a user has warehouse access for a specific product
+ * This ensures users can only access products from their assigned warehouse
+ * @returns Express middleware function
+ */
+export const checkWarehouseAccess = () => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // Check if user exists in request (authenticateToken middleware should have set this)
+      if (!req.user || !req.user.id) {
+        throw new CustomError({
+          message: 'Authentication required',
+          errorCode: 'AUTHENTICATION_REQUIRED',
+          status: 401,
+        });
+      }
+
+      // Get product ID from request body or params
+      const productId = req.body.productId || req.params.productId;
+
+      // If no product ID is provided, throw an error
+      if (!productId) {
+        throw new CustomError({
+          message: 'Product ID is required for warehouse access check',
+          errorCode: 'PRODUCT_ID_REQUIRED',
+          status: 400,
+        });
+      }
+
+      // Get user's full details from database
+      const user = await userService.getUserById(req.user.id);
+
+      // If user doesn't exist, throw error
+      if (!user) {
+        throw new CustomError({
+          message: 'User not found',
+          errorCode: 'USER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // If user has no warehouse association, they have global access (likely admin)
+      if (!user.warehouseId) {
+        return next();
+      }
+
+      // Get product details to check warehouse association
+      const product = await productService.getProductById(productId);
+
+      // If product doesn't exist, throw error
+      if (!product) {
+        throw new CustomError({
+          message: 'Product not found',
+          errorCode: 'PRODUCT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // If product has no warehouse, throw error
+      if (!product.warehouseId) {
+        throw new CustomError({
+          message: 'Product does not have a warehouse assigned',
+          errorCode: 'PRODUCT_WITHOUT_WAREHOUSE',
+          status: 400,
+        });
+      }
+
+      // Check if user's warehouse matches product's warehouse
+      if (user.warehouseId !== product.warehouseId) {
+        throw new CustomError({
+          message: 'You do not have permission to access products from this warehouse',
+          errorCode: 'WAREHOUSE_ACCESS_DENIED',
+          status: 403,
+        });
+      }
+
+      // If we reach here, user has access to the product
+      next();
     } catch (error) {
       next(error);
     }

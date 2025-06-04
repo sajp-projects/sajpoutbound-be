@@ -117,18 +117,19 @@ model WarehouseLog {
 }
 
 model Product {
-  id                 String              @id @default(uuid())
+  id                 String                  @id @default(uuid())
   name               String
-  id_sl              String?             @unique
+  id_sl              String?                 @unique
   description        String?
   satuan             String // Unit of measurement (kg, m, ton, l, etc.)
   warehouseId        String
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  warehouse          Warehouse           @relation(fields: [warehouseId], references: [id])
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  warehouse          Warehouse               @relation(fields: [warehouseId], references: [id])
   productLogs        ProductLog[]
   deliveryOrderItems DeliveryOrderItem[]
   shipmentItems      ShipmentItem[]
+  chosenProducts     ShipmentChosenProduct[]
 
   @@index([warehouseId], map: "Product_warehouseId_fkey")
 }
@@ -211,19 +212,20 @@ model ArmadaLog {
 }
 
 model DeliveryOrder {
-  id            String              @id @default(uuid())
-  customerId    String
-  address       String?
-  internalNote  String?
-  status        STATUS              @default(PENDING)
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  deletedAt     DateTime?
-  customer      Customer            @relation(fields: [customerId], references: [id])
-  items         DeliveryOrderItem[]
-  doLogs        DeliveryOrderLog[]
-  shipmentItems ShipmentItem[]
-  spmbs         SPMB[]
+  id             String                  @id @default(uuid())
+  customerId     String
+  address        String?
+  internalNote   String?
+  status         STATUS                  @default(PENDING)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  deletedAt      DateTime?
+  customer       Customer                @relation(fields: [customerId], references: [id])
+  items          DeliveryOrderItem[]
+  doLogs         DeliveryOrderLog[]
+  shipmentItems  ShipmentItem[]
+  spmbs          SPMB[]
+  chosenProducts ShipmentChosenProduct[]
 
   @@index([customerId], map: "DeliveryOrder_customerId_fkey")
 }
@@ -264,22 +266,23 @@ model DeliveryOrderLog {
 }
 
 model Shipment {
-  id            String         @id @default(uuid())
-  type          SHIPMENT_TYPE  @default(ANTAR)
-  status        STATUS         @default(PENDING)
-  armadaId      String? // Our armada, used for ANTAR type
-  internalNote  String?
-  plateNumber   String? // Manually input plate number for verification
-  platePhoto    String? // Photo of plate number for verification
-  isVerified    Boolean        @default(false) // Flag for verification status
-  verifiedAt    DateTime? // When the plate was verified
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  deletedAt     DateTime?
-  armada        Armada?        @relation(fields: [armadaId], references: [id])
-  shipmentItems ShipmentItem[]
-  spmbs         SPMB[]
-  shipmentLogs  ShipmentLog[]
+  id             String                  @id @default(uuid())
+  type           SHIPMENT_TYPE           @default(ANTAR)
+  status         STATUS                  @default(PENDING)
+  armadaId       String? // Our armada, used for ANTAR type
+  internalNote   String?
+  plateNumber    String? // Manually input plate number for verification
+  platePhoto     String? // Photo of plate number for verification
+  isVerified     Boolean                 @default(false) // Flag for verification status
+  verifiedAt     DateTime? // When the plate was verified
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  deletedAt      DateTime?
+  armada         Armada?                 @relation(fields: [armadaId], references: [id])
+  shipmentItems  ShipmentItem[]
+  spmbs          SPMB[]
+  shipmentLogs   ShipmentLog[]
+  chosenProducts ShipmentChosenProduct[]
 
   @@index([armadaId], map: "Shipment_armadaId_fkey")
 }
@@ -339,6 +342,23 @@ model ShipmentLog {
 
   @@index([performedById], map: "ShipmentLog_performedById_fkey")
   @@index([shipmentId], map: "ShipmentLog_shipmentId_fkey")
+}
+
+model ShipmentChosenProduct {
+  id              String        @id @default(uuid())
+  shipmentId      String
+  deliveryOrderId String
+  productId       String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  shipment        Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  deliveryOrder   DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
+  product         Product       @relation(fields: [productId], references: [id])
+
+  @@unique([shipmentId, productId], name: "unique_shipment_product")
+  @@index([shipmentId], map: "ShipmentChosenProduct_shipmentId_fkey")
+  @@index([deliveryOrderId], map: "ShipmentChosenProduct_deliveryOrderId_fkey")
+  @@index([productId], map: "ShipmentChosenProduct_productId_fkey")
 }
 
 enum ACTION {

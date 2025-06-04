@@ -4,7 +4,11 @@ import {
 import { CustomError } from '../middlewares/error';
 import {
   createShipmentSchema,
+  ShipmentChosenProductInput,
+  shipmentChosenProductSchema,
   ShipmentCreateInput,
+  ShipmentFullUpdateInput,
+  shipmentFullUpdateSchema,
   shipmentIdSchema,
   ShipmentUpdateInput,
   ShipmentWeighInput,
@@ -239,13 +243,20 @@ export default {
    * Update a shipment
    */
   async updateShipment(
-    req: Request<{ id: string }, unknown, ShipmentUpdateInput>,
+    req: Request<{ id: string }, unknown, ShipmentUpdateInput | ShipmentFullUpdateInput>,
     res: Response,
     next: NextFunction,
   ) {
     try {
       const { id } = req.params;
-      const validated = await updateShipmentSchema.validateAsync(req.body);
+
+      // Check if this is a full update with items
+      const isFullUpdate = 'items' in req.body && Array.isArray(req.body.items);
+
+      // Validate based on update type
+      const validated = isFullUpdate
+        ? await shipmentFullUpdateSchema.validateAsync(req.body)
+        : await updateShipmentSchema.validateAsync(req.body);
 
       await shipmentIdSchema.validateAsync({
         id,
@@ -270,6 +281,68 @@ export default {
             errorCode: 'ARMADA_NOT_FOUND',
             status: 404,
           });
+        }
+      }
+
+      // If this is a full update, validate the items
+      if (isFullUpdate) {
+        const fullUpdate = validated as ShipmentFullUpdateInput;
+
+        if (fullUpdate.items && fullUpdate.items.length > 0) {
+          // Get unique delivery order IDs and product IDs
+          const deliveryOrderIds = [
+            ...new Set(fullUpdate.items.map((item) => item.deliveryOrderId)),
+          ];
+          const productIds = [...new Set(fullUpdate.items.map((item) => item.productId))];
+
+          // Validate delivery orders
+          const deliveryOrders =
+            await deliveryOrderService.getDeliveryOrdersByIds(deliveryOrderIds);
+          if (deliveryOrders.length !== deliveryOrderIds.length) {
+            throw new CustomError({
+              message: 'One or more delivery orders not found',
+              errorCode: 'DELIVERY_ORDER_NOT_FOUND',
+              status: 404,
+            });
+          }
+
+          // Validate products
+          const products = await productService.getProductsByIds(productIds);
+          if (products.length !== productIds.length) {
+            throw new CustomError({
+              message: 'One or more products not found',
+              errorCode: 'PRODUCT_NOT_FOUND',
+              status: 404,
+            });
+          }
+
+          // Validate that products have warehouses assigned
+          const productsWithoutWarehouse = products.filter((product) => !product.warehouseId);
+          if (productsWithoutWarehouse.length > 0) {
+            throw new CustomError({
+              message: `Products with IDs ${productsWithoutWarehouse.map((p) => p.id).join(', ')} don't have warehouses assigned`,
+              errorCode: 'PRODUCT_WITHOUT_WAREHOUSE',
+              status: 400,
+            });
+          }
+
+          // Get the current shipment to check status
+          const shipment = await shipmentService.getShipmentById(id);
+          if (!shipment) {
+            throw new CustomError({
+              message: 'Shipment not found',
+              errorCode: 'SHIPMENT_NOT_FOUND',
+              status: 404,
+            });
+          }
+
+          if (shipment.status !== 'PENDING') {
+            throw new CustomError({
+              message: 'Cannot update shipment items when status is not PENDING',
+              errorCode: 'INVALID_STATUS_FOR_ITEM_UPDATE',
+              status: 400,
+            });
+          }
         }
       }
 
@@ -478,6 +551,163 @@ export default {
       }
 
       res.status(200).json(success(shipment));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Choose a product for a shipment
+   */
+  async chooseProductForShipment(
+    req: Request<{ shipmentId: string }, unknown, Omit<ShipmentChosenProductInput, 'shipmentId'>>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { shipmentId } = req.params;
+      const { deliveryOrderId, productId } = req.body;
+
+      // Validate shipment ID
+      await shipmentIdSchema.validateAsync({
+        id: shipmentId,
+      });
+
+      // Validate input data
+      const data: ShipmentChosenProductInput = {
+        shipmentId,
+        deliveryOrderId,
+        productId,
+      };
+
+      await shipmentChosenProductSchema.validateAsync(data);
+
+      // Get the authenticated user ID
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
+      // Check if shipment exists
+      const shipment = await shipmentService.getShipmentById(shipmentId);
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Shipment not found',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Check if shipment is in valid status
+      if (shipment.status !== 'PENDING') {
+        throw new CustomError({
+          message: 'Cannot choose products for shipment with non-PENDING status',
+          errorCode: 'INVALID_SHIPMENT_STATUS',
+          status: 400,
+        });
+      }
+
+      // Check if delivery order exists
+      const deliveryOrder = await deliveryOrderService.getDeliveryOrderById(deliveryOrderId);
+      if (!deliveryOrder) {
+        throw new CustomError({
+          message: 'Delivery order not found',
+          errorCode: 'DELIVERY_ORDER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Choose product (warehouse access is verified by middleware)
+      const chosenProduct = await shipmentService.chooseProductForShipment(data);
+
+      res.status(200).json(success(chosenProduct));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Get chosen products for a shipment
+   */
+  async getChosenProductsForShipment(
+    req: Request<{ shipmentId: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { shipmentId } = req.params;
+
+      // Validate shipment ID
+      await shipmentIdSchema.validateAsync({
+        id: shipmentId,
+      });
+
+      // Check if shipment exists
+      const shipment = await shipmentService.getShipmentById(shipmentId);
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Shipment not found',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Get chosen products
+      const chosenProducts = await shipmentService.getChosenProductsForShipment(shipmentId);
+
+      res.status(200).json(success(chosenProducts));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Delete a chosen product from a shipment
+   */
+  async deleteChosenProduct(
+    req: Request<{ shipmentId: string; productId: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { shipmentId, productId } = req.params;
+
+      // Validate shipment ID
+      await shipmentIdSchema.validateAsync({
+        id: shipmentId,
+      });
+
+      // Check if shipment exists
+      const shipment = await shipmentService.getShipmentById(shipmentId);
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Shipment not found',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Check if shipment is in valid status
+      if (shipment.status !== 'PENDING') {
+        throw new CustomError({
+          message: 'Cannot remove products from shipment with non-PENDING status',
+          errorCode: 'INVALID_SHIPMENT_STATUS',
+          status: 400,
+        });
+      }
+
+      // Delete chosen product
+      await shipmentService.deleteChosenProduct(shipmentId, productId);
+
+      res.status(200).json(
+        success({
+          message: 'Product removed from shipment',
+        }),
+      );
     } catch (error) {
       next(error);
     }
