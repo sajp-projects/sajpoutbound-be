@@ -621,6 +621,30 @@ export default {
         });
       }
 
+      // Check if product exists
+      const product = await productService.getProductById(productId);
+      if (!product) {
+        throw new CustomError({
+          message: 'Product not found',
+          errorCode: 'PRODUCT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Check if product is already chosen for this shipment from the same delivery order
+      const existingChosenProducts = await shipmentService.getChosenProductsForShipment(shipmentId);
+      const isDuplicate = existingChosenProducts.some(
+        (item) => item.productId === productId && item.deliveryOrderId === deliveryOrderId,
+      );
+
+      if (isDuplicate) {
+        throw new CustomError({
+          message: 'This product is already chosen for this shipment from the same delivery order',
+          errorCode: 'DUPLICATE_PRODUCT',
+          status: 400,
+        });
+      }
+
       // Choose product (warehouse access is verified by middleware)
       const chosenProduct = await shipmentService.chooseProductForShipment(data);
 

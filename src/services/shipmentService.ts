@@ -1058,20 +1058,6 @@ export default {
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-      // Check if the product is already chosen for this shipment
-      const existingChosenProduct = await tx.shipmentChosenProduct.findFirst({
-        where: {
-          shipmentId: data.shipmentId,
-          deliveryOrderId: data.deliveryOrderId,
-          productId: data.productId,
-        },
-      });
-
-      if (existingChosenProduct) {
-        // Return the existing record if found
-        return existingChosenProduct;
-      }
-
       // Create a new chosen product record
       const chosenProduct = await tx.shipmentChosenProduct.create({
         data: {
