@@ -274,7 +274,6 @@ model Shipment {
   plateNumber    String? // Manually input plate number for verification
   platePhoto     String? // Photo of plate number for verification
   isVerified     Boolean                 @default(false) // Flag for verification status
-  locationType   String?
   verifiedAt     DateTime? // When the plate was verified
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
@@ -296,6 +295,7 @@ model ShipmentItem {
   requestedQuantity Int                  @default(0) // Total quantity from DO item
   weightedQuantity  Float? // Actual weight after weighing process
   status            SHIPMENT_ITEM_STATUS @default(PENDING)
+  locationType      String?
   chosenProduct     Boolean              @default(false)
   warehouseId       String
   weighedAt         DateTime? // When the item was weighed

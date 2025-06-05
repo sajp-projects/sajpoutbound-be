@@ -38,11 +38,6 @@ export default {
           },
         },
         {
-          locationType: {
-            contains: search,
-          },
-        },
-        {
           armada: {
             model: {
               contains: search,
@@ -140,11 +135,7 @@ export default {
             contains: search,
           },
         },
-        {
-          locationType: {
-            contains: search,
-          },
-        },
+
         {
           armada: {
             model: {
@@ -367,7 +358,6 @@ export default {
         type: data.type,
         internalNote: data.internalNote,
         plateNumber: plateNumberToUse,
-        locationType: data.locationType,
         status: STATUS.PENDING,
         createdAt: jakartaTime,
         updatedAt: jakartaTime,
@@ -419,6 +409,7 @@ export default {
             deliveryOrderId: item.deliveryOrderId,
             productId: item.productId,
             requestedQuantity: item.requestedQuantity,
+            locationType: item.locationType,
             status: SHIPMENT_ITEM_STATUS.PENDING,
             warehouseId: product.warehouseId,
             createdAt: jakartaTime,
@@ -567,6 +558,7 @@ export default {
                 deliveryOrderId: item.deliveryOrderId,
                 productId: item.productId,
                 requestedQuantity: item.requestedQuantity,
+                locationType: item.locationType,
                 updatedAt: jakartaTime,
               },
             });
@@ -589,6 +581,7 @@ export default {
                 deliveryOrderId: item.deliveryOrderId,
                 productId: item.productId,
                 requestedQuantity: item.requestedQuantity,
+                locationType: item.locationType,
                 status: SHIPMENT_ITEM_STATUS.PENDING,
                 warehouseId: product!.warehouseId!,
                 createdAt: jakartaTime,
