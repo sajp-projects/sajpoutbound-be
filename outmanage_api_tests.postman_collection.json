@@ -4398,5 +4398,37 @@
         }
       ]
     }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Automatically add auth token to all requests if it exists",
+          "const token = pm.environment.get('accessToken') || pm.globals.get('accessToken');",
+          "if (token) {",
+          "    pm.request.headers.upsert({",
+          "        key: 'x-outmanage-token',",
+          "        value: token",
+          "    });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
   ]
 }
