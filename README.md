@@ -92,13 +92,7 @@ cp .env.prod.example .env.prod
 docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 
-4. Run database migrations:
-
-```bash
-docker-compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
-```
-
-5. Seed the database (optional):
+4. Seed the database (optional):
 
 ```bash
 docker-compose -f docker-compose.prod.yml exec api npm run seed
@@ -201,3 +195,58 @@ This is implemented using:
 - If you need to manually set the token, you can update the `accessToken` variable in the
   environment
 - All requests use the `baseUrl` variable, so you can easily switch between environments
+
+## Testing Plate Verification with Gemini AI
+
+The system now uses Google's Gemini AI (free tier) to verify vehicle plate numbers. Here's how to
+test it:
+
+### Setup
+
+1. Obtain a Gemini API key from [Google AI Studio](https://aistudio.google.com/)
+   - The system uses the free `gemini-2.5-flash` model
+   - No credit card or billing is required for API key creation
+   - This model offers faster performance for image recognition
+2. Add your API key to the environment variables:
+   ```
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+### Testing in Postman
+
+1. **Upload Plate Photo**:
+
+   - Create a PATCH request to `/shipment/:id/upload-plate-photo`
+   - In the "Body" tab, select "form-data"
+   - Add a key named "platePhoto"
+   - Change the type dropdown next to "platePhoto" from "Text" to "File"
+   - Click "Select Files" and choose the image of a vehicle license plate
+   - Add authentication headers if required
+   - Send the request
+
+2. **Verify Plate**:
+   - Create a PATCH request to `/shipment/:id/verify-plate`
+   - Add authentication headers if required
+   - Send the request
+   - Gemini AI will extract the plate number from the photo and compare it with the registered plate
+     number
+   - The response will include verification details:
+     ```json
+     {
+       "success": true,
+       "data": {
+         "shipment": { ... },
+         "plateVerification": {
+           "expectedPlateNumber": "ABC123",
+           "extractedPlateNumber": "ABC123",
+           "isMatch": true
+         }
+       }
+     }
+     ```
+
+### Troubleshooting
+
+- If verification fails, ensure the plate number is clearly visible in the photo
+- Check that the registered plate number matches what's in the image
+- Verify your Gemini API key is valid and properly configured

@@ -104,7 +104,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"type\": \"ANTAR\",\n    \"armadaId\": \"armada-uuid-here\",\n    \"internalNote\": \"Shipment to Jakarta warehouse\",\n    \"plateNumber\": \"B 1234 CD\",\n    \"items\": [\n        {\n            \"deliveryOrderId\": \"delivery-order-uuid-here\",\n            \"productId\": \"product-uuid-here\",\n            \"requestedQuantity\": 50\n        }\n    ]\n}",
+              "raw": "{\n    \"type\": \"ANTAR\",\n    \"armadaId\": \"armada-uuid-here\",\n    \"internalNote\": \"Shipment to Jakarta warehouse\",\n    \"plateNumber\": \"B 1234 CD\",\n    \"locationType\": \"Central Jakarta Office\",\n    \"items\": [\n        {\n            \"deliveryOrderId\": \"delivery-order-uuid-here\",\n            \"productId\": \"product-uuid-here\",\n            \"requestedQuantity\": 50\n        }\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -112,7 +112,7 @@
               }
             },
             "url": "{{baseUrl}}/api/shipments",
-            "description": "This endpoint creates a new shipment with the specified details. The type can be either ANTAR (delivery) or JEMPUT (pickup). The warehouseId is no longer needed as it's automatically derived from the product's assigned warehouse. The armadaId is optional - if not provided, no armada will be associated with the shipment.\n\nExample 1 (with armada):\n```json\n{\n    \"type\": \"ANTAR\",\n    \"armadaId\": \"armada-uuid-here\",\n    \"internalNote\": \"This is a test shipment\",\n    \"plateNumber\": \"B1234CD\",\n    \"items\": [\n        {\n            \"deliveryOrderId\": \"do-uuid-here\",\n            \"productId\": \"product-uuid-here\",\n            \"requestedQuantity\": 50\n        }\n    ]\n}\n```\n\nExample 2 (without armada):\n```json\n{\n    \"type\": \"ANTAR\",\n    \"internalNote\": \"This is a test shipment\",\n    \"plateNumber\": \"B1234CD\",\n    \"items\": [\n        {\n            \"deliveryOrderId\": \"do-uuid-here\",\n            \"productId\": \"product-uuid-here\",\n            \"requestedQuantity\": 50\n        }\n    ]\n}\n```"
+            "description": "This endpoint creates a new shipment with the specified details. The type can be either ANTAR (delivery) or JEMPUT (pickup). The warehouseId is no longer needed as it's automatically derived from the product's assigned warehouse. The armadaId is optional - if not provided, no armada will be associated with the shipment.\n\nExample 1 (with armada):\n```json\n{\n    \"type\": \"ANTAR\",\n    \"armadaId\": \"armada-uuid-here\",\n    \"internalNote\": \"This is a test shipment\",\n    \"plateNumber\": \"B1234CD\",\n    \"locationType\": \"Customer Warehouse\",\n    \"items\": [\n        {\n            \"deliveryOrderId\": \"do-uuid-here\",\n            \"productId\": \"product-uuid-here\",\n            \"requestedQuantity\": 50\n        }\n    ]\n}\n```\n\nExample 2 (without armada):\n```json\n{\n    \"type\": \"ANTAR\",\n    \"internalNote\": \"This is a test shipment\",\n    \"plateNumber\": \"B1234CD\",\n    \"locationType\": \"External Site\",\n    \"items\": [\n        {\n            \"deliveryOrderId\": \"do-uuid-here\",\n            \"productId\": \"product-uuid-here\",\n            \"requestedQuantity\": 50\n        }\n    ]\n}\n```"
           },
           "response": []
         },
@@ -128,7 +128,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"type\": \"ANTAR\",\n    \"armadaId\": \"updated-armada-uuid-here\",\n    \"internalNote\": \"Updated: Shipment to Jakarta warehouse\",\n    \"plateNumber\": \"B 5678 EF\"\n}",
+              "raw": "{\n    \"type\": \"ANTAR\",\n    \"armadaId\": \"updated-armada-uuid-here\",\n    \"internalNote\": \"Updated: Shipment to Jakarta warehouse\",\n    \"plateNumber\": \"B 5678 EF\",\n    \"locationType\": \"Updated Location Type\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -246,6 +246,59 @@
               ]
             },
             "description": "This request retrieves all items in a shipment that are available for weighing (items with PENDING status)."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Plate Photo",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "platePhoto",
+                  "type": "file",
+                  "src": "",
+                  "description": "The image file of the vehicle plate number"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id/upload-plate-photo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id", "upload-plate-photo"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to upload plate photo for"
+                }
+              ]
+            },
+            "description": "This request uploads a plate photo for a shipment. The photo will be saved and associated with the shipment.\n\n**Important:** All shipment items must be in COMPLETED status before this endpoint can be used."
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Plate Number and Photo with AI",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id/verify-plate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id", "verify-plate"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to verify plate for"
+                }
+              ]
+            },
+            "description": "This request verifies a shipment's plate number using Google's Gemini AI. The AI will extract the plate number from the previously uploaded photo and compare it with the registered plate number. If they match, the shipment will be marked as verified.\n\n**Important:** All shipment items must be in COMPLETED status before this endpoint can be used."
           },
           "response": []
         }

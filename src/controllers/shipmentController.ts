@@ -1,6 +1,7 @@
 import {
   NextFunction, Request, Response, 
 } from 'express';
+import path from 'path';
 import { CustomError } from '../middlewares/error';
 import {
   createShipmentSchema,
@@ -17,6 +18,8 @@ import {
 } from '../schemas/shipment';
 import armadaService from '../services/armadaService';
 import deliveryOrderService from '../services/deliveryOrderService';
+import fileService from '../services/fileService';
+import geminiAiService from '../services/geminiAiService';
 import productService from '../services/productService';
 import shipmentService from '../services/shipmentService';
 import { success } from '../types/response';
@@ -470,7 +473,14 @@ export default {
   },
 
   /**
-   * Process a shipment item (weigh and update status)
+   * Process a shipment item (weigh and record weights for chosen product)
+   *
+   * This endpoint handles the weighing process by:
+   * 1. Validating the shipment item exists and is in PENDING status
+   * 2. Finding the associated chosen product
+   * 3. Recording the weights (gross, net, tare)
+   * 4. Updating the status directly to COMPLETED (skipping the WEIGHING status)
+   * 5. Updating delivery order quantities
    */
   async weighShipmentItem(
     req: Request<Record<string, never>, unknown, ShipmentWeighInput>,
@@ -490,9 +500,10 @@ export default {
         });
       }
 
-      const item = await shipmentService.weighShipmentItem(validated, performedById);
+      // First, get the shipment item to check if it exists and validate its state
+      const existingItem = await shipmentService.getShipmentItemById(validated.shipmentItemId);
 
-      if (!item) {
+      if (!existingItem) {
         throw new CustomError({
           message: 'Shipment item not found',
           errorCode: 'SHIPMENT_ITEM_NOT_FOUND',
@@ -500,57 +511,48 @@ export default {
         });
       }
 
-      res.status(200).json(success(item));
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  /**
-   * Verify a shipment and mark it as completed
-   */
-  async verifyShipment(
-    req: Request<{ id: string }, unknown, { platePhoto: string }>,
-    res: Response,
-    next: NextFunction,
-  ) {
-    try {
-      const { id } = req.params;
-      const { platePhoto } = req.body;
-
-      await shipmentIdSchema.validateAsync({
-        id,
-      });
-
-      if (!platePhoto) {
+      // Check if item is already completed
+      if (existingItem.status !== 'PENDING') {
         throw new CustomError({
-          message: 'Plate photo is required',
-          errorCode: 'PLATE_PHOTO_REQUIRED',
+          message: 'Item has already been weighed',
+          errorCode: 'ITEM_ALREADY_WEIGHED',
           status: 400,
         });
       }
 
-      const performedById = req.user?.id;
+      // Find the shipment chosen product associated with this item
+      const shipmentChosenProduct = await shipmentService.getShipmentChosenProduct(
+        existingItem.shipmentId,
+        existingItem.deliveryOrderId,
+        existingItem.productId,
+      );
 
-      if (!performedById) {
+      if (!shipmentChosenProduct) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
-          status: 401,
-        });
-      }
-
-      const shipment = await shipmentService.verifyShipment(id, platePhoto, performedById);
-
-      if (!shipment) {
-        throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Shipment chosen product not found',
+          errorCode: 'CHOSEN_PRODUCT_NOT_FOUND',
           status: 404,
         });
       }
 
-      res.status(200).json(success(shipment));
+      // Now proceed with weighing the item
+      const item = await shipmentService.weighShipmentItem(
+        validated,
+        performedById,
+        existingItem,
+        shipmentChosenProduct,
+      );
+
+      res.status(200).json(
+        success({
+          item,
+          weights: {
+            gross: validated.grossWeight,
+            net: validated.netWeight,
+            tare: validated.tareWeight,
+          },
+        }),
+      );
     } catch (error) {
       next(error);
     }
@@ -730,6 +732,212 @@ export default {
       res.status(200).json(
         success({
           message: 'Product removed from shipment',
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Upload plate photo for a shipment
+   *
+   * This can only be done when all shipment items are in COMPLETED status
+   */
+  async uploadPlatePhoto(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+
+      await shipmentIdSchema.validateAsync({
+        id,
+      });
+
+      const performedById = req.user?.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
+      // Check if shipment exists and validate item status
+      const incompleteItems = await shipmentService.validateAllItemsComplete(id);
+
+      if (incompleteItems === null) {
+        throw new CustomError({
+          message: 'Shipment not found',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      if (incompleteItems.length > 0) {
+        throw new CustomError({
+          message: 'All shipment items must be completed before uploading plate photo',
+          errorCode: 'INCOMPLETE_ITEMS',
+          status: 400,
+        });
+      }
+
+      // Process the uploaded file
+      try {
+        const platePhotoPath = await fileService.saveUploadedImage(
+          req,
+          'platePhoto',
+          `plate_photo_${id}`,
+        );
+
+        // Update the shipment with the plate photo path
+        const shipment = await shipmentService.updatePlatePhoto(id, platePhotoPath, performedById);
+
+        if (!shipment) {
+          throw new CustomError({
+            message: 'Shipment not found',
+            errorCode: 'SHIPMENT_NOT_FOUND',
+            status: 404,
+          });
+        }
+
+        res.status(200).json(success(shipment));
+      } catch (uploadError: any) {
+        throw new CustomError({
+          message: uploadError.message || 'Error uploading plate photo',
+          errorCode: 'UPLOAD_ERROR',
+          status: 400,
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Verify shipment with plate number and photo
+   *
+   * This can only be done when all shipment items are in COMPLETED status
+   */
+  async verifyPlateNumberAndPhoto(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+
+      await shipmentIdSchema.validateAsync({
+        id,
+      });
+
+      const performedById = req.user?.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
+      // Check if shipment exists and validate item status
+      const incompleteItems = await shipmentService.validateAllItemsComplete(id);
+
+      if (!incompleteItems) {
+        throw new CustomError({
+          message: 'Shipment not found',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      if (incompleteItems.length > 0) {
+        throw new CustomError({
+          message: 'All shipment items must be completed before verifying plate number',
+          errorCode: 'INCOMPLETE_ITEMS',
+          status: 400,
+        });
+      }
+
+      // Check if shipment exists and has plate photo
+      const existingShipment = await shipmentService.getShipmentById(id);
+
+      if (!existingShipment) {
+        throw new CustomError({
+          message: 'Shipment not found',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Verify that plate number and photo exist
+      if (!existingShipment.plateNumber && !existingShipment.armada?.plateNumber) {
+        throw new CustomError({
+          message: 'Shipment must have a plate number before verification',
+          errorCode: 'PLATE_NUMBER_REQUIRED',
+          status: 400,
+        });
+      }
+
+      if (!existingShipment.platePhoto) {
+        throw new CustomError({
+          message: 'Plate photo must be uploaded before verification',
+          errorCode: 'PLATE_PHOTO_REQUIRED',
+          status: 400,
+        });
+      }
+
+      // Get the expected plate number from either the shipment or its armada
+      const expectedPlateNumber =
+        existingShipment.plateNumber || existingShipment.armada?.plateNumber;
+
+      // Get the absolute path to the uploaded plate photo
+      const platePhotoRelativePath = existingShipment.platePhoto;
+      const platePhotoAbsolutePath = path.join(
+        process.cwd(),
+        'src',
+        'public',
+        platePhotoRelativePath,
+      );
+
+      // Use Gemini AI to extract plate number from the photo
+      const extractedPlateNumber =
+        await geminiAiService.extractPlateNumberFromImage(platePhotoAbsolutePath);
+
+      // If no plate number could be extracted
+      if (!extractedPlateNumber) {
+        throw new CustomError({
+          message:
+            'Failed to extract plate number from photo. Please ensure the plate is clearly visible.',
+          errorCode: 'PLATE_EXTRACTION_FAILED',
+          status: 400,
+        });
+      }
+
+      // Compare the extracted plate number with the expected plate number
+      const isMatch = geminiAiService.comparePlateNumbers(
+        extractedPlateNumber,
+        expectedPlateNumber as string,
+      );
+
+      if (!isMatch) {
+        res.status(200).json(
+          success({
+            message: `Plate number in photo (${extractedPlateNumber}) does not match the registered plate number (${expectedPlateNumber})`,
+            errorCode: 'PLATE_MISMATCH',
+            status: 400,
+          }),
+        );
+        return;
+      }
+
+      // If we get here, the plate numbers match, so proceed with verification
+      const shipment = await shipmentService.verifyPlateNumberAndPhoto(id, performedById);
+
+      res.status(200).json(
+        success({
+          ...shipment,
+          plateVerification: {
+            expectedPlateNumber,
+            extractedPlateNumber,
+            isMatch,
+          },
         }),
       );
     } catch (error) {

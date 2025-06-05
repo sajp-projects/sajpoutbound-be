@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import http from 'http';
+import path from 'path';
 import prisma from './config/prisma';
 import { createErrorMiddleware } from './middlewares/error';
 import { logger, loggingMiddleware } from './middlewares/logger';
@@ -35,6 +36,9 @@ app.use(
 );
 
 app.use(loggingMiddleware);
+
+// Serve static files from the public directory
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 app.get('/health', (req, res) => {
   const jakartaTime = new Date();

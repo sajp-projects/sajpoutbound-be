@@ -3,11 +3,15 @@ import express from 'express';
 import shipmentController from '../controllers/shipmentController';
 import { checkPermission, checkWarehouseAccess } from '../middlewares/permission';
 import shipmentLogRoutes from './shipmentLogRoutes';
+import shipmentWeighingRoute from './shipmentWeighingRoute';
 
 const router = express.Router();
 
 // Shipment logs routes
 router.use('/logs', shipmentLogRoutes);
+
+// Third party routes
+router.use('/weighing', shipmentWeighingRoute);
 
 // Get all shipments
 router.get(
@@ -31,11 +35,7 @@ router.get(
 );
 
 // Chosen products routes
-router.get(
-  '/:shipmentId/choosen-product',
-  checkPermission('shipment', PERMISSION_ACTION.READ),
-  shipmentController.getChosenProductsForShipment,
-);
+router.get('/:shipmentId/choosen-product', shipmentController.getChosenProductsForShipment);
 
 router.post(
   '/:shipmentId/choosen-product',
@@ -86,18 +86,18 @@ router.patch(
   shipmentController.restoreShipment,
 );
 
-// Weigh shipment item
-router.post(
-  '/weigh',
+// Upload Plate Photo (multipart/form-data with 'platePhoto' field)
+router.patch(
+  '/:id/upload-plate-photo',
   checkPermission('shipment', PERMISSION_ACTION.UPDATE),
-  shipmentController.weighShipmentItem,
+  shipmentController.uploadPlatePhoto,
 );
 
-// Verify shipment
+// Verify Plate Number and Photo
 router.patch(
-  '/:id/verify',
+  '/:id/verify-plate',
   checkPermission('shipment', PERMISSION_ACTION.UPDATE),
-  shipmentController.verifyShipment,
+  shipmentController.verifyPlateNumberAndPhoto,
 );
 
 export default router;

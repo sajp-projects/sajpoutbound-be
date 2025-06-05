@@ -274,6 +274,7 @@ model Shipment {
   plateNumber    String? // Manually input plate number for verification
   platePhoto     String? // Photo of plate number for verification
   isVerified     Boolean                 @default(false) // Flag for verification status
+  locationType   String?
   verifiedAt     DateTime? // When the plate was verified
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
@@ -317,7 +318,7 @@ model SPMB {
   deliveryOrderId String
   code            String        @unique // SPMB document code/number
   status          SPMB_STATUS   @default(PENDING)
-  documentPath    String? // Optional URL/path to the stored PDF
+  documentPath    String?       // Optional URL/path to the stored PDF
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   shipment        Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
@@ -346,20 +347,34 @@ model ShipmentLog {
 }
 
 model ShipmentChosenProduct {
-  id              String        @id @default(uuid())
+  id              String                          @id @default(uuid())
   shipmentId      String
   deliveryOrderId String
   productId       String
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  shipment        Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-  deliveryOrder   DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
-  product         Product       @relation(fields: [productId], references: [id])
+  createdAt       DateTime                        @default(now())
+  updatedAt       DateTime                        @updatedAt
+  shipment        Shipment                        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  deliveryOrder   DeliveryOrder                   @relation(fields: [deliveryOrderId], references: [id])
+  product         Product                         @relation(fields: [productId], references: [id])
+  weighings       ShipmentChosenProductWeighing[]
 
   @@unique([shipmentId, deliveryOrderId, productId], name: "unique_shipment_do_product")
   @@index([shipmentId], map: "ShipmentChosenProduct_shipmentId_fkey")
   @@index([deliveryOrderId], map: "ShipmentChosenProduct_deliveryOrderId_fkey")
   @@index([productId], map: "ShipmentChosenProduct_productId_fkey")
+}
+
+model ShipmentChosenProductWeighing {
+  id                      String                @id @default(uuid())
+  shipmentChosenProductId String
+  grossWeight             Float
+  netWeight               Float?
+  tareWeight              Float?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  shipmentChosenProduct   ShipmentChosenProduct @relation(fields: [shipmentChosenProductId], references: [id])
+
+  @@index([shipmentChosenProductId], map: "ShipmentChosenProductWeighing_shipmentChosenProductId_fkey")
 }
 
 enum ACTION {
@@ -397,7 +412,6 @@ enum STATUS {
 
 enum SHIPMENT_ITEM_STATUS {
   PENDING // Not yet weighed
-  WEIGHING // In weighing process
   COMPLETED // Weighing completed
 }
 

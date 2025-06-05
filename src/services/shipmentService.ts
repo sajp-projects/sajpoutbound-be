@@ -38,6 +38,11 @@ export default {
           },
         },
         {
+          locationType: {
+            contains: search,
+          },
+        },
+        {
           armada: {
             model: {
               contains: search,
@@ -132,6 +137,11 @@ export default {
         },
         {
           internalNote: {
+            contains: search,
+          },
+        },
+        {
+          locationType: {
             contains: search,
           },
         },
@@ -268,6 +278,74 @@ export default {
   },
 
   /**
+   * Get shipment with items and check if all items are complete
+   */
+  async getShipmentWithItems(id: string) {
+    return prisma.shipment.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        armada: true,
+        shipmentItems: true,
+      },
+    });
+  },
+
+  /**
+   * Validate that all shipment items are in COMPLETED status
+   * Returns null if all items are complete, otherwise returns an array of incomplete items
+   */
+  async validateAllItemsComplete(shipmentId: string) {
+    const shipment = await this.getShipmentWithItems(shipmentId);
+
+    const pendingItems =
+      shipment?.shipmentItems.filter((item) => item.status !== 'COMPLETED') || [];
+
+    return pendingItems.length > 0 ? pendingItems : null;
+  },
+
+  /**
+   * Get a shipment item by ID with related data
+   */
+  async getShipmentItemById(shipmentItemId: string) {
+    return prisma.shipmentItem.findUnique({
+      where: {
+        id: shipmentItemId,
+      },
+      include: {
+        shipment: true,
+        deliveryOrder: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            satuan: true,
+          },
+        },
+      },
+    });
+  },
+
+  /**
+   * Get a shipment chosen product by shipment, delivery order, and product IDs
+   */
+  async getShipmentChosenProduct(shipmentId: string, deliveryOrderId: string, productId: string) {
+    return prisma.shipmentChosenProduct.findFirst({
+      where: {
+        shipmentId,
+        deliveryOrderId,
+        productId,
+      },
+      include: {
+        shipment: true,
+        deliveryOrder: true,
+        product: true,
+      },
+    });
+  },
+
+  /**
    * Create a new shipment with items
    */
   async createShipment(data: ShipmentCreateInput, performedById: string) {
@@ -289,6 +367,7 @@ export default {
         type: data.type,
         internalNote: data.internalNote,
         plateNumber: plateNumberToUse,
+        locationType: data.locationType,
         status: STATUS.PENDING,
         createdAt: jakartaTime,
         updatedAt: jakartaTime,
@@ -723,49 +802,16 @@ export default {
   /**
    * Process a shipment item (weigh and update status)
    */
-  async weighShipmentItem(data: ShipmentWeighInput, performedById: string) {
+  async weighShipmentItem(
+    data: ShipmentWeighInput,
+    performedById: string,
+    existingItem: any,
+    shipmentChosenProduct: any,
+  ) {
     return prisma.$transaction(async (tx) => {
-      // Get the current shipment item
-      const existingItem = await tx.shipmentItem.findUnique({
-        where: {
-          id: data.shipmentItemId,
-        },
-        include: {
-          shipment: true,
-          deliveryOrder: true,
-          product: {
-            select: {
-              id: true,
-              name: true,
-              satuan: true,
-            },
-          },
-        },
-      });
-
-      if (!existingItem) {
-        return null;
-      }
-
-      // Check if item is already being weighed or completed
-      if (existingItem.status !== SHIPMENT_ITEM_STATUS.PENDING) {
-        throw new Error(`Item is already ${existingItem.status.toLowerCase()}`);
-      }
-
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
-
-      // Update the shipment item status to WEIGHING
-      await tx.shipmentItem.update({
-        where: {
-          id: data.shipmentItemId,
-        },
-        data: {
-          status: SHIPMENT_ITEM_STATUS.WEIGHING,
-          updatedAt: jakartaTime,
-        },
-      });
 
       // Update the shipment status to PROSES if it's currently PENDING
       if (existingItem.shipment.status === STATUS.PENDING) {
@@ -789,13 +835,12 @@ export default {
         );
       }
 
-      // Complete the weighing process
       const completedItem = await tx.shipmentItem.update({
         where: {
           id: data.shipmentItemId,
         },
         data: {
-          weightedQuantity: data.weightedQuantity,
+          weightedQuantity: data.grossWeight,
           status: SHIPMENT_ITEM_STATUS.COMPLETED,
           weighedAt: jakartaTime,
           updatedAt: jakartaTime,
@@ -813,6 +858,18 @@ export default {
         },
       });
 
+      // Create shipment chosen product weighing record
+      await tx.shipmentChosenProductWeighing.create({
+        data: {
+          shipmentChosenProductId: shipmentChosenProduct.id,
+          grossWeight: data.grossWeight,
+          netWeight: data.netWeight || 0,
+          tareWeight: data.tareWeight || 0,
+          createdAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+      });
+
       // Update the delivery order item quantities
       const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
         where: {
@@ -824,7 +881,7 @@ export default {
       if (deliveryOrderItem) {
         const processingQuantity = Math.min(
           deliveryOrderItem.pendingQuantity,
-          Math.floor(data.weightedQuantity),
+          Math.floor(data.grossWeight),
         );
 
         await tx.deliveryOrderItem.update({
@@ -840,138 +897,6 @@ export default {
       }
 
       return completedItem;
-    });
-  },
-
-  /**
-   * Verify a shipment and mark it as completed
-   */
-  async verifyShipment(id: string, platePhoto: string, performedById: string) {
-    return prisma.$transaction(async (tx) => {
-      // Get the current shipment data
-      const existingShipment = await tx.shipment.findUnique({
-        where: {
-          id,
-        },
-      });
-
-      if (!existingShipment) {
-        return null;
-      }
-
-      // Check if all items are completed
-      const pendingItems = await tx.shipmentItem.count({
-        where: {
-          shipmentId: id,
-          status: {
-            not: SHIPMENT_ITEM_STATUS.COMPLETED,
-          },
-        },
-      });
-
-      if (pendingItems > 0) {
-        throw new Error('Cannot verify shipment: Some items are still pending');
-      }
-
-      // Create a Jakarta timezone date (UTC+7)
-      const jakartaTime = new Date();
-      jakartaTime.setHours(jakartaTime.getHours() + 7);
-
-      // Verify the shipment
-      const verifiedShipment = await tx.shipment.update({
-        where: {
-          id,
-        },
-        data: {
-          platePhoto,
-          isVerified: true,
-          verifiedAt: jakartaTime,
-          status: STATUS.SELESAI,
-          updatedAt: jakartaTime,
-        },
-        include: {
-          armada: true,
-          shipmentItems: {
-            include: {
-              product: true,
-              deliveryOrder: true,
-            },
-          },
-        },
-      });
-
-      // Update all SPMB records to COMPLETED
-      await tx.sPMB.updateMany({
-        where: {
-          shipmentId: id,
-        },
-        data: {
-          status: 'COMPLETED',
-          updatedAt: jakartaTime,
-        },
-      });
-
-      // Get all related delivery orders
-      const deliveryOrderIds = verifiedShipment.shipmentItems.map((item) => item.deliveryOrderId);
-      const uniqueDeliveryOrderIds = [...new Set(deliveryOrderIds)];
-
-      // Update each delivery order
-      for (const doId of uniqueDeliveryOrderIds) {
-        // Check if all items in this DO are completed
-        const doItems = await tx.deliveryOrderItem.findMany({
-          where: {
-            deliveryOrderId: doId,
-          },
-        });
-
-        // Only mark delivery order as completed if all items are completed
-        const allItemsComplete = doItems.every((item) => item.pendingQuantity === 0);
-
-        if (allItemsComplete) {
-          await tx.deliveryOrder.update({
-            where: {
-              id: doId,
-            },
-            data: {
-              status: STATUS.SELESAI,
-              updatedAt: jakartaTime,
-            },
-          });
-
-          // Update delivery order items to set completedQuantity
-          for (const item of doItems) {
-            await tx.deliveryOrderItem.update({
-              where: {
-                id: item.id,
-              },
-              data: {
-                completedQuantity: item.processingQuantity,
-                processingQuantity: 0,
-                updatedAt: jakartaTime,
-              },
-            });
-          }
-        }
-      }
-
-      // Log verification
-      await shipmentLogService.logShipmentVerification(
-        id,
-        performedById,
-        existingShipment.plateNumber || 'Unknown',
-        tx,
-      );
-
-      // Log status change
-      await shipmentLogService.logShipmentStatusChange(
-        id,
-        performedById,
-        existingShipment.status,
-        STATUS.SELESAI,
-        tx,
-      );
-
-      return verifiedShipment;
     });
   },
 
@@ -1214,6 +1139,160 @@ export default {
       }
 
       return result;
+    });
+  },
+
+  /**
+   * Update plate photo for a shipment
+   */
+  async updatePlatePhoto(id: string, platePhotoPath: string, performedById: string) {
+    return prisma.$transaction(async (tx) => {
+      // Get the current shipment data before update
+      const existingShipment = await tx.shipment.findUnique({
+        where: {
+          id,
+        },
+      });
+
+      if (!existingShipment) {
+        return null;
+      }
+
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Update the shipment with the plate photo path
+      const updatedShipment = await tx.shipment.update({
+        where: {
+          id,
+        },
+        data: {
+          platePhoto: platePhotoPath,
+          updatedAt: jakartaTime,
+        },
+        include: {
+          armada: true,
+          shipmentItems: {
+            include: {
+              product: {
+                select: {
+                  name: true,
+                  satuan: true,
+                },
+              },
+              deliveryOrder: {
+                select: {
+                  customer: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+              warehouse: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Log the update
+      await shipmentLogService.logShipmentUpdate(
+        id,
+        performedById,
+        {
+          platePhoto: existingShipment.platePhoto || null,
+        },
+        {
+          platePhoto: platePhotoPath,
+        },
+        tx,
+      );
+
+      return updatedShipment;
+    });
+  },
+
+  /**
+   * Verify shipment with plate number and photo
+   */
+  async verifyPlateNumberAndPhoto(id: string, performedById: string) {
+    return prisma.$transaction(async (tx) => {
+      // Get the current shipment data
+      const existingShipment = await tx.shipment.findUnique({
+        where: {
+          id,
+        },
+        include: {
+          armada: true,
+        },
+      });
+
+      if (!existingShipment) {
+        return null;
+      }
+
+      // Check if plate photo is uploaded
+      if (!existingShipment.platePhoto) {
+        throw new Error('Plate photo must be uploaded before verification');
+      }
+
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Update the shipment to mark plate number as verified
+      const updatedShipment = await tx.shipment.update({
+        where: {
+          id,
+        },
+        data: {
+          isVerified: true,
+          verifiedAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+        include: {
+          armada: true,
+          shipmentItems: {
+            include: {
+              product: {
+                select: {
+                  name: true,
+                  satuan: true,
+                },
+              },
+              deliveryOrder: {
+                select: {
+                  customer: {
+                    select: {
+                      name: true,
+                    },
+                  },
+                },
+              },
+              warehouse: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Log the verification
+      await shipmentLogService.logShipmentVerification(
+        id,
+        performedById,
+        existingShipment.plateNumber || existingShipment.armada?.plateNumber || 'Unknown',
+        tx,
+      );
+
+      return updatedShipment;
     });
   },
 };

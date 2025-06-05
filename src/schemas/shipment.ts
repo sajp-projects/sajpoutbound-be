@@ -7,6 +7,7 @@ export type ShipmentCreateInput = {
   armadaId?: string;
   internalNote?: string;
   plateNumber?: string;
+  locationType?: string;
   items: {
     deliveryOrderId: string;
     productId: string;
@@ -20,6 +21,7 @@ export type ShipmentUpdateInput = {
   internalNote?: string;
   plateNumber?: string;
   platePhoto?: string;
+  locationType?: string;
   isVerified?: boolean;
   status?: STATUS;
 };
@@ -37,7 +39,9 @@ export type ShipmentFullUpdateInput = ShipmentUpdateInput & {
 
 export type ShipmentWeighInput = {
   shipmentItemId: string;
-  weightedQuantity: number;
+  grossWeight: number;
+  netWeight?: number;
+  tareWeight?: number;
 };
 
 export type ShipmentChosenProductInput = {
@@ -63,6 +67,9 @@ export const createShipmentSchema = Joi.object<ShipmentCreateInput>({
   }),
   plateNumber: Joi.string().allow('', null).max(20).messages({
     'string.max': 'Plate number cannot exceed {#limit} characters',
+  }),
+  locationType: Joi.string().allow('', null).max(100).messages({
+    'string.max': 'Location type cannot exceed {#limit} characters',
   }),
   items: Joi.array()
     .items(
@@ -111,6 +118,9 @@ export const updateShipmentSchema = Joi.object<ShipmentUpdateInput>({
   platePhoto: Joi.string().allow('', null).max(500).messages({
     'string.max': 'Plate photo URL cannot exceed {#limit} characters',
   }),
+  locationType: Joi.string().allow('', null).max(100).messages({
+    'string.max': 'Location type cannot exceed {#limit} characters',
+  }),
   isVerified: Joi.boolean(),
 })
   .min(1)
@@ -124,10 +134,18 @@ export const shipmentWeighSchema = Joi.object<ShipmentWeighInput>({
     'string.guid': 'Shipment Item ID must be a valid UUID',
     'any.required': 'Shipment Item ID is required',
   }),
-  weightedQuantity: Joi.number().required().min(0).messages({
-    'number.base': 'Weighted quantity must be a number',
-    'number.min': 'Weighted quantity must be at least 0',
-    'any.required': 'Weighted quantity is required',
+  grossWeight: Joi.number().required().min(0).messages({
+    'number.base': 'Gross weight must be a number',
+    'number.min': 'Gross weight must be at least 0',
+    'any.required': 'Gross weight is required',
+  }),
+  netWeight: Joi.number().optional().min(0).messages({
+    'number.base': 'Net weight must be a number',
+    'number.min': 'Net weight must be at least 0',
+  }),
+  tareWeight: Joi.number().optional().min(0).messages({
+    'number.base': 'Tare weight must be a number',
+    'number.min': 'Tare weight must be at least 0',
   }),
 });
 
@@ -145,6 +163,9 @@ export const shipmentFullUpdateSchema = Joi.object<ShipmentFullUpdateInput>({
   }),
   plateNumber: Joi.string().allow('', null).max(20).messages({
     'string.max': 'Plate number cannot exceed {#limit} characters',
+  }),
+  locationType: Joi.string().allow('', null).max(100).messages({
+    'string.max': 'Location type cannot exceed {#limit} characters',
   }),
   items: Joi.array()
     .items(
