@@ -229,27 +229,6 @@
           "response": []
         },
         {
-          "name": "Get Available Items for Weighing",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/shipments/:id/available-items",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "shipments", ":id", "available-items"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "shipment-uuid-here",
-                  "description": "UUID of the shipment to get available items for"
-                }
-              ]
-            },
-            "description": "This request retrieves all items in a shipment that are available for weighing (items with PENDING status)."
-          },
-          "response": []
-        },
-        {
           "name": "Upload Plate Photo",
           "request": {
             "method": "PATCH",
@@ -305,9 +284,30 @@
       ]
     },
     {
-      "name": "Shipment Weighing API",
-      "description": "These endpoints are used by third-party systems to weigh shipment items.",
+      "name": "Shipment Weighing Management",
+      "description": "Endpoints for managing the weighing process of shipment items. These are used by both the main application and third-party weighing systems.",
       "item": [
+        {
+          "name": "Get Available Items for Weighing",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id/available-items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id", "available-items"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to get available items for"
+                }
+              ]
+            },
+            "description": "This request retrieves all items in a shipment that are available for weighing (items with PENDING status)."
+          },
+          "response": []
+        },
         {
           "name": "Weigh Shipment Item",
           "request": {
