@@ -50,8 +50,8 @@ export default {
       const form = formidable({
         // File will be stored in a temporary directory first
         keepExtensions: true,
-        // Limit file size to 5MB
-        maxFileSize: 5 * 1024 * 1024,
+        // Limit file size to 10MB
+        maxFileSize: 10 * 1024 * 1024,
         // Only allow image files
         filter: (part) => {
           return part.mimetype?.includes('image/') || false;

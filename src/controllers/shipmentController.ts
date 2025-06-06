@@ -1,6 +1,4 @@
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import path from 'path';
 import { CustomError } from '../middlewares/error';
 import {
@@ -765,7 +763,7 @@ export default {
       // Check if shipment exists and validate item status
       const incompleteItems = await shipmentService.validateAllItemsComplete(id);
 
-      if (incompleteItems === null) {
+      if (incompleteItems === false) {
         throw new CustomError({
           message: 'Shipment not found',
           errorCode: 'SHIPMENT_NOT_FOUND',
@@ -773,7 +771,7 @@ export default {
         });
       }
 
-      if (incompleteItems.length > 0) {
+      if (incompleteItems !== null && incompleteItems.length > 0) {
         throw new CustomError({
           message: 'All shipment items must be completed before uploading plate photo',
           errorCode: 'INCOMPLETE_ITEMS',
@@ -839,7 +837,7 @@ export default {
       // Check if shipment exists and validate item status
       const incompleteItems = await shipmentService.validateAllItemsComplete(id);
 
-      if (!incompleteItems) {
+      if (incompleteItems === false) {
         throw new CustomError({
           message: 'Shipment not found',
           errorCode: 'SHIPMENT_NOT_FOUND',
@@ -847,7 +845,7 @@ export default {
         });
       }
 
-      if (incompleteItems.length > 0) {
+      if (incompleteItems !== null && incompleteItems.length > 0) {
         throw new CustomError({
           message: 'All shipment items must be completed before verifying plate number',
           errorCode: 'INCOMPLETE_ITEMS',

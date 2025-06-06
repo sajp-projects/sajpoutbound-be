@@ -286,12 +286,17 @@ export default {
   /**
    * Validate that all shipment items are in COMPLETED status
    * Returns null if all items are complete, otherwise returns an array of incomplete items
+   * Returns false if shipment not found
    */
   async validateAllItemsComplete(shipmentId: string) {
     const shipment = await this.getShipmentWithItems(shipmentId);
 
-    const pendingItems =
-      shipment?.shipmentItems.filter((item) => item.status !== 'COMPLETED') || [];
+    // If shipment not found, return false to indicate shipment doesn't exist
+    if (!shipment) {
+      return false;
+    }
+
+    const pendingItems = shipment.shipmentItems.filter((item) => item.status !== 'COMPLETED');
 
     return pendingItems.length > 0 ? pendingItems : null;
   },
@@ -653,17 +658,17 @@ export default {
 
         logOldData.armada = oldArmada
           ? {
-            id: oldArmada.id,
-            model: oldArmada.model,
-            plateNumber: oldArmada.plateNumber,
-          }
+              id: oldArmada.id,
+              model: oldArmada.model,
+              plateNumber: oldArmada.plateNumber,
+            }
           : null;
         logNewData.armada = newArmada
           ? {
-            id: newArmada.id,
-            model: newArmada.model,
-            plateNumber: newArmada.plateNumber,
-          }
+              id: newArmada.id,
+              model: newArmada.model,
+              plateNumber: newArmada.plateNumber,
+            }
           : null;
       }
 
