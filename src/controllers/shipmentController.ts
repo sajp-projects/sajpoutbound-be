@@ -1,8 +1,12 @@
-import { NextFunction, Request, Response } from 'express';
+import {
+  NextFunction, Request, Response, 
+} from 'express';
 import path from 'path';
 import { CustomError } from '../middlewares/error';
 import {
   createShipmentSchema,
+  ShipmentBulkWeighInput,
+  shipmentBulkWeighSchema,
   ShipmentChosenProductInput,
   shipmentChosenProductSchema,
   ShipmentCreateInput,
@@ -439,6 +443,9 @@ export default {
 
   /**
    * Get all available items for weighing in a shipment
+   *
+   * Note: Items with the same product ID are combined for easier weighing.
+   * These can be weighed at once using the bulk weighing endpoint.
    */
   async getAvailableItemsForWeighing(
     req: Request<{ id: string }>,
@@ -474,10 +481,10 @@ export default {
    * Process a shipment item (weigh and record weights for chosen product)
    *
    * This endpoint handles the weighing process by:
-   * 1. Validating the shipment item exists and is in PENDING status
+   * 1. Validating the shipment item exists and is in CHOSEN status
    * 2. Finding the associated chosen product
    * 3. Recording the weights (gross, net, tare)
-   * 4. Updating the status directly to COMPLETED (skipping the WEIGHING status)
+   * 4. Updating the status directly to COMPLETED
    * 5. Updating delivery order quantities
    */
   async weighShipmentItem(
@@ -509,11 +516,11 @@ export default {
         });
       }
 
-      // Check if item is already completed
-      if (existingItem.status !== 'PENDING') {
+      // Check if item is in CHOSEN status
+      if (existingItem.status !== 'CHOSEN') {
         throw new CustomError({
-          message: 'Item has already been weighed',
-          errorCode: 'ITEM_ALREADY_WEIGHED',
+          message: 'You have not added this product for weighing',
+          errorCode: 'INVALID_ITEM_STATUS',
           status: 400,
         });
       }
@@ -521,7 +528,6 @@ export default {
       // Find the shipment chosen product associated with this item
       const shipmentChosenProduct = await shipmentService.getShipmentChosenProduct(
         existingItem.shipmentId,
-        existingItem.deliveryOrderId,
         existingItem.productId,
       );
 
@@ -566,7 +572,7 @@ export default {
   ) {
     try {
       const { shipmentId } = req.params;
-      const { deliveryOrderId, productId } = req.body;
+      const { productId } = req.body;
 
       // Validate shipment ID
       await shipmentIdSchema.validateAsync({
@@ -576,7 +582,6 @@ export default {
       // Validate input data
       const data: ShipmentChosenProductInput = {
         shipmentId,
-        deliveryOrderId,
         productId,
       };
 
@@ -611,16 +616,6 @@ export default {
         });
       }
 
-      // Check if delivery order exists
-      const deliveryOrder = await deliveryOrderService.getDeliveryOrderById(deliveryOrderId);
-      if (!deliveryOrder) {
-        throw new CustomError({
-          message: 'Delivery order not found',
-          errorCode: 'DELIVERY_ORDER_NOT_FOUND',
-          status: 404,
-        });
-      }
-
       // Check if product exists
       const product = await productService.getProductById(productId);
       if (!product) {
@@ -631,21 +626,32 @@ export default {
         });
       }
 
-      // Check if product is already chosen for this shipment from the same delivery order
+      // Check if product is already chosen for this shipment
       const existingChosenProducts = await shipmentService.getChosenProductsForShipment(shipmentId);
-      const isDuplicate = existingChosenProducts.some(
-        (item) => item.productId === productId && item.deliveryOrderId === deliveryOrderId,
-      );
+      const isDuplicate =
+        existingChosenProducts?.some((item) => item?.productId === productId) || false;
 
       if (isDuplicate) {
         throw new CustomError({
-          message: 'This product is already chosen for this shipment from the same delivery order',
+          message: 'This product is already chosen for this shipment',
           errorCode: 'DUPLICATE_PRODUCT',
           status: 400,
         });
       }
 
-      // Choose product (warehouse access is verified by middleware)
+      // Check if there are any pending shipment items for this product
+      const pendingItems = shipment.shipmentItems.filter(
+        (item) => item.productId === productId && item.status === 'PENDING',
+      );
+
+      if (pendingItems.length <= 0) {
+        throw new CustomError({
+          message: 'No pending shipment items found for this product',
+          errorCode: 'NO_PENDING_ITEMS',
+          status: 400,
+        });
+      }
+
       const chosenProduct = await shipmentService.chooseProductForShipment(data);
 
       res.status(200).json(success(chosenProduct));
@@ -680,10 +686,15 @@ export default {
         });
       }
 
-      // Get chosen products
+      // Get chosen products - these are already combined by product ID
       const chosenProducts = await shipmentService.getChosenProductsForShipment(shipmentId);
 
-      res.status(200).json(success(chosenProducts));
+      res.status(200).json(
+        success({
+          note: 'Products are combined by product ID. Each product has a single weighing record that represents the total weight for that product across all delivery orders.',
+          chosenProducts,
+        }),
+      );
     } catch (error) {
       next(error);
     }
@@ -936,6 +947,107 @@ export default {
             extractedPlateNumber,
             isMatch,
           },
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Bulk weigh multiple shipment items with the same product
+   *
+   * This endpoint handles weighing all items with the same product at once, by:
+   * 1. Finding all chosen items for this product in the shipment
+   * 2. Distributing the weight proportionally based on each item's requested quantity
+   * 3. Recording the weights for each item and its chosen product
+   * 4. Updating all items to COMPLETED status
+   */
+  async bulkWeighShipmentItems(
+    req: Request<Record<string, never>, unknown, ShipmentBulkWeighInput>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const validated = await shipmentBulkWeighSchema.validateAsync(req.body);
+
+      const performedById = req.user?.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Authentication required for this action',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
+      // Check if shipment exists
+      const shipment = await shipmentService.getShipmentById(validated.shipmentId);
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Shipment not found',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Check if product exists
+      const product = await productService.getProductById(validated.productId);
+      if (!product) {
+        throw new CustomError({
+          message: 'Product not found',
+          errorCode: 'PRODUCT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Check if there are any items with this product that are in CHOSEN status
+      const chosenItems = shipment.shipmentItems.filter(
+        (item) => item.productId === validated.productId && item.status === 'CHOSEN',
+      );
+
+      if (chosenItems.length === 0) {
+        throw new CustomError({
+          message: 'No chosen items found for this product in the shipment',
+          errorCode: 'NO_CHOSEN_ITEMS',
+          status: 404,
+        });
+      }
+
+      // Now proceed with bulk weighing the items
+      const result = await shipmentService.bulkWeighShipmentItems(validated, performedById);
+
+      // If the service returns null, it means no items were found
+      if (!result) {
+        throw new CustomError({
+          message: 'No chosen items found for this product in the shipment',
+          errorCode: 'NO_CHOSEN_ITEMS',
+          status: 404,
+        });
+      }
+
+      // Format the response to highlight the combined data
+      res.status(200).json(
+        success({
+          note:
+            'The product has been weighed once with a total weight of ' +
+            validated.grossWeight +
+            '. For inventory purposes, this weight is distributed proportionally across delivery orders, ' +
+            'but only one weighing record is stored to avoid confusion.',
+          combinedData: {
+            product: result.product,
+            shipment: result.shipment,
+            totalRequestedQuantity: result.totalRequestedQuantity,
+            totalWeightedQuantity: result.totalWeightedQuantity,
+            deliveryOrders: result.deliveryOrders,
+            customers: result.customers,
+            weights: result.weights,
+            status: result.status,
+            locationType: result.locationType,
+            weighedAt: result.weighedAt,
+          },
+          // Keep the individual items data for reference if needed
+          individualItems: result.individualItems,
         }),
       );
     } catch (error) {

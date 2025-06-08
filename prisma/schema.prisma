@@ -212,20 +212,19 @@ model ArmadaLog {
 }
 
 model DeliveryOrder {
-  id             String                  @id @default(uuid())
-  customerId     String
-  address        String?
-  internalNote   String?
-  status         STATUS                  @default(PENDING)
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
-  deletedAt      DateTime?
-  customer       Customer                @relation(fields: [customerId], references: [id])
-  items          DeliveryOrderItem[]
-  doLogs         DeliveryOrderLog[]
-  shipmentItems  ShipmentItem[]
-  spmbs          SPMB[]
-  chosenProducts ShipmentChosenProduct[]
+  id            String              @id @default(uuid())
+  customerId    String
+  address       String?
+  internalNote  String?
+  status        STATUS              @default(PENDING)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  deletedAt     DateTime?
+  customer      Customer            @relation(fields: [customerId], references: [id])
+  items         DeliveryOrderItem[]
+  doLogs        DeliveryOrderLog[]
+  shipmentItems ShipmentItem[]
+  spmbs         SPMB[]
 
   @@index([customerId], map: "DeliveryOrder_customerId_fkey")
 }
@@ -318,7 +317,7 @@ model SPMB {
   deliveryOrderId String
   code            String        @unique // SPMB document code/number
   status          SPMB_STATUS   @default(PENDING)
-  documentPath    String?       // Optional URL/path to the stored PDF
+  documentPath    String? // Optional URL/path to the stored PDF
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   shipment        Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
@@ -347,20 +346,17 @@ model ShipmentLog {
 }
 
 model ShipmentChosenProduct {
-  id              String                          @id @default(uuid())
-  shipmentId      String
-  deliveryOrderId String
-  productId       String
-  createdAt       DateTime                        @default(now())
-  updatedAt       DateTime                        @updatedAt
-  shipment        Shipment                        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-  deliveryOrder   DeliveryOrder                   @relation(fields: [deliveryOrderId], references: [id])
-  product         Product                         @relation(fields: [productId], references: [id])
-  weighings       ShipmentChosenProductWeighing[]
+  id         String                          @id @default(uuid())
+  shipmentId String
+  productId  String
+  createdAt  DateTime                        @default(now())
+  updatedAt  DateTime                        @updatedAt
+  shipment   Shipment                        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  product    Product                         @relation(fields: [productId], references: [id])
+  weighings  ShipmentChosenProductWeighing[]
 
-  @@unique([shipmentId, deliveryOrderId, productId], name: "unique_shipment_do_product")
+  @@unique([shipmentId, productId], name: "unique_shipment_do_product")
   @@index([shipmentId], map: "ShipmentChosenProduct_shipmentId_fkey")
-  @@index([deliveryOrderId], map: "ShipmentChosenProduct_deliveryOrderId_fkey")
   @@index([productId], map: "ShipmentChosenProduct_productId_fkey")
 }
 
@@ -412,6 +408,7 @@ enum STATUS {
 
 enum SHIPMENT_ITEM_STATUS {
   PENDING // Not yet weighed
+  CHOSEN // Chosen for weighing
   COMPLETED // Weighing completed
 }
 

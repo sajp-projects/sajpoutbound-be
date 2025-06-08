@@ -28,14 +28,14 @@ router.get(
 );
 
 // Get available items for weighing in a shipment
-router.get(
-  '/:id/available-items',
-  checkPermission('shipment', PERMISSION_ACTION.READ),
-  shipmentController.getAvailableItemsForWeighing,
-);
+router.get('/:id/available-items', shipmentController.getAvailableItemsForWeighing);
 
 // Chosen products routes
-router.get('/:shipmentId/choosen-product', shipmentController.getChosenProductsForShipment);
+router.get(
+  '/:shipmentId/choosen-product',
+  checkPermission('shipment', PERMISSION_ACTION.READ),
+  shipmentController.getChosenProductsForShipment,
+);
 
 router.post(
   '/:shipmentId/choosen-product',

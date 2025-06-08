@@ -1,6 +1,7 @@
 import { SHIPMENT_ITEM_STATUS, STATUS } from '@prisma/client';
 import prisma from '../config/prisma';
 import {
+  ShipmentBulkWeighInput,
   ShipmentChosenProductInput,
   ShipmentCreateInput,
   ShipmentItemUpdateInput,
@@ -324,21 +325,83 @@ export default {
   },
 
   /**
-   * Get a shipment chosen product by shipment, delivery order, and product IDs
+   * Get a specific chosen product for a shipment
    */
-  async getShipmentChosenProduct(shipmentId: string, deliveryOrderId: string, productId: string) {
-    return prisma.shipmentChosenProduct.findFirst({
+  async getShipmentChosenProduct(shipmentId: string, productId: string) {
+    const chosenProduct = await prisma.shipmentChosenProduct.findFirst({
       where: {
         shipmentId,
-        deliveryOrderId,
         productId,
       },
       include: {
-        shipment: true,
-        deliveryOrder: true,
-        product: true,
+        weighings: true,
       },
     });
+
+    if (!chosenProduct) {
+      return null;
+    }
+
+    // Get product details
+    const product = await prisma.product.findUnique({
+      where: {
+        id: productId,
+      },
+      include: {
+        warehouse: true,
+      },
+    });
+
+    if (!product) {
+      return null;
+    }
+
+    // Get all delivery orders for this product in this shipment
+    const shipmentItems = await prisma.shipmentItem.findMany({
+      where: {
+        shipmentId,
+        productId,
+        chosenProduct: true,
+      },
+      include: {
+        deliveryOrder: {
+          include: {
+            customer: true,
+          },
+        },
+      },
+    });
+
+    // Extract unique delivery orders and customers
+    const deliveryOrders: any[] = [];
+    const customers: any[] = [];
+
+    for (const item of shipmentItems) {
+      const existingDO = deliveryOrders.find((d) => d.id === item.deliveryOrder.id);
+      if (!existingDO) {
+        deliveryOrders.push(item.deliveryOrder);
+
+        if (
+          item.deliveryOrder.customer &&
+          !customers.some((c) => c.id === item.deliveryOrder.customer.id)
+        ) {
+          customers.push(item.deliveryOrder.customer);
+        }
+      }
+    }
+
+    // Build combined result
+    return {
+      id: chosenProduct.id,
+      shipmentId,
+      productId,
+      product,
+      deliveryOrders,
+      customers,
+      weighings: chosenProduct.weighings,
+      createdAt: chosenProduct.createdAt,
+      updatedAt: chosenProduct.updatedAt,
+    };
   },
 
   /**
@@ -658,17 +721,17 @@ export default {
 
         logOldData.armada = oldArmada
           ? {
-              id: oldArmada.id,
-              model: oldArmada.model,
-              plateNumber: oldArmada.plateNumber,
-            }
+            id: oldArmada.id,
+            model: oldArmada.model,
+            plateNumber: oldArmada.plateNumber,
+          }
           : null;
         logNewData.armada = newArmada
           ? {
-              id: newArmada.id,
-              model: newArmada.model,
-              plateNumber: newArmada.plateNumber,
-            }
+            id: newArmada.id,
+            model: newArmada.model,
+            plateNumber: newArmada.plateNumber,
+          }
           : null;
       }
 
@@ -807,7 +870,7 @@ export default {
     shipmentChosenProduct: any,
   ) {
     return prisma.$transaction(async (tx) => {
-      // Create a Jakarta timezone date (UTC+7)
+      // Create a Jakarta timezone date (UTC+7)a
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
@@ -902,10 +965,11 @@ export default {
    * Get all available items for weighing in a shipment
    */
   async getAvailableItemsForWeighing(shipmentId: string) {
-    return prisma.shipmentItem.findMany({
+    // Get all items from the database
+    const items = await prisma.shipmentItem.findMany({
       where: {
         shipmentId,
-        status: SHIPMENT_ITEM_STATUS.PENDING,
+        status: SHIPMENT_ITEM_STATUS.CHOSEN,
       },
       include: {
         product: {
@@ -937,6 +1001,54 @@ export default {
         createdAt: 'asc',
       },
     });
+
+    // Create a map to group items by product ID
+    const productMap = new Map();
+
+    // Process each item and combine those with the same product ID
+    for (const item of items) {
+      const productId = item.product.id;
+
+      if (!productMap.has(productId)) {
+        productMap.set(productId, {
+          shipmentId: item.shipmentId,
+          product: item.product,
+          warehouse: item.warehouse,
+          // Create arrays to track all related delivery orders and their info
+          deliveryOrders: [item.deliveryOrder],
+          requestedQuantity: item.requestedQuantity,
+          // Track all shipment item IDs for reference if needed
+          shipmentItemIds: [item.id],
+        });
+      } else {
+        // Product already exists in our map, update the entry
+        const existingItem = productMap.get(productId);
+
+        // Add to the total quantity
+        existingItem.requestedQuantity += item.requestedQuantity;
+
+        // Add this item's ID to the list
+        existingItem.shipmentItemIds.push(item.id);
+
+        // Add this delivery order if it's not already included
+        // Define type for the delivery order object
+        const doExists = existingItem.deliveryOrders.some(
+          (do1: { id: string; customer?: { id: string; name: string } }) =>
+            do1.id === item.deliveryOrder.id,
+        );
+
+        if (!doExists) {
+          existingItem.deliveryOrders.push(item.deliveryOrder);
+        }
+      }
+    }
+
+    // Convert the map back to an array, but only include products that are not already chosen
+    const combinedItems = Array.from(productMap.values());
+
+    return {
+      availableItems: combinedItems,
+    };
   },
 
   /**
@@ -981,69 +1093,126 @@ export default {
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-      // Find the matching shipment item
-      const shipmentItem = await tx.shipmentItem.findFirst({
+      // Find all matching shipment items with this product
+      const shipmentItems = await tx.shipmentItem.findMany({
         where: {
           shipmentId: data.shipmentId,
-          deliveryOrderId: data.deliveryOrderId,
           productId: data.productId,
-        },
-      });
-
-      // Update the shipment item if found to mark it as chosen
-      if (shipmentItem) {
-        await tx.shipmentItem.update({
-          where: {
-            id: shipmentItem.id,
-          },
-          data: {
-            chosenProduct: true,
-            updatedAt: jakartaTime,
-          },
-        });
-      }
-
-      // Create a new chosen product record
-      const chosenProduct = await tx.shipmentChosenProduct.create({
-        data: {
-          shipmentId: data.shipmentId,
-          deliveryOrderId: data.deliveryOrderId,
-          productId: data.productId,
-          createdAt: jakartaTime,
-          updatedAt: jakartaTime,
+          status: SHIPMENT_ITEM_STATUS.PENDING, // Only update PENDING items
         },
         include: {
+          deliveryOrder: true,
           product: {
             select: {
               id: true,
               name: true,
               satuan: true,
               warehouseId: true,
-              warehouse: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-          deliveryOrder: {
-            select: {
-              id: true,
-              customerId: true,
-              customer: {
-                select: {
-                  id: true,
-                  name: true,
-                  address: true,
-                },
-              },
+              warehouse: true,
             },
           },
         },
       });
 
-      return chosenProduct;
+      // If items found, update each one to chosen status
+      if (shipmentItems.length > 0) {
+        // Update each shipment item to mark it as chosen
+        for (const item of shipmentItems) {
+          await tx.shipmentItem.update({
+            where: {
+              id: item.id,
+            },
+            data: {
+              status: SHIPMENT_ITEM_STATUS.CHOSEN, // Update status to CHOSEN
+              chosenProduct: true,
+              updatedAt: jakartaTime,
+            },
+          });
+        }
+
+        // Check if a chosen product record already exists for this product
+        const existingChosen = await tx.shipmentChosenProduct.findFirst({
+          where: {
+            shipmentId: data.shipmentId,
+            productId: data.productId,
+          },
+        });
+
+        // Only create if it doesn't exist yet
+        if (!existingChosen) {
+          await tx.shipmentChosenProduct.create({
+            data: {
+              shipmentId: data.shipmentId,
+              productId: data.productId,
+              createdAt: jakartaTime,
+              updatedAt: jakartaTime,
+            },
+          });
+        }
+      }
+
+      // Get all delivery orders related to this product in this shipment
+      const deliveryOrders = await tx.deliveryOrder.findMany({
+        where: {
+          shipmentItems: {
+            some: {
+              shipmentId: data.shipmentId,
+              productId: data.productId,
+              chosenProduct: true,
+            },
+          },
+        },
+        include: {
+          customer: true,
+        },
+      });
+
+      // Get the product details
+      const product = await tx.product.findUnique({
+        where: {
+          id: data.productId,
+        },
+        include: {
+          warehouse: true,
+        },
+      });
+
+      // Get the chosen product record
+      const chosenProduct = await tx.shipmentChosenProduct.findFirst({
+        where: {
+          shipmentId: data.shipmentId,
+          productId: data.productId,
+        },
+        include: {
+          weighings: true,
+        },
+      });
+
+      // If we don't have a product or chosen product record, something went wrong
+      if (!product || !chosenProduct) {
+        throw new Error('Failed to retrieve product information after choosing');
+      }
+
+      // Build a combined response
+      const result = {
+        id: chosenProduct.id,
+        shipmentId: data.shipmentId,
+        productId: data.productId,
+        product: {
+          id: product.id,
+          name: product.name,
+          satuan: product.satuan,
+          warehouseId: product.warehouseId,
+          warehouse: product.warehouse,
+        },
+        deliveryOrders: deliveryOrders,
+        customers: deliveryOrders.map((d) => d.customer).filter(Boolean),
+        weighings: chosenProduct.weighings,
+        createdAt: chosenProduct.createdAt,
+        updatedAt: chosenProduct.updatedAt,
+      };
+
+      return result;
     });
   },
 
@@ -1051,43 +1220,128 @@ export default {
    * Get all chosen products for a shipment
    */
   async getChosenProductsForShipment(shipmentId: string) {
-    return prisma.shipmentChosenProduct.findMany({
+    // Get all chosen products for this shipment
+    const chosenProducts = await prisma.shipmentChosenProduct.findMany({
       where: {
         shipmentId,
       },
       include: {
-        product: {
+        weighings: {
           select: {
             id: true,
-            name: true,
-            satuan: true,
-            warehouseId: true,
-            warehouse: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
+            grossWeight: true,
+            netWeight: true,
+            tareWeight: true,
           },
         },
-        deliveryOrder: {
-          select: {
-            id: true,
-            customerId: true,
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                address: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'asc',
       },
     });
+
+    // For each chosen product, get additional details
+    const result = await Promise.all(
+      chosenProducts.map(async (chosenProduct) => {
+        // Get product details
+        const product = await prisma.product.findUnique({
+          where: {
+            id: chosenProduct.productId,
+          },
+          include: {
+            warehouse: true,
+          },
+        });
+
+        if (!product) {
+          return null; // Skip if product not found
+        }
+
+        // Get all delivery orders for this product in this shipment
+        const shipmentItems = await prisma.shipmentItem.findMany({
+          where: {
+            shipmentId,
+            productId: chosenProduct.productId,
+            chosenProduct: true,
+          },
+          include: {
+            deliveryOrder: {
+              include: {
+                customer: true,
+              },
+            },
+          },
+        });
+
+        // Extract unique delivery orders and customers
+        type DeliveryOrder = {
+          id: string;
+          customer: {
+            id: string;
+            name: string;
+            [key: string]: any;
+          };
+          [key: string]: any;
+        };
+        type Customer = {
+          id: string;
+          name: string;
+          [key: string]: any;
+        };
+        const deliveryOrders: DeliveryOrder[] = [];
+        const customers: Customer[] = [];
+        const locationTypes: string[] = [];
+        let totalRequestedQuantity = 0;
+
+        for (const item of shipmentItems) {
+          totalRequestedQuantity += item.requestedQuantity;
+
+          if (item.locationType && !locationTypes.includes(item.locationType)) {
+            locationTypes.push(item.locationType);
+          }
+
+          const existingDO = deliveryOrders.find((d) => d.id === item.deliveryOrder.id);
+          if (!existingDO) {
+            deliveryOrders.push(item.deliveryOrder);
+
+            if (
+              item.deliveryOrder.customer &&
+              !customers.some((c) => c.id === item.deliveryOrder.customer.id)
+            ) {
+              customers.push(item.deliveryOrder.customer);
+            }
+          }
+        }
+
+        // Build combined result
+        return {
+          id: chosenProduct.id,
+          shipmentId,
+          productId: chosenProduct.productId,
+          product: {
+            id: product.id,
+            name: product.name,
+            satuan: product.satuan,
+            warehouseId: product.warehouseId,
+            warehouse: product.warehouse,
+          },
+          deliveryOrders,
+          customers,
+          shipmentItems: shipmentItems.map((si) => si.id),
+          weighings: chosenProduct.weighings,
+          totalGrossWeight:
+            chosenProduct.weighings.length > 0 ? chosenProduct.weighings[0].grossWeight : 0,
+          totalNetWeight:
+            chosenProduct.weighings.length > 0 ? chosenProduct.weighings[0].netWeight || 0 : 0,
+          totalTareWeight:
+            chosenProduct.weighings.length > 0 ? chosenProduct.weighings[0].tareWeight || 0 : 0,
+          totalRequestedQuantity,
+          locationType: locationTypes.join(', '),
+          createdAt: chosenProduct.createdAt,
+          updatedAt: chosenProduct.updatedAt,
+        };
+      }),
+    );
+
+    // Filter out nulls and return
+    return result.filter(Boolean);
   },
 
   /**
@@ -1112,12 +1366,11 @@ export default {
       });
 
       // For each delivery order that had this product chosen, update the shipment item
-      for (const chosenProduct of chosenProducts) {
+      for (const _ of chosenProducts) {
         // Find the matching shipment item
         const shipmentItem = await tx.shipmentItem.findFirst({
           where: {
             shipmentId,
-            deliveryOrderId: chosenProduct.deliveryOrderId,
             productId,
           },
         });
@@ -1291,6 +1544,229 @@ export default {
       );
 
       return updatedShipment;
+    });
+  },
+
+  /**
+   * Process multiple shipment items with the same product at once (bulk weighing)
+   */
+  async bulkWeighShipmentItems(data: ShipmentBulkWeighInput, performedById: string) {
+    return prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Find all chosen items for this product in the shipment
+      const items = await tx.shipmentItem.findMany({
+        where: {
+          shipmentId: data.shipmentId,
+          productId: data.productId,
+          status: SHIPMENT_ITEM_STATUS.CHOSEN,
+        },
+        include: {
+          shipment: true,
+          deliveryOrder: {
+            include: {
+              customer: true,
+            },
+          },
+          product: {
+            select: {
+              id: true,
+              name: true,
+              satuan: true,
+            },
+          },
+          warehouse: true,
+        },
+      });
+
+      if (items.length === 0) {
+        return null;
+      }
+
+      const totalRequestedQuantity = items.reduce((sum, item) => sum + item.requestedQuantity, 0);
+
+      if (items[0].shipment.status === STATUS.PENDING) {
+        await tx.shipment.update({
+          where: {
+            id: data.shipmentId,
+          },
+          data: {
+            status: STATUS.PROSES,
+            updatedAt: jakartaTime,
+          },
+        });
+
+        // Log shipment status change
+        await shipmentLogService.logShipmentStatusChange(
+          data.shipmentId,
+          performedById,
+          STATUS.PENDING,
+          STATUS.PROSES,
+          tx,
+        );
+      }
+
+      // TODO: NEED CHORE
+      // Process each item
+      const updatedItems = [];
+      type DeliveryOrder = {
+        id: string;
+        customer: {
+          id: string;
+          name: string;
+          [key: string]: any;
+        };
+        [key: string]: any;
+      };
+      type Customer = {
+        id: string;
+        name: string;
+        [key: string]: any;
+      };
+      const deliveryOrders: DeliveryOrder[] = [];
+      const customers: Customer[] = [];
+
+      for (const item of items) {
+        // Calculate proportional weight based on requested quantity
+        const proportion = item.requestedQuantity / totalRequestedQuantity;
+        const itemGrossWeight = data.grossWeight * proportion;
+
+        // Update the item
+        const updatedItem = await tx.shipmentItem.update({
+          where: {
+            id: item.id,
+          },
+          data: {
+            weightedQuantity: itemGrossWeight, // Keep this proportional for inventory purposes
+            status: SHIPMENT_ITEM_STATUS.COMPLETED,
+            weighedAt: jakartaTime,
+            updatedAt: jakartaTime,
+          },
+          include: {
+            shipment: true,
+            deliveryOrder: {
+              include: {
+                customer: true,
+              },
+            },
+            product: {
+              select: {
+                id: true,
+                name: true,
+                satuan: true,
+              },
+            },
+            warehouse: true,
+          },
+        });
+
+        updatedItems.push(updatedItem);
+
+        // Add unique delivery orders and customers
+        if (!deliveryOrders.some((do1) => do1.id === item.deliveryOrder.id)) {
+          deliveryOrders.push(item.deliveryOrder);
+        }
+
+        if (!customers.some((c) => c.id === item.deliveryOrder.customer.id)) {
+          customers.push(item.deliveryOrder.customer);
+        }
+
+        // Update the delivery order item quantities
+        const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+          where: {
+            deliveryOrderId: item.deliveryOrderId,
+            productId: item.productId,
+          },
+        });
+
+        if (deliveryOrderItem) {
+          const processingQuantity = Math.min(
+            deliveryOrderItem.pendingQuantity,
+            Math.floor(itemGrossWeight),
+          );
+
+          await tx.deliveryOrderItem.update({
+            where: {
+              id: deliveryOrderItem.id,
+            },
+            data: {
+              pendingQuantity: deliveryOrderItem.pendingQuantity - processingQuantity,
+              processingQuantity: deliveryOrderItem.processingQuantity + processingQuantity,
+              updatedAt: jakartaTime,
+            },
+          });
+        }
+      }
+
+      // Find or create ShipmentChosenProduct for this product in this shipment
+      let shipmentChosenProduct = await tx.shipmentChosenProduct.findFirst({
+        where: {
+          shipmentId: data.shipmentId,
+          productId: data.productId,
+        },
+      });
+
+      // If no chosen product record exists yet, create one
+      if (!shipmentChosenProduct) {
+        shipmentChosenProduct = await tx.shipmentChosenProduct.create({
+          data: {
+            shipmentId: data.shipmentId,
+            productId: data.productId,
+            createdAt: jakartaTime,
+            updatedAt: jakartaTime,
+          },
+        });
+      }
+
+      // Delete any existing weighing records for this chosen product
+      await tx.shipmentChosenProductWeighing.deleteMany({
+        where: {
+          shipmentChosenProductId: shipmentChosenProduct.id,
+        },
+      });
+
+      // Create a new weighing record with the total weight
+      await tx.shipmentChosenProductWeighing.create({
+        data: {
+          shipmentChosenProductId: shipmentChosenProduct.id,
+          grossWeight: data.grossWeight,
+          netWeight: data.netWeight || 0,
+          tareWeight: data.tareWeight || 0,
+          createdAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // Create a combined view of the data
+      const combinedData = {
+        shipmentId: data.shipmentId,
+        shipment: items[0].shipment,
+        product: items[0].product,
+        warehouse: items[0].warehouse,
+        totalRequestedQuantity,
+        totalWeightedQuantity: data.grossWeight, // This is now the actual weighed amount
+        deliveryOrders,
+        customers,
+        itemIds: updatedItems.map((item) => item.id),
+        status: SHIPMENT_ITEM_STATUS.COMPLETED,
+        locationType: updatedItems
+          .map((item) => item.locationType)
+          .filter(Boolean)
+          .join(', '),
+        weighedAt: jakartaTime,
+        // Weights are now a single record
+        weights: {
+          gross: data.grossWeight,
+          net: data.netWeight || 0,
+          tare: data.tareWeight || 0,
+        },
+        // Only include individual items if needed for reference
+        individualItems: updatedItems,
+      };
+
+      return combinedData;
     });
   },
 };

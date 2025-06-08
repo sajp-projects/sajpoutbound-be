@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `ShipmentItem` MODIFY `status` ENUM('PENDING', 'CHOSEN', 'COMPLETED') NOT NULL DEFAULT 'PENDING';

@@ -45,9 +45,16 @@ export type ShipmentWeighInput = {
   tareWeight?: number;
 };
 
+export type ShipmentBulkWeighInput = {
+  shipmentId: string;
+  productId: string;
+  grossWeight: number;
+  netWeight?: number;
+  tareWeight?: number;
+};
+
 export type ShipmentChosenProductInput = {
   shipmentId: string;
-  deliveryOrderId: string;
   productId: string;
 };
 
@@ -147,6 +154,32 @@ export const shipmentWeighSchema = Joi.object<ShipmentWeighInput>({
   }),
 });
 
+export const shipmentBulkWeighSchema = Joi.object<ShipmentBulkWeighInput>({
+  shipmentId: Joi.string().required().uuid().messages({
+    'string.empty': 'Shipment ID is required',
+    'string.guid': 'Shipment ID must be a valid UUID',
+    'any.required': 'Shipment ID is required',
+  }),
+  productId: Joi.string().required().uuid().messages({
+    'string.empty': 'Product ID is required',
+    'string.guid': 'Product ID must be a valid UUID',
+    'any.required': 'Product ID is required',
+  }),
+  grossWeight: Joi.number().required().min(0).messages({
+    'number.base': 'Gross weight must be a number',
+    'number.min': 'Gross weight must be at least 0',
+    'any.required': 'Gross weight is required',
+  }),
+  netWeight: Joi.number().optional().min(0).messages({
+    'number.base': 'Net weight must be a number',
+    'number.min': 'Net weight must be at least 0',
+  }),
+  tareWeight: Joi.number().optional().min(0).messages({
+    'number.base': 'Tare weight must be a number',
+    'number.min': 'Tare weight must be at least 0',
+  }),
+});
+
 export const shipmentFullUpdateSchema = Joi.object<ShipmentFullUpdateInput>({
   type: Joi.string()
     .valid(...Object.values(SHIPMENT_TYPE))
@@ -204,11 +237,6 @@ export const shipmentChosenProductSchema = Joi.object<ShipmentChosenProductInput
     'string.empty': 'Shipment ID is required',
     'string.guid': 'Shipment ID must be a valid UUID',
     'any.required': 'Shipment ID is required',
-  }),
-  deliveryOrderId: Joi.string().required().uuid().messages({
-    'string.empty': 'Delivery Order ID is required',
-    'string.guid': 'Delivery Order ID must be a valid UUID',
-    'any.required': 'Delivery Order ID is required',
   }),
   productId: Joi.string().required().uuid().messages({
     'string.empty': 'Product ID is required',

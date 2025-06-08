@@ -9,7 +9,13 @@ module.exports = {
   rules: {
     '@typescript-eslint/no-explicit-any': 'off',
     '@typescript-eslint/ban-types': 'off',
-    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_|^next$' }],
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        varsIgnorePattern: '^_',
+        argsIgnorePattern: '^_|^next$',
+      },
+    ],
 
     // Formatting rules
     indent: ['error', 2],
@@ -21,20 +27,42 @@ module.exports = {
     'keyword-spacing': 'error',
     'space-infix-ops': 'error',
     'eol-last': 'error',
-    'no-multiple-empty-lines': ['error', { max: 1 }],
+    'no-multiple-empty-lines': [
+      'error',
+      {
+        max: 1,
+      },
+    ],
     'object-curly-spacing': ['error', 'always'],
 
     // Rules for object formatting
     'object-curly-newline': [
       'error',
       {
-        ObjectExpression: { minProperties: 1, multiline: true },
-        ObjectPattern: { minProperties: 3, multiline: true },
-        ImportDeclaration: { minProperties: 3, multiline: true },
-        ExportDeclaration: { minProperties: 3, multiline: true },
+        ObjectExpression: {
+          minProperties: 1,
+          multiline: true,
+        },
+        ObjectPattern: {
+          minProperties: 3,
+          multiline: true,
+        },
+        ImportDeclaration: {
+          minProperties: 3,
+          multiline: true,
+        },
+        ExportDeclaration: {
+          minProperties: 3,
+          multiline: true,
+        },
       },
     ],
-    'object-property-newline': ['error', { allowAllPropertiesOnSameLine: false }],
+    'object-property-newline': [
+      'error',
+      {
+        allowAllPropertiesOnSameLine: false,
+      },
+    ],
   },
   env: {
     node: true,
