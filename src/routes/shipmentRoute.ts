@@ -28,7 +28,7 @@ router.get(
 );
 
 // Get available items for weighing in a shipment
-router.get('/:id/available-items', shipmentController.getAvailableItemsForWeighing);
+router.get('/available-items', shipmentController.getAvailableItemsForWeighing);
 
 // Chosen products routes
 router.get(

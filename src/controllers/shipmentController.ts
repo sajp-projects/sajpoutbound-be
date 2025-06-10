@@ -447,29 +447,9 @@ export default {
    * Note: Items with the same product ID are combined for easier weighing.
    * These can be weighed at once using the bulk weighing endpoint.
    */
-  async getAvailableItemsForWeighing(
-    req: Request<{ id: string }>,
-    res: Response,
-    next: NextFunction,
-  ) {
+  async getAvailableItemsForWeighing(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
-
-      await shipmentIdSchema.validateAsync({
-        id,
-      });
-
-      const shipment = await shipmentService.getShipmentById(id);
-
-      if (!shipment) {
-        throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
-          status: 404,
-        });
-      }
-
-      const items = await shipmentService.getAvailableItemsForWeighing(id);
+      const items = await shipmentService.getAvailableItemsForWeighing();
 
       res.status(200).json(success(items));
     } catch (error) {
@@ -691,7 +671,6 @@ export default {
 
       res.status(200).json(
         success({
-          note: 'Products are combined by product ID. Each product has a single weighing record that represents the total weight for that product across all delivery orders.',
           chosenProducts,
         }),
       );

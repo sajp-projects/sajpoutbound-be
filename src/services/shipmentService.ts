@@ -984,11 +984,10 @@ export default {
   /**
    * Get all available items for weighing in a shipment
    */
-  async getAvailableItemsForWeighing(shipmentId: string) {
+  async getAvailableItemsForWeighing() {
     // Get all items from the database
     const items = await prisma.shipmentItem.findMany({
       where: {
-        shipmentId,
         status: SHIPMENT_ITEM_STATUS.CHOSEN,
       },
       include: {
@@ -1344,7 +1343,14 @@ export default {
           },
           deliveryOrders,
           customers,
-          shipmentItems: shipmentItems.map((si) => si.id),
+          shipmentItems: shipmentItems.map((si) => ({
+            id: si.id,
+            status: si.status,
+            requestedQuantity: si.requestedQuantity,
+            weightedQuantity: si.weightedQuantity,
+            locationType: si.locationType,
+            weighedAt: si.weighedAt,
+          })),
           weighings: chosenProduct.weighings,
           totalGrossWeight:
             chosenProduct.weighings.length > 0 ? chosenProduct.weighings[0].grossWeight : 0,
