@@ -162,7 +162,7 @@ export default {
         newData: {
           status: newStatus,
         },
-        description: `Shipment status changed from ${oldStatus} to ${newStatus}`,
+        description: 'Barang sudah ditimbang',
       },
     });
   },

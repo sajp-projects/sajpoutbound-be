@@ -232,6 +232,105 @@ router.post('/shipments/weighing', shipmentController.bulkWeighShipmentItems);
  */
 router.get('/shipments/available-items', shipmentController.getAvailableItemsForWeighing);
 
+/**
+ * @openapi
+ * /api/shipments/{shipmentId}/available-items:
+ *   get:
+ *     summary: Get available items for weighing in a specific shipment
+ *     description: |
+ *       Returns a list of items that are ready for weighing in a specific shipment.
+ *       These items have been marked as "CHOSEN" and are grouped by product to facilitate
+ *       bulk weighing operations.
+ *     tags:
+ *       - Shipment Weighing
+ *     parameters:
+ *       - name: shipmentId
+ *         in: path
+ *         required: true
+ *         description: The ID of the shipment to get available items for
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved available items
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     availableItems:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           shipmentId:
+ *                             type: string
+ *                             format: uuid
+ *                             description: ID of the shipment containing these items
+ *                           product:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                                 format: uuid
+ *                               name:
+ *                                 type: string
+ *                               satuan:
+ *                                 type: string
+ *                                 description: Unit of measurement
+ *                           warehouse:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                                 format: uuid
+ *                               name:
+ *                                 type: string
+ *                           deliveryOrders:
+ *                             type: array
+ *                             description: List of delivery orders associated with these items
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 id:
+ *                                   type: string
+ *                                   format: uuid
+ *                                 customer:
+ *                                   type: object
+ *                                   properties:
+ *                                     id:
+ *                                       type: string
+ *                                       format: uuid
+ *                                     name:
+ *                                       type: string
+ *                           requestedQuantity:
+ *                             type: number
+ *                             description: Total requested quantity for all items with this product
+ *                           shipmentItemIds:
+ *                             type: array
+ *                             description: IDs of all shipment items included in this group
+ *                             items:
+ *                               type: string
+ *                               format: uuid
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Shipment not found
+ *       500:
+ *         description: Server error
+ */
+router.get(
+  '/shipments/:shipmentId/available-items',
+  shipmentController.getAvailableItemsForWeighing,
+);
+
 router.use(authenticateToken);
 
 // User routes

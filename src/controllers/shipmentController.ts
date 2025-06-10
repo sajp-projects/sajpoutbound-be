@@ -458,6 +458,21 @@ export default {
     }
   },
 
+  async getAvailableItemsForWeighingByShipmentId(
+    req: Request<{ shipmentId: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { shipmentId } = req.params;
+      const items = await shipmentService.getAvailableItemsForWeighingByShipmentId(shipmentId);
+
+      res.status(200).json(success(items));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   /**
    * Process a shipment item (weigh and record weights for chosen product)
    *
@@ -825,26 +840,7 @@ export default {
         });
       }
 
-      // Check if shipment exists and validate item status
-      const incompleteItems = await shipmentService.validateAllItemsComplete(id);
-
-      if (incompleteItems === false) {
-        throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
-          status: 404,
-        });
-      }
-
-      if (incompleteItems !== null && incompleteItems.length > 0) {
-        throw new CustomError({
-          message: 'All shipment items must be completed before verifying plate number',
-          errorCode: 'INCOMPLETE_ITEMS',
-          status: 400,
-        });
-      }
-
-      // Check if shipment exists and has plate photo
+      // Check if shipment exists and get its items
       const existingShipment = await shipmentService.getShipmentById(id);
 
       if (!existingShipment) {
@@ -852,6 +848,19 @@ export default {
           message: 'Shipment not found',
           errorCode: 'SHIPMENT_NOT_FOUND',
           status: 404,
+        });
+      }
+
+      // Ensure all shipment items are either in CHOSEN or COMPLETED status
+      const invalidItems = existingShipment.shipmentItems.filter((item) => {
+        return item.status !== 'CHOSEN' && item.status !== 'COMPLETED';
+      });
+
+      if (invalidItems.length > 0) {
+        throw new CustomError({
+          message: 'All shipment items must be chosen or completed before verifying plate number',
+          errorCode: 'INVALID_ITEMS',
+          status: 400,
         });
       }
 
@@ -893,7 +902,7 @@ export default {
       if (!extractedPlateNumber) {
         throw new CustomError({
           message:
-            'Failed to extract plate number from photo. Please ensure the plate is clearly visible.',
+            'Failed to extract plate number from photo. Please ensure the plate is clearly visible. Please try again',
           errorCode: 'PLATE_EXTRACTION_FAILED',
           status: 400,
         });
@@ -907,14 +916,18 @@ export default {
 
       if (!isMatch) {
         throw new CustomError({
-          message: `Plate number in photo (${extractedPlateNumber}) does not match the registered plate number (${expectedPlateNumber})`,
+          message: `Plate number in photo (${extractedPlateNumber}) does not match the registered plate number (${expectedPlateNumber}) Please try again`,
           errorCode: 'PLATE_MISMATCH',
           status: 400,
         });
       }
 
       // If we get here, the plate numbers match, so proceed with verification
-      const shipment = await shipmentService.verifyPlateNumberAndPhoto(id, performedById);
+      const shipment = await shipmentService.verifyPlateNumberAndPhoto(
+        id,
+        performedById,
+        existingShipment,
+      );
 
       res.status(200).json(
         success({
