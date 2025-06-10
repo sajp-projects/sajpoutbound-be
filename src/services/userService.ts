@@ -165,12 +165,16 @@ export default {
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
+      // Calculate expiry date (6 hours from now)
+      const expiryDate = new Date(jakartaTime);
+      expiryDate.setHours(expiryDate.getHours() + 6);
+
       // Create the user with the provided data
       const createdUser = await tx.user.create({
         data: {
           ...userData,
           refreshToken: '',
-          expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 6),
+          expiresAt: expiryDate,
           createdAt: jakartaTime,
           updatedAt: jakartaTime,
         },

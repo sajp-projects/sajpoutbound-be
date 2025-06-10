@@ -17,18 +17,18 @@ model User {
   deletedAt         DateTime?
   roleId            String?
   warehouseId       String?
-  refreshToken      String? @db.Text
   expiresAt         DateTime?
+  refreshToken      String?            @db.Text
+  armadaLogs        ArmadaLog[]        @relation("PerformedArmadaLogs")
+  customerLogs      CustomerLog[]      @relation("PerformedCustomerLogs")
+  deliveryOrderLogs DeliveryOrderLog[] @relation("PerformedDeliveryOrderLogs")
+  productLogs       ProductLog[]       @relation("PerformedProductLogs")
+  shipmentLogs      ShipmentLog[]      @relation("PerformedShipmentLogs")
   role              Role?              @relation(fields: [roleId], references: [id])
   warehouse         Warehouse?         @relation(fields: [warehouseId], references: [id])
   performedLogs     UserLog[]          @relation("PerformedLogs")
   userLogs          UserLog[]          @relation("UserLogs")
   warehouseLogs     WarehouseLog[]     @relation("PerformedWarehouseLogs")
-  productLogs       ProductLog[]       @relation("PerformedProductLogs")
-  customerLogs      CustomerLog[]      @relation("PerformedCustomerLogs")
-  armadaLogs        ArmadaLog[]        @relation("PerformedArmadaLogs")
-  deliveryOrderLogs DeliveryOrderLog[] @relation("PerformedDeliveryOrderLogs")
-  shipmentLogs      ShipmentLog[]      @relation("PerformedShipmentLogs")
 
   @@index([roleId], map: "User_roleId_fkey")
   @@index([warehouseId], map: "User_warehouseId_fkey")
@@ -94,10 +94,10 @@ model Warehouse {
   description   String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  users         User[]
-  warehouseLogs WarehouseLog[]
   products      Product[]
   shipmentItems ShipmentItem[]
+  users         User[]
+  warehouseLogs WarehouseLog[]
 }
 
 model WarehouseLog {
@@ -121,17 +121,17 @@ model WarehouseLog {
 model Product {
   id                 String                  @id @default(uuid())
   name               String
-  id_sl              String?                 @unique
   description        String?
-  satuan             String // Unit of measurement (kg, m, ton, l, etc.)
   warehouseId        String
   createdAt          DateTime                @default(now())
   updatedAt          DateTime                @updatedAt
+  id_sl              String?                 @unique
+  satuan             String
+  deliveryOrderItems DeliveryOrderItem[]
   warehouse          Warehouse               @relation(fields: [warehouseId], references: [id])
   productLogs        ProductLog[]
-  deliveryOrderItems DeliveryOrderItem[]
-  shipmentItems      ShipmentItem[]
   chosenProducts     ShipmentChosenProduct[]
+  shipmentItems      ShipmentItem[]
 
   @@index([warehouseId], map: "Product_warehouseId_fkey")
 }
@@ -176,8 +176,8 @@ model CustomerLog {
   oldData       Json?
   newData       Json?
   description   String?
-  performedBy   User        @relation("PerformedCustomerLogs", fields: [performedById], references: [id])
   customer      Customer?   @relation(fields: [customerId], references: [id])
+  performedBy   User        @relation("PerformedCustomerLogs", fields: [performedById], references: [id])
 
   @@index([performedById], map: "CustomerLog_performedById_fkey")
   @@index([customerId], map: "CustomerLog_customerId_fkey")
@@ -206,8 +206,8 @@ model ArmadaLog {
   oldData       Json?
   newData       Json?
   description   String?
-  performedBy   User        @relation("PerformedArmadaLogs", fields: [performedById], references: [id])
   armada        Armada?     @relation(fields: [armadaId], references: [id])
+  performedBy   User        @relation("PerformedArmadaLogs", fields: [performedById], references: [id])
 
   @@index([performedById], map: "ArmadaLog_performedById_fkey")
   @@index([armadaId], map: "ArmadaLog_armadaId_fkey")
@@ -218,15 +218,15 @@ model DeliveryOrder {
   customerId    String
   address       String?
   internalNote  String?
-  status        STATUS              @default(PENDING)
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   deletedAt     DateTime?
+  status        STATUS              @default(PENDING)
   customer      Customer            @relation(fields: [customerId], references: [id])
   items         DeliveryOrderItem[]
   doLogs        DeliveryOrderLog[]
-  shipmentItems ShipmentItem[]
   spmbs         SPMB[]
+  shipmentItems ShipmentItem[]
 
   @@index([customerId], map: "DeliveryOrder_customerId_fkey")
 }
@@ -236,11 +236,11 @@ model DeliveryOrderItem {
   deliveryOrderId    String
   productId          String
   quantity           Int           @default(0)
-  pendingQuantity    Int           @default(0)
-  processingQuantity Int           @default(0)
-  completedQuantity  Int           @default(0)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
+  completedQuantity  Int           @default(0)
+  pendingQuantity    Int           @default(0)
+  processingQuantity Int           @default(0)
   deliveryOrder      DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
   product            Product       @relation(fields: [productId], references: [id])
 
@@ -259,8 +259,8 @@ model DeliveryOrderLog {
   oldData         Json?
   newData         Json?
   description     String?
-  performedBy     User           @relation("PerformedDeliveryOrderLogs", fields: [performedById], references: [id])
   deliveryOrder   DeliveryOrder? @relation(fields: [deliveryOrderId], references: [id])
+  performedBy     User           @relation("PerformedDeliveryOrderLogs", fields: [performedById], references: [id])
 
   @@index([performedById], map: "DeliveryOrderLog_performedById_fkey")
   @@index([deliveryOrderId], map: "DeliveryOrderLog_deliveryOrderId_fkey")
@@ -270,20 +270,20 @@ model Shipment {
   id             String                  @id @default(uuid())
   type           SHIPMENT_TYPE           @default(ANTAR)
   status         STATUS                  @default(PENDING)
-  armadaId       String? // Our armada, used for ANTAR type
+  armadaId       String?
   internalNote   String?
-  plateNumber    String? // Manually input plate number for verification
-  platePhoto     String? // Photo of plate number for verification
-  isVerified     Boolean                 @default(false) // Flag for verification status
-  verifiedAt     DateTime? // When the plate was verified
+  plateNumber    String?
+  platePhoto     String?
+  isVerified     Boolean                 @default(false)
+  verifiedAt     DateTime?
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
   deletedAt      DateTime?
-  armada         Armada?                 @relation(fields: [armadaId], references: [id])
-  shipmentItems  ShipmentItem[]
   spmbs          SPMB[]
-  shipmentLogs   ShipmentLog[]
+  armada         Armada?                 @relation(fields: [armadaId], references: [id])
   chosenProducts ShipmentChosenProduct[]
+  shipmentItems  ShipmentItem[]
+  shipmentLogs   ShipmentLog[]
 
   @@index([armadaId], map: "Shipment_armadaId_fkey")
 }
@@ -293,18 +293,18 @@ model ShipmentItem {
   shipmentId        String
   deliveryOrderId   String
   productId         String
-  requestedQuantity Int                  @default(0) // Total quantity from DO item
-  weightedQuantity  Float? // Actual weight after weighing process
+  requestedQuantity Int                  @default(0)
+  weightedQuantity  Float?
   status            SHIPMENT_ITEM_STATUS @default(PENDING)
-  locationType      String?
-  chosenProduct     Boolean              @default(false)
   warehouseId       String
-  weighedAt         DateTime? // When the item was weighed
+  weighedAt         DateTime?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
-  shipment          Shipment             @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  chosenProduct     Boolean              @default(false)
+  locationType      String?
   deliveryOrder     DeliveryOrder        @relation(fields: [deliveryOrderId], references: [id])
   product           Product              @relation(fields: [productId], references: [id])
+  shipment          Shipment             @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   warehouse         Warehouse            @relation(fields: [warehouseId], references: [id])
 
   @@index([shipmentId], map: "ShipmentItem_shipmentId_fkey")
@@ -317,13 +317,13 @@ model SPMB {
   id              String        @id @default(uuid())
   shipmentId      String
   deliveryOrderId String
-  code            String        @unique // SPMB document code/number
+  code            String        @unique
   status          SPMB_STATUS   @default(PENDING)
-  documentPath    String? // Optional URL/path to the stored PDF
+  documentPath    String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
-  shipment        Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   deliveryOrder   DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
+  shipment        Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 
   @@index([shipmentId], map: "SPMB_shipmentId_fkey")
   @@index([deliveryOrderId], map: "SPMB_deliveryOrderId_fkey")
@@ -353,8 +353,8 @@ model ShipmentChosenProduct {
   productId  String
   createdAt  DateTime                        @default(now())
   updatedAt  DateTime                        @updatedAt
-  shipment   Shipment                        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   product    Product                         @relation(fields: [productId], references: [id])
+  shipment   Shipment                        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
   weighings  ShipmentChosenProductWeighing[]
 
   @@unique([shipmentId, productId], name: "unique_shipment_do_product")
@@ -409,9 +409,9 @@ enum STATUS {
 }
 
 enum SHIPMENT_ITEM_STATUS {
-  PENDING // Not yet weighed
-  CHOSEN // Chosen for weighing
-  COMPLETED // Weighing completed
+  PENDING
+  CHOSEN
+  COMPLETED
 }
 
 enum SPMB_STATUS {
@@ -420,6 +420,6 @@ enum SPMB_STATUS {
 }
 
 enum SHIPMENT_TYPE {
-  ANTAR // We use our own armada
-  JEMPUT // Customer uses their own vehicle
+  ANTAR
+  JEMPUT
 }

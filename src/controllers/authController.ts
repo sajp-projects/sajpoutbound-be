@@ -59,8 +59,13 @@ export default {
         roleId: user.roleId,
       });
 
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
       // Calculate expiry date (6 hours from now)
-      const expiryDate = jwt.calculateExpiryDate(6);
+      const expiryDate = new Date(jakartaTime);
+      expiryDate.setHours(expiryDate.getHours() + 6);
 
       // Update refresh token in database
       await userService.updateUserRefreshToken(user.id, refreshToken, expiryDate);
