@@ -906,14 +906,11 @@ export default {
       );
 
       if (!isMatch) {
-        res.status(200).json(
-          success({
-            message: `Plate number in photo (${extractedPlateNumber}) does not match the registered plate number (${expectedPlateNumber})`,
-            errorCode: 'PLATE_MISMATCH',
-            status: 400,
-          }),
-        );
-        return;
+        throw new CustomError({
+          message: `Plate number in photo (${extractedPlateNumber}) does not match the registered plate number (${expectedPlateNumber})`,
+          errorCode: 'PLATE_MISMATCH',
+          status: 400,
+        });
       }
 
       // If we get here, the plate numbers match, so proceed with verification
