@@ -92,16 +92,28 @@ export default {
 
   async refreshToken(req: Request, res: Response, next: NextFunction) {
     try {
-      // Get user ID from the request object (set by authentication middleware)
-      const userId = req.user?.id;
+      const token = req.headers['x-outmanage-token'] as string;
 
-      if (!userId) {
+      if (!token) {
         throw new CustomError({
-          message: 'Authentication required',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'No token provided',
+          errorCode: 'NO_TOKEN_PROVIDED',
           status: 401,
         });
       }
+
+      // Decode the token without verifying (it might be expired)
+      const decoded = jwt.decodeToken(token);
+
+      if (!decoded || !decoded.id) {
+        throw new CustomError({
+          message: 'Invalid token format',
+          errorCode: 'INVALID_TOKEN_FORMAT',
+          status: 401,
+        });
+      }
+
+      const userId = decoded.id;
 
       // Get user from database
       const user = await userService.getUserById(userId);
@@ -123,9 +135,11 @@ export default {
         });
       }
 
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
       // Check if refresh token has expired
-      const now = new Date();
-      if (user.expiresAt && user.expiresAt < now) {
+      if (user.expiresAt && user.expiresAt < jakartaTime) {
         throw new CustomError({
           message: 'Refresh token expired, please login again',
           errorCode: 'REFRESH_TOKEN_EXPIRED',

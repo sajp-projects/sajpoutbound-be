@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post('/login', authController.login);
 // Protected routes (authentication required)
-router.get('/refresh-token', authenticateToken, authController.refreshToken);
+router.get('/refresh-token', authController.refreshToken);
 router.post('/logout', authenticateToken, authController.logout);
 
 export default router;
