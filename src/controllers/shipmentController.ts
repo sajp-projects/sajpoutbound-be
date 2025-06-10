@@ -450,6 +450,16 @@ export default {
    */
   async getAvailableItemsForWeighing(req: Request, res: Response, next: NextFunction) {
     try {
+      const auth = req.headers['x-auth'] as string;
+
+      if (!auth || auth !== process.env.X_AUTH_KEY) {
+        throw new CustomError({
+          message: 'Tolong cek API Key kembali.',
+          errorCode: 'UNAUTHORIZED',
+          status: 401,
+        });
+      }
+
       const items = await shipmentService.getAvailableItemsForWeighing();
 
       res.status(200).json(success(items));
@@ -464,7 +474,32 @@ export default {
     next: NextFunction,
   ) {
     try {
+      const auth = req.headers['x-auth'] as string;
+
+      if (!auth || auth !== process.env.X_AUTH_KEY) {
+        throw new CustomError({
+          message: 'Tolong cek API Key kembali.',
+          errorCode: 'UNAUTHORIZED',
+          status: 401,
+        });
+      }
+
       const { shipmentId } = req.params;
+
+      await shipmentIdSchema.validateAsync({
+        id: shipmentId,
+      });
+
+      const shipment = await shipmentService.getShipmentById(shipmentId);
+
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Shipment not found',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
       const items = await shipmentService.getAvailableItemsForWeighingByShipmentId(shipmentId);
 
       res.status(200).json(success(items));
@@ -864,6 +899,15 @@ export default {
         });
       }
 
+      // Check if shipment is already verified or completed
+      if (existingShipment.isVerified || existingShipment.status === 'SELESAI') {
+        throw new CustomError({
+          message: 'Shipment has already been verified',
+          errorCode: 'ALREADY_VERIFIED',
+          status: 400,
+        });
+      }
+
       // Verify that plate number and photo exist
       if (!existingShipment.plateNumber && !existingShipment.armada?.plateNumber) {
         throw new CustomError({
@@ -959,6 +1003,16 @@ export default {
     next: NextFunction,
   ) {
     try {
+      const auth = req.headers['x-auth'] as string;
+
+      if (!auth || auth !== process.env.X_AUTH_KEY) {
+        throw new CustomError({
+          message: 'Tolong cek API Key kembali.',
+          errorCode: 'UNAUTHORIZED',
+          status: 401,
+        });
+      }
+
       const validated = await shipmentBulkWeighSchema.validateAsync(req.body);
 
       let performedById;

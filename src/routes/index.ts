@@ -30,6 +30,13 @@ router.use('/auth', authRoutes);
  *       4. Updating all items to COMPLETED status
  *     tags:
  *       - Shipment Weighing
+ *     parameters:
+ *       - in: header
+ *         name: x-auth
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Custom authentication header.
  *     requestBody:
  *       required: true
  *       content:
@@ -157,6 +164,13 @@ router.post('/shipments/weighing', shipmentController.bulkWeighShipmentItems);
  *       bulk weighing operations.
  *     tags:
  *       - Shipment Weighing
+ *     parameters:
+ *       - in: header
+ *         name: x-auth
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Custom authentication header.
  *     responses:
  *       200:
  *         description: Successfully retrieved available items
@@ -244,6 +258,12 @@ router.get('/shipments/available-items', shipmentController.getAvailableItemsFor
  *     tags:
  *       - Shipment Weighing
  *     parameters:
+ *       - in: header
+ *         name: x-auth
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Custom authentication header.
  *       - name: shipmentId
  *         in: path
  *         required: true
@@ -328,7 +348,7 @@ router.get('/shipments/available-items', shipmentController.getAvailableItemsFor
  */
 router.get(
   '/shipments/:shipmentId/available-items',
-  shipmentController.getAvailableItemsForWeighing,
+  shipmentController.getAvailableItemsForWeighingByShipmentId,
 );
 
 router.use(authenticateToken);

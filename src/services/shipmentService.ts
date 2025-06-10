@@ -1719,6 +1719,15 @@ export default {
         tx,
       );
 
+      // Log the status change to SELESAI
+      await shipmentLogService.logShipmentStatusChange(
+        id,
+        performedById,
+        existingShipment.status,
+        STATUS.SELESAI,
+        tx,
+      );
+
       return updatedShipment;
     });
   },
