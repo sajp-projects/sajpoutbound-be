@@ -278,7 +278,7 @@ export default {
       }
 
       // Validate armada if provided
-      if (validated.armadaId) {
+      if (validated.armadaId && validated.armadaId !== '') {
         const armada = await armadaService.getArmadaById(validated.armadaId);
         if (!armada) {
           throw new CustomError({
@@ -1029,23 +1029,17 @@ export default {
       // Format the response to highlight the combined data
       res.status(200).json(
         success({
-          note:
-            'The product has been weighed once with a total weight of ' +
-            validated.grossWeight +
-            '. For inventory purposes, this weight is distributed proportionally across delivery orders, ' +
-            'but only one weighing record is stored to avoid confusion.',
-          combinedData: {
-            product: result.product,
-            shipment: result.shipment,
-            totalRequestedQuantity: result.totalRequestedQuantity,
-            totalWeightedQuantity: result.totalWeightedQuantity,
-            deliveryOrders: result.deliveryOrders,
-            customers: result.customers,
-            weights: result.weights,
-            status: result.status,
-            locationType: result.locationType,
-            weighedAt: result.weighedAt,
-          },
+          product: result.product,
+          shipment: result.shipment,
+          totalRequestedQuantity: result.totalRequestedQuantity,
+          totalWeightedQuantity: result.totalWeightedQuantity,
+          deliveryOrders: result.deliveryOrders,
+          customers: result.customers,
+          weights: result.weights,
+          status: result.status,
+          locationType: result.locationType,
+          weighedAt: result.weighedAt,
+
           // Keep the individual items data for reference if needed
           individualItems: result.individualItems,
         }),

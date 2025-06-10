@@ -532,6 +532,15 @@ export default {
               updatedAt: jakartaTime,
             },
           });
+
+          await tx.deliveryOrder.update({
+            where: {
+              id: item.deliveryOrderId,
+            },
+            data: {
+              status: STATUS.PROSES,
+            },
+          });
         }
       }
 
@@ -606,10 +615,22 @@ export default {
         updatedAt: jakartaTime,
       };
 
-      if (data.armadaId === null || data.armadaId === undefined) {
-        // Disconnect armada if null or undefined
+      // Remove armadaId from direct update as Prisma doesn't allow it
+      if ('armadaId' in updateData) {
+        delete updateData.armadaId;
+      }
+
+      if (data.armadaId === null || data.armadaId === undefined || data.armadaId === '') {
+        // Disconnect armada if null, undefined, or empty string
         updateData.armada = {
           disconnect: true,
+        };
+      } else if (data.armadaId) {
+        // Connect to new armada if an ID is provided
+        updateData.armada = {
+          connect: {
+            id: data.armadaId,
+          },
         };
       }
 

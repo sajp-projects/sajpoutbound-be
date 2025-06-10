@@ -114,7 +114,7 @@ export const updateShipmentSchema = Joi.object<ShipmentUpdateInput>({
     .messages({
       'any.only': 'Invalid shipment type. Must be ANTAR or JEMPUT',
     }),
-  armadaId: Joi.string().uuid().allow(null).messages({
+  armadaId: Joi.string().uuid().allow(null, '').messages({
     'string.guid': 'Armada ID must be a valid UUID',
   }),
   internalNote: Joi.string().allow('', null).max(1000).messages({
@@ -186,7 +186,7 @@ export const shipmentFullUpdateSchema = Joi.object<ShipmentFullUpdateInput>({
     .messages({
       'any.only': 'Invalid shipment type. Must be ANTAR or JEMPUT',
     }),
-  armadaId: Joi.string().uuid().allow(null).messages({
+  armadaId: Joi.string().uuid().allow(null, '').messages({
     'string.guid': 'Armada ID must be a valid UUID',
   }),
   internalNote: Joi.string().allow('', null).max(1000).messages({
