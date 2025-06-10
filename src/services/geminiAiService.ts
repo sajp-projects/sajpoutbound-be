@@ -7,8 +7,14 @@ import { promisify } from 'util';
 
 const readFileAsync = promisify(fs.readFile);
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!GEMINI_API_KEY) {
+  throw new Error('GEMINI_API_KEY is not set');
+}
+
 // Initialize the Google Generative AI with API key
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 /**
  * Helper function to convert an image file to a base64 string

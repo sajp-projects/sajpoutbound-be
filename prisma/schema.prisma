@@ -17,6 +17,8 @@ model User {
   deletedAt         DateTime?
   roleId            String?
   warehouseId       String?
+  refreshToken      String? @db.Text
+  expiresAt         DateTime?
   role              Role?              @relation(fields: [roleId], references: [id])
   warehouse         Warehouse?         @relation(fields: [warehouseId], references: [id])
   performedLogs     UserLog[]          @relation("PerformedLogs")

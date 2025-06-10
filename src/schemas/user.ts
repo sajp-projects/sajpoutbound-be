@@ -8,6 +8,9 @@ export type UserCreateInput = Pick<
 >;
 export type UserUpdateInput = Partial<Pick<UserModel, 'email' | 'name' | 'roleId' | 'warehouseId'>>;
 export type UserLoginInput = Pick<UserModel, 'email' | 'password'>;
+export type RefreshTokenInput = {
+  refreshToken: string;
+};
 
 export const createUserSchema = Joi.object<UserCreateInput>({
   email: Joi.string().email().required().messages({
@@ -60,6 +63,13 @@ export const loginUserSchema = Joi.object<UserLoginInput>({
   }),
   password: Joi.string().required().messages({
     'any.required': 'Password is required',
+  }),
+});
+
+export const refreshTokenSchema = Joi.object<RefreshTokenInput>({
+  refreshToken: Joi.string().required().messages({
+    'string.empty': 'Refresh token is required',
+    'any.required': 'Refresh token is required',
   }),
 });
 

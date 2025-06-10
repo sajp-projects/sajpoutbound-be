@@ -169,6 +169,8 @@ export default {
       const createdUser = await tx.user.create({
         data: {
           ...userData,
+          refreshToken: '',
+          expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 6),
           createdAt: jakartaTime,
           updatedAt: jakartaTime,
         },
@@ -410,6 +412,26 @@ export default {
       const { password: _password, ...userWithoutPassword } = deletedUser;
 
       return userWithoutPassword;
+    });
+  },
+
+  async getUserByEmail(email: string) {
+    return prisma.user.findFirst({
+      where: {
+        email,
+      },
+    });
+  },
+
+  async updateUserRefreshToken(id: string, refreshToken: string, expiresAt: Date) {
+    return prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        refreshToken,
+        expiresAt,
+      },
     });
   },
 };
