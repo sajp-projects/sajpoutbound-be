@@ -292,7 +292,6 @@ export default {
   async validateAllItemsComplete(shipmentId: string) {
     const shipment = await this.getShipmentWithItems(shipmentId);
 
-    // If shipment not found, return false to indicate shipment doesn't exist
     if (!shipment) {
       return false;
     }
@@ -508,6 +507,32 @@ export default {
         });
 
         shipmentItems.push(shipmentItem);
+
+        // Update delivery order item quantities
+        const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+          where: {
+            deliveryOrderId: item.deliveryOrderId,
+            productId: item.productId,
+          },
+        });
+
+        if (deliveryOrderItem) {
+          const processingQuantity = Math.min(
+            deliveryOrderItem.pendingQuantity,
+            item.requestedQuantity,
+          );
+
+          await tx.deliveryOrderItem.update({
+            where: {
+              id: deliveryOrderItem.id,
+            },
+            data: {
+              pendingQuantity: deliveryOrderItem.pendingQuantity - processingQuantity,
+              processingQuantity: deliveryOrderItem.processingQuantity + processingQuantity,
+              updatedAt: jakartaTime,
+            },
+          });
+        }
       }
 
       // Generate SPMB for each unique delivery order
@@ -930,32 +955,6 @@ export default {
           updatedAt: jakartaTime,
         },
       });
-
-      // Update the delivery order item quantities
-      const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
-        where: {
-          deliveryOrderId: existingItem.deliveryOrderId,
-          productId: existingItem.productId,
-        },
-      });
-
-      if (deliveryOrderItem) {
-        const processingQuantity = Math.min(
-          deliveryOrderItem.pendingQuantity,
-          Math.floor(data.grossWeight),
-        );
-
-        await tx.deliveryOrderItem.update({
-          where: {
-            id: deliveryOrderItem.id,
-          },
-          data: {
-            pendingQuantity: deliveryOrderItem.pendingQuantity - processingQuantity,
-            processingQuantity: deliveryOrderItem.processingQuantity + processingQuantity,
-            updatedAt: jakartaTime,
-          },
-        });
-      }
 
       return completedItem;
     });
@@ -1608,8 +1607,7 @@ export default {
         );
       }
 
-      // TODO: NEED CHORE
-      // Process each item
+      // TODO: NEED CHORE cleaning code
       const updatedItems = [];
       type DeliveryOrder = {
         id: string;
@@ -1671,32 +1669,6 @@ export default {
 
         if (!customers.some((c) => c.id === item.deliveryOrder.customer.id)) {
           customers.push(item.deliveryOrder.customer);
-        }
-
-        // Update the delivery order item quantities
-        const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
-          where: {
-            deliveryOrderId: item.deliveryOrderId,
-            productId: item.productId,
-          },
-        });
-
-        if (deliveryOrderItem) {
-          const processingQuantity = Math.min(
-            deliveryOrderItem.pendingQuantity,
-            Math.floor(itemGrossWeight),
-          );
-
-          await tx.deliveryOrderItem.update({
-            where: {
-              id: deliveryOrderItem.id,
-            },
-            data: {
-              pendingQuantity: deliveryOrderItem.pendingQuantity - processingQuantity,
-              processingQuantity: deliveryOrderItem.processingQuantity + processingQuantity,
-              updatedAt: jakartaTime,
-            },
-          });
         }
       }
 
