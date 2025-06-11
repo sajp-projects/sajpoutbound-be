@@ -3,15 +3,11 @@ import express from 'express';
 import shipmentController from '../controllers/shipmentController';
 import { checkPermission, checkWarehouseAccess } from '../middlewares/permission';
 import shipmentLogRoutes from './shipmentLogRoutes';
-import shipmentWeighingRoute from './shipmentWeighingRoute';
 
 const router = express.Router();
 
 // Shipment logs routes
 router.use('/logs', shipmentLogRoutes);
-
-// Third party routes
-router.use('/weighing', shipmentWeighingRoute);
 
 // Get all shipments
 router.get(
@@ -26,9 +22,6 @@ router.get(
   checkPermission('shipment', PERMISSION_ACTION.READ),
   shipmentController.getArchivedShipments,
 );
-
-// Get available items for weighing in a shipment
-router.get('/:id/available-items', shipmentController.getAvailableItemsForWeighing);
 
 // Chosen products routes
 router.get(

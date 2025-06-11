@@ -7,8 +7,14 @@ import { promisify } from 'util';
 
 const readFileAsync = promisify(fs.readFile);
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!GEMINI_API_KEY) {
+  throw new Error('GEMINI_API_KEY is not set');
+}
+
 // Initialize the Google Generative AI with API key
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 /**
  * Helper function to convert an image file to a base64 string
@@ -64,17 +70,63 @@ export default {
       // Convert image to the format expected by Gemini
       const imagePart = await fileToGenerativePart(imagePath);
 
+      // Use a more detailed prompt to improve extraction accuracy
+      const prompt = `
+I need to extract a vehicle license plate number from this image.
+
+Instructions:
+1. Look for any text that resembles a license plate (usually a combination of letters and numbers)
+2. Focus on rectangular plates typically mounted on the front or back of vehicles
+3. Indonesian plates generally follow formats like: "B 1234 ABC", "AB 1234 CD", or similar patterns
+4. ONLY return the raw plate text with no additional information, explanation, or formatting
+5. If multiple plates are visible, return the most prominently displayed one
+6. If no plate is clearly visible or readable, return "NO_PLATE_FOUND"
+
+Example outputs:
+- "B 1234 ABC"
+- "AB 123 CD"
+- "NO_PLATE_FOUND"
+`;
+
       // Generate content with the model
-      const result = await model.generateContent([
-        'Extract the vehicle license plate number from this image. Return ONLY the plate number with no additional text, spaces, or formatting. If no plate is visible or readable, return "NO_PLATE_FOUND".',
-        imagePart,
-      ]);
-
+      const result = await model.generateContent([prompt, imagePart]);
       const response = result.response;
-      const text = response.text().trim();
+      let text = response.text().trim();
 
-      // Return null if no plate was found
-      if (text === 'NO_PLATE_FOUND') {
+      // Check if we got a response but no plate was found
+      if (text === 'NO_PLATE_FOUND' || text.includes('NO_PLATE_FOUND')) {
+        // Try a second attempt with a different prompt if first attempt failed
+        const secondPrompt =
+          'What license plate number do you see in this image? Only return the license plate text.';
+        const secondResult = await model.generateContent([secondPrompt, imagePart]);
+        text = secondResult.response.text().trim();
+
+        // If still no result, return null
+        if (
+          !text ||
+          text.toLowerCase().includes('no') ||
+          text.toLowerCase().includes('not visible')
+        ) {
+          return null;
+        }
+      }
+
+      // Clean up the plate number - remove any text that isn't part of the plate
+      // Remove phrases like "the license plate is" or "I see"
+      text = text
+        .replace(/^(the )?license plate( number)? is /i, '')
+        .replace(/^i see /i, '')
+        .replace(/^plate( number)?: /i, '')
+        .replace(/"/g, '') // Remove quotes
+        .trim();
+
+      // Return null for invalid responses
+      if (
+        text === 'NO_PLATE_FOUND' ||
+        text.toLowerCase().includes('no plate') ||
+        text.toLowerCase().includes('not visible') ||
+        text.toLowerCase().includes('unable to')
+      ) {
         return null;
       }
 
@@ -98,6 +150,39 @@ export default {
     const normalizedExtracted = extractedPlate.replace(/[\s\-./]/g, '').toUpperCase();
     const normalizedExpected = expectedPlate.replace(/[\s\-./]/g, '').toUpperCase();
 
-    return normalizedExtracted === normalizedExpected;
+    // Check for exact match
+    if (normalizedExtracted === normalizedExpected) {
+      return true;
+    }
+
+    // Check if the normalized expected plate is contained within the extracted text
+    // This helps when the AI returns extra information
+    if (
+      normalizedExtracted.includes(normalizedExpected) ||
+      normalizedExpected.includes(normalizedExtracted)
+    ) {
+      return true;
+    }
+
+    // Calculate similarity (allowing for minor OCR errors)
+    // If at least 80% of characters match in sequence, consider it a match
+    const minLength = Math.min(normalizedExtracted.length, normalizedExpected.length);
+    if (minLength > 3) {
+      // Only for plates with enough characters
+      let matchingChars = 0;
+      for (let i = 0; i < minLength; i++) {
+        if (normalizedExtracted[i] === normalizedExpected[i]) {
+          matchingChars++;
+        }
+      }
+
+      const matchPercentage = matchingChars / minLength;
+      if (matchPercentage >= 0.8) {
+        // 80% match threshold
+        return true;
+      }
+    }
+
+    return false;
   },
 };

@@ -45,19 +45,30 @@ export default {
         });
       }
 
-      // Generate JWT token
-      const token = jwt.generateToken({
+      // Generate JWT access token (short-lived, 30s)
+      const accessToken = jwt.generateAccessToken({
         id: user.id,
         email: user.email,
         roleId: user.roleId,
       });
 
-      // Generate refresh token
+      // Generate refresh token (longer-lived, 6h)
       const refreshToken = jwt.generateRefreshToken({
         id: user.id,
         email: user.email,
         roleId: user.roleId,
       });
+
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Calculate expiry date (6 hours from now)
+      const expiryDate = new Date(jakartaTime);
+      expiryDate.setHours(expiryDate.getHours() + 6);
+
+      // Update refresh token in database
+      await userService.updateUserRefreshToken(user.id, refreshToken, expiryDate);
 
       // Return success with tokens
       res.status(200).json(
@@ -70,8 +81,7 @@ export default {
             role: user.role,
           },
           tokens: {
-            accessToken: token,
-            refreshToken,
+            accessToken,
           },
         }),
       );
@@ -82,30 +92,31 @@ export default {
 
   async refreshToken(req: Request, res: Response, next: NextFunction) {
     try {
-      const { refreshToken } = req.body;
+      const token = req.headers['x-outmanage-token'] as string;
 
-      // Check if refresh token exists
-      if (!refreshToken) {
+      if (!token) {
         throw new CustomError({
-          message: 'Refresh token is required',
-          errorCode: 'REFRESH_TOKEN_REQUIRED',
-          status: 400,
-        });
-      }
-
-      // Verify the refresh token
-      const decoded = jwt.verifyToken(refreshToken);
-
-      if (!decoded || decoded.type !== 'refresh') {
-        throw new CustomError({
-          message: 'Invalid refresh token',
-          errorCode: 'INVALID_REFRESH_TOKEN',
+          message: 'No token provided',
+          errorCode: 'NO_TOKEN_PROVIDED',
           status: 401,
         });
       }
 
-      // Find user by id from the token
-      const user = await userService.getUserById(decoded.id);
+      // Decode the token without verifying (it might be expired)
+      const decoded = jwt.decodeToken(token);
+
+      if (!decoded || !decoded.id) {
+        throw new CustomError({
+          message: 'Invalid token format',
+          errorCode: 'INVALID_TOKEN_FORMAT',
+          status: 401,
+        });
+      }
+
+      const userId = decoded.id;
+
+      // Get user from database
+      const user = await userService.getUserById(userId);
 
       if (!user) {
         throw new CustomError({
@@ -115,19 +126,62 @@ export default {
         });
       }
 
+      // Check if user has a valid refresh token in database
+      if (!user.refreshToken) {
+        throw new CustomError({
+          message: 'No refresh token found, please login again',
+          errorCode: 'NO_REFRESH_TOKEN',
+          status: 401,
+        });
+      }
+
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Check if refresh token has expired
+      if (user.expiresAt && user.expiresAt < jakartaTime) {
+        throw new CustomError({
+          message: 'Refresh token expired, please login again',
+          errorCode: 'REFRESH_TOKEN_EXPIRED',
+          status: 401,
+        });
+      }
+
       // Generate new access token
-      const newAccessToken = jwt.generateToken({
+      const accessToken = jwt.generateAccessToken({
         id: user.id,
         email: user.email,
         roleId: user.roleId,
       });
 
-      // Return success with new access token
       res.status(200).json(
         success({
-          tokens: {
-            accessToken: newAccessToken,
-          },
+          accessToken,
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async logout(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new CustomError({
+          message: 'Authentication required',
+          errorCode: 'AUTH_REQUIRED',
+          status: 401,
+        });
+      }
+
+      // Invalidate the refresh token by setting it to empty and expiry to now
+      await userService.updateUserRefreshToken(userId, '', new Date());
+
+      res.status(200).json(
+        success({
+          message: 'Successfully logged out',
         }),
       );
     } catch (error) {

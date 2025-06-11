@@ -4,7 +4,9 @@ import dotenv from 'dotenv';
 import express from 'express';
 import http from 'http';
 import path from 'path';
+import swaggerUi from 'swagger-ui-express';
 import prisma from './config/prisma';
+import swaggerSpec from './config/swagger';
 import { createErrorMiddleware } from './middlewares/error';
 import { logger, loggingMiddleware } from './middlewares/logger';
 import routes from './routes';
@@ -39,6 +41,15 @@ app.use(loggingMiddleware);
 
 // Serve static files from the public directory
 app.use('/public', express.static(path.join(__dirname, 'public')));
+
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Endpoint to get Swagger JSON
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 app.get('/health', (req, res) => {
   const jakartaTime = new Date();
@@ -80,6 +91,7 @@ process.on('SIGINT', async () => {
 // Start the server
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
+  console.log(`API Documentation available at http://localhost:${port}/api-docs`);
 });
 
 export default app;

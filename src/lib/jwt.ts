@@ -5,7 +5,10 @@ dotenv.config();
 
 // Get JWT secret key from environment variables with fallback
 const JWT_SECRET = process.env.JWT_SECRET || 'default_jwt_secret_for_development';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d';
+// Access tokens are short-lived (30 seconds by default) to minimize security risks
+const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '30s';
+// Refresh tokens are longer-lived (6 hours by default) and stored in the database
+const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '6h';
 
 interface TokenPayload {
   id: string;
@@ -18,13 +21,47 @@ interface TokenPayload {
  */
 export default {
   /**
-   * Generate a JWT token
+   * Generate an access token (short-lived)
+   *
+   * These tokens are used for API authentication and expire quickly (30s by default).
+   * When they expire, the frontend should use the refresh token to get a new access token.
    *
    * @param payload - Data to include in the token
-   * @param expiresIn - Token expiration time (default: from env or 1 day)
    * @returns JWT token string
    */
-  generateToken(payload: TokenPayload, expiresIn = JWT_EXPIRES_IN): string {
+  generateAccessToken(payload: TokenPayload): string {
+    // @ts-expect-error - Ignoring type issues with jsonwebtoken
+    return jwt.sign(payload, JWT_SECRET, {
+      expiresIn: ACCESS_TOKEN_EXPIRES_IN,
+    });
+  },
+
+  /**
+   * Generate a refresh token (longer-lived)
+   *
+   * These tokens are stored in the database and used to generate new access tokens.
+   * They last longer (6h by default) but are still secure because:
+   * 1. They're stored in the database and can be invalidated
+   * 2. The user still needs a valid access token to call the refresh endpoint
+   *
+   * @param payload - Data to include in the token
+   * @returns JWT token string
+   */
+  generateRefreshToken(payload: TokenPayload): string {
+    // @ts-expect-error - Ignoring type issues with jsonwebtoken
+    return jwt.sign(payload, JWT_SECRET, {
+      expiresIn: REFRESH_TOKEN_EXPIRES_IN,
+    });
+  },
+
+  /**
+   * Generate a token with custom expiration
+   *
+   * @param payload - Data to include in the token
+   * @param expiresIn - Token expiration time
+   * @returns JWT token string
+   */
+  generateToken(payload: TokenPayload, expiresIn = ACCESS_TOKEN_EXPIRES_IN): string {
     // @ts-expect-error - Ignoring type issues with jsonwebtoken
     return jwt.sign(payload, JWT_SECRET, {
       expiresIn,
@@ -61,23 +98,14 @@ export default {
   },
 
   /**
-   * Generate a refresh token (longer lived than access token)
+   * Calculate token expiry date
    *
-   * @param payload - Data to include in the token
-   * @param expiresIn - Token expiration time (default: 7 days)
-   * @returns JWT token string
+   * @param hoursFromNow - Number of hours from now
+   * @returns Date object representing expiry time
    */
-  generateRefreshToken(payload: TokenPayload, expiresIn = '7d'): string {
-    // Remove any unnecessary data from refresh token
-    const refreshPayload = {
-      id: payload.id,
-      email: payload.email,
-      roleId: payload.roleId,
-      type: 'refresh',
-    };
-    // @ts-expect-error - Ignoring type issues with jsonwebtoken
-    return jwt.sign(refreshPayload, JWT_SECRET, {
-      expiresIn,
-    });
+  calculateExpiryDate(hoursFromNow = 6): Date {
+    const date = new Date();
+    date.setHours(date.getHours() + hoursFromNow);
+    return date;
   },
 };

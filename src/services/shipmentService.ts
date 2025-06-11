@@ -292,7 +292,6 @@ export default {
   async validateAllItemsComplete(shipmentId: string) {
     const shipment = await this.getShipmentWithItems(shipmentId);
 
-    // If shipment not found, return false to indicate shipment doesn't exist
     if (!shipment) {
       return false;
     }
@@ -508,6 +507,41 @@ export default {
         });
 
         shipmentItems.push(shipmentItem);
+
+        // Update delivery order item quantities
+        const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+          where: {
+            deliveryOrderId: item.deliveryOrderId,
+            productId: item.productId,
+          },
+        });
+
+        if (deliveryOrderItem) {
+          const processingQuantity = Math.min(
+            deliveryOrderItem.pendingQuantity,
+            item.requestedQuantity,
+          );
+
+          await tx.deliveryOrderItem.update({
+            where: {
+              id: deliveryOrderItem.id,
+            },
+            data: {
+              pendingQuantity: deliveryOrderItem.pendingQuantity - processingQuantity,
+              processingQuantity: deliveryOrderItem.processingQuantity + processingQuantity,
+              updatedAt: jakartaTime,
+            },
+          });
+
+          await tx.deliveryOrder.update({
+            where: {
+              id: item.deliveryOrderId,
+            },
+            data: {
+              status: STATUS.PROSES,
+            },
+          });
+        }
       }
 
       // Generate SPMB for each unique delivery order
@@ -581,10 +615,22 @@ export default {
         updatedAt: jakartaTime,
       };
 
-      if (data.armadaId === null || data.armadaId === undefined) {
-        // Disconnect armada if null or undefined
+      // Remove armadaId from direct update as Prisma doesn't allow it
+      if ('armadaId' in updateData) {
+        delete updateData.armadaId;
+      }
+
+      if (data.armadaId === null || data.armadaId === undefined || data.armadaId === '') {
+        // Disconnect armada if null, undefined, or empty string
         updateData.armada = {
           disconnect: true,
+        };
+      } else if (data.armadaId) {
+        // Connect to new armada if an ID is provided
+        updateData.armada = {
+          connect: {
+            id: data.armadaId,
+          },
         };
       }
 
@@ -931,32 +977,6 @@ export default {
         },
       });
 
-      // Update the delivery order item quantities
-      const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
-        where: {
-          deliveryOrderId: existingItem.deliveryOrderId,
-          productId: existingItem.productId,
-        },
-      });
-
-      if (deliveryOrderItem) {
-        const processingQuantity = Math.min(
-          deliveryOrderItem.pendingQuantity,
-          Math.floor(data.grossWeight),
-        );
-
-        await tx.deliveryOrderItem.update({
-          where: {
-            id: deliveryOrderItem.id,
-          },
-          data: {
-            pendingQuantity: deliveryOrderItem.pendingQuantity - processingQuantity,
-            processingQuantity: deliveryOrderItem.processingQuantity + processingQuantity,
-            updatedAt: jakartaTime,
-          },
-        });
-      }
-
       return completedItem;
     });
   },
@@ -964,12 +984,97 @@ export default {
   /**
    * Get all available items for weighing in a shipment
    */
-  async getAvailableItemsForWeighing(shipmentId: string) {
+  async getAvailableItemsForWeighing() {
     // Get all items from the database
     const items = await prisma.shipmentItem.findMany({
       where: {
-        shipmentId,
         status: SHIPMENT_ITEM_STATUS.CHOSEN,
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            satuan: true,
+          },
+        },
+        deliveryOrder: {
+          select: {
+            id: true,
+            customer: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        warehouse: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    // Create a map to group items by product ID
+    const productMap = new Map();
+
+    // Process each item and combine those with the same product ID
+    for (const item of items) {
+      const productId = item.product.id;
+
+      if (!productMap.has(productId)) {
+        productMap.set(productId, {
+          shipmentId: item.shipmentId,
+          product: item.product,
+          warehouse: item.warehouse,
+          // Create arrays to track all related delivery orders and their info
+          deliveryOrders: [item.deliveryOrder],
+          requestedQuantity: item.requestedQuantity,
+          // Track all shipment item IDs for reference if needed
+          shipmentItemIds: [item.id],
+        });
+      } else {
+        // Product already exists in our map, update the entry
+        const existingItem = productMap.get(productId);
+
+        // Add to the total quantity
+        existingItem.requestedQuantity += item.requestedQuantity;
+
+        // Add this item's ID to the list
+        existingItem.shipmentItemIds.push(item.id);
+
+        // Add this delivery order if it's not already included
+        // Define type for the delivery order object
+        const doExists = existingItem.deliveryOrders.some(
+          (do1: { id: string; customer?: { id: string; name: string } }) =>
+            do1.id === item.deliveryOrder.id,
+        );
+
+        if (!doExists) {
+          existingItem.deliveryOrders.push(item.deliveryOrder);
+        }
+      }
+    }
+
+    // Convert the map back to an array, but only include products that are not already chosen
+    const combinedItems = Array.from(productMap.values());
+
+    return {
+      availableItems: combinedItems,
+    };
+  },
+
+  async getAvailableItemsForWeighingByShipmentId(shipmentId: string) {
+    const items = await prisma.shipmentItem.findMany({
+      where: {
+        status: SHIPMENT_ITEM_STATUS.CHOSEN,
+        shipmentId,
       },
       include: {
         product: {
@@ -1324,7 +1429,14 @@ export default {
           },
           deliveryOrders,
           customers,
-          shipmentItems: shipmentItems.map((si) => si.id),
+          shipmentItems: shipmentItems.map((si) => ({
+            id: si.id,
+            status: si.status,
+            requestedQuantity: si.requestedQuantity,
+            weightedQuantity: si.weightedQuantity,
+            locationType: si.locationType,
+            weighedAt: si.weighedAt,
+          })),
           weighings: chosenProduct.weighings,
           totalGrossWeight:
             chosenProduct.weighings.length > 0 ? chosenProduct.weighings[0].grossWeight : 0,
@@ -1471,26 +1583,13 @@ export default {
   /**
    * Verify shipment with plate number and photo
    */
-  async verifyPlateNumberAndPhoto(id: string, performedById: string) {
+  async verifyPlateNumberAndPhoto(
+    id: string,
+    performedById: string,
+    existingShipment: NonNullable<Awaited<ReturnType<typeof this.getShipmentById>>>,
+  ) {
     return prisma.$transaction(async (tx) => {
       // Get the current shipment data
-      const existingShipment = await tx.shipment.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          armada: true,
-        },
-      });
-
-      if (!existingShipment) {
-        return null;
-      }
-
-      // Check if plate photo is uploaded
-      if (!existingShipment.platePhoto) {
-        throw new Error('Plate photo must be uploaded before verification');
-      }
 
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
@@ -1504,6 +1603,7 @@ export default {
         data: {
           isVerified: true,
           verifiedAt: jakartaTime,
+          status: STATUS.SELESAI,
           updatedAt: jakartaTime,
         },
         include: {
@@ -1535,11 +1635,96 @@ export default {
         },
       });
 
+      // Update all shipment items to COMPLETED
+      await tx.shipmentItem.updateMany({
+        where: {
+          shipmentId: id,
+        },
+        data: {
+          status: SHIPMENT_ITEM_STATUS.COMPLETED,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // Track delivery orders to check their completion status
+      const processedDeliveryOrderIds = new Set<string>();
+
+      // Process each shipment item to update related delivery order item quantities
+      for (const item of existingShipment!.shipmentItems) {
+        // Get the corresponding delivery order item
+        const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+          where: {
+            deliveryOrderId: item.deliveryOrderId,
+            productId: item.productId,
+          },
+        });
+
+        if (deliveryOrderItem) {
+          // Calculate quantity to move from processing to completed
+          const quantityToComplete = Math.min(
+            deliveryOrderItem.processingQuantity,
+            item.requestedQuantity,
+          );
+
+          // Update the delivery order item quantities
+          await tx.deliveryOrderItem.update({
+            where: {
+              id: deliveryOrderItem.id,
+            },
+            data: {
+              processingQuantity: deliveryOrderItem.processingQuantity - quantityToComplete,
+              completedQuantity: deliveryOrderItem.completedQuantity + quantityToComplete,
+              updatedAt: jakartaTime,
+            },
+          });
+
+          // Add this delivery order ID to the set of processed orders
+          processedDeliveryOrderIds.add(item.deliveryOrderId);
+        }
+      }
+
+      // Now check if each affected delivery order should be marked as completed
+      for (const doId of processedDeliveryOrderIds) {
+        // Get all items for this delivery order
+        const doItems = await tx.deliveryOrderItem.findMany({
+          where: {
+            deliveryOrderId: doId,
+          },
+        });
+
+        // Check if any items still have pending or processing quantity
+        const hasIncompleteItems = doItems.some(
+          (doItem) => doItem.pendingQuantity > 0 || doItem.processingQuantity > 0,
+        );
+
+        // If all items are completed, update the delivery order status
+        if (!hasIncompleteItems) {
+          await tx.deliveryOrder.update({
+            where: {
+              id: doId,
+            },
+            data: {
+              status: STATUS.SELESAI,
+              updatedAt: jakartaTime,
+            },
+          });
+        }
+      }
+
       // Log the verification
       await shipmentLogService.logShipmentVerification(
         id,
         performedById,
         existingShipment.plateNumber || existingShipment.armada?.plateNumber || 'Unknown',
+        tx,
+      );
+
+      // Log the status change to SELESAI
+      await shipmentLogService.logShipmentStatusChange(
+        id,
+        performedById,
+        existingShipment.status,
+        STATUS.SELESAI,
         tx,
       );
 
@@ -1608,8 +1793,7 @@ export default {
         );
       }
 
-      // TODO: NEED CHORE
-      // Process each item
+      // TODO: NEED CHORE cleaning code
       const updatedItems = [];
       type DeliveryOrder = {
         id: string;
@@ -1671,32 +1855,6 @@ export default {
 
         if (!customers.some((c) => c.id === item.deliveryOrder.customer.id)) {
           customers.push(item.deliveryOrder.customer);
-        }
-
-        // Update the delivery order item quantities
-        const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
-          where: {
-            deliveryOrderId: item.deliveryOrderId,
-            productId: item.productId,
-          },
-        });
-
-        if (deliveryOrderItem) {
-          const processingQuantity = Math.min(
-            deliveryOrderItem.pendingQuantity,
-            Math.floor(itemGrossWeight),
-          );
-
-          await tx.deliveryOrderItem.update({
-            where: {
-              id: deliveryOrderItem.id,
-            },
-            data: {
-              pendingQuantity: deliveryOrderItem.pendingQuantity - processingQuantity,
-              processingQuantity: deliveryOrderItem.processingQuantity + processingQuantity,
-              updatedAt: jakartaTime,
-            },
-          });
         }
       }
 
