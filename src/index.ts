@@ -16,7 +16,7 @@ dotenv.config();
 
 // Initialize Express app
 const app = express();
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT) || 3000;
 const server = http.createServer(app);
 
 // Middleware
@@ -26,6 +26,11 @@ app.use(
       'https://www.outmanage.vercel.app',
       'https://outmanage.vercel.app',
       'http://localhost:5173',
+      'http://31.97.105.79:5173',
+      'https://demo.benzeta.shop',
+      'https://benzeta.shop',
+      'https://www.demo.benzeta.shop',
+      'https://www.benzeta.shop',
     ],
     credentials: true,
   }),
@@ -89,7 +94,7 @@ process.on('SIGINT', async () => {
 });
 
 // Start the server
-server.listen(port, () => {
+server.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
   console.log(`API Documentation available at http://localhost:${port}/api-docs`);
 });

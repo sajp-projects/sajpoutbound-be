@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import {
   Permission, PERMISSION_ACTION, PrismaClient, 
 } from '@prisma/client';
