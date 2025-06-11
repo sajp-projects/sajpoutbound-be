@@ -638,14 +638,14 @@ export default {
         });
       }
 
-      // Check if shipment is in valid status
-      if (shipment.status !== 'PENDING') {
-        throw new CustomError({
-          message: 'Cannot choose products for shipment with non-PENDING status',
-          errorCode: 'INVALID_SHIPMENT_STATUS',
-          status: 400,
-        });
-      }
+      // // Check if shipment is in valid status
+      // if (shipment.status !== 'PENDING') {
+      //   throw new CustomError({
+      //     message: 'Cannot choose products for shipment with non-PENDING status',
+      //     errorCode: 'INVALID_SHIPMENT_STATUS',
+      //     status: 400,
+      //   });
+      // }
 
       // Check if product exists
       const product = await productService.getProductById(productId);
