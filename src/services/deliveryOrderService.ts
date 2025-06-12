@@ -52,6 +52,11 @@ export default {
             contains: search,
           },
         },
+        {
+          doNumber: {
+            contains: search,
+          },
+        },
       ];
     }
 

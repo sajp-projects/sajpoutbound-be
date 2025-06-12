@@ -55,6 +55,11 @@ export default {
           },
         },
         {
+          shipmentNumber: {
+            contains: search,
+          },
+        },
+        {
           armada: {
             model: {
               contains: search,
