@@ -26,6 +26,7 @@ app.use(
       'https://www.outmanage.vercel.app',
       'https://outmanage.vercel.app',
       'http://localhost:5173',
+      'http://localhost:5174',
       'http://31.97.105.79:5173',
       'https://demo.benzeta.shop',
       'https://benzeta.shop',

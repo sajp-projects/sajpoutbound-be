@@ -1921,13 +1921,17 @@ export default {
   },
 
   /**
-   * Get all shipments with status PENDING (not yet weighed)
+   * Get all shipments that have at least one shipmentItem with status CHOSEN (not yet weighed)
    */
   async getPendingShipments() {
     return prisma.shipment.findMany({
       where: {
-        status: STATUS.PENDING,
         deletedAt: null,
+        shipmentItems: {
+          some: {
+            status: SHIPMENT_ITEM_STATUS.CHOSEN,
+          },
+        },
       },
       include: {
         armada: {
