@@ -370,7 +370,7 @@ export default {
             });
           }
 
-          // Get the current shipment to check status
+          // Get the current shipment to check status and items
           const shipment = await shipmentService.getShipmentById(id);
           if (!shipment) {
             throw new CustomError({
@@ -386,6 +386,48 @@ export default {
               errorCode: 'TIDAK_DAPAT_MEMPERBARUI_ITEM_PENGIRIMAN',
               status: 400,
             });
+          }
+
+          // Map of existing shipment items by (deliveryOrderId, productId)
+          const existingItemsMap = new Map();
+          for (const item of shipment.shipmentItems) {
+            existingItemsMap.set(item.deliveryOrderId + '-' + item.productId, item);
+          }
+
+          // Map of updated items by (deliveryOrderId, productId)
+          const updatedItemsMap = new Map();
+          for (const item of fullUpdate.items) {
+            updatedItemsMap.set(item.deliveryOrderId + '-' + item.productId, item);
+          }
+
+          // 1. Prevent removing loaded items
+          for (const [key, existingItem] of existingItemsMap.entries()) {
+            if (!updatedItemsMap.has(key)) {
+              if (existingItem.status !== 'PENDING') {
+                throw new CustomError({
+                  message: 'Item yang sudah dimuat tidak dapat dihapus dari pengiriman.',
+                  errorCode: 'ITEM_SUDAH_DIMUAT_TIDAK_BISA_DIHAPUS',
+                  status: 400,
+                });
+              }
+            }
+          }
+
+          // 2. Prevent changing quantity of loaded items
+          for (const [key, updatedItem] of updatedItemsMap.entries()) {
+            if (existingItemsMap.has(key)) {
+              const existingItem = existingItemsMap.get(key);
+              if (
+                existingItem.status !== 'PENDING' &&
+                updatedItem.requestedQuantity !== existingItem.requestedQuantity
+              ) {
+                throw new CustomError({
+                  message: 'Kuantitas item yang sudah dimuat tidak dapat diubah.',
+                  errorCode: 'KUANTITAS_ITEM_SUDAH_DIMUAT_TIDAK_BISA_DIUBAH',
+                  status: 400,
+                });
+              }
+            }
           }
         }
       }
@@ -427,15 +469,28 @@ export default {
         });
       }
 
-      const shipment = await shipmentService.deleteShipment(id, performedById);
+      const existingShipment = await shipmentService.getShipmentById(id);
 
-      if (!shipment) {
+      if (!existingShipment) {
         throw new CustomError({
           message: 'Pengiriman tidak ditemukan',
           errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
+
+      if (
+        existingShipment.status !== STATUS.PENDING ||
+        existingShipment.shipmentItems.some((item) => item.status !== 'PENDING')
+      ) {
+        throw new CustomError({
+          message: 'Pengiriman hanya dapat diarsipkan jika status dan semua item masih PENDING.',
+          errorCode: 'PENGIRIMAN_TIDAK_BISA_DIARSIPKAN',
+          status: 400,
+        });
+      }
+
+      const shipment = await shipmentService.deleteShipment(id, performedById, existingShipment);
 
       res.status(200).json(success(shipment));
     } catch (error) {

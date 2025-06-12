@@ -643,12 +643,10 @@ export default {
       }
 
       if (data.armadaId === null || data.armadaId === undefined || data.armadaId === '') {
-        // Disconnect armada if null, undefined, or empty string
         updateData.armada = {
           disconnect: true,
         };
       } else if (data.armadaId) {
-        // Connect to new armada if an ID is provided
         updateData.armada = {
           connect: {
             id: data.armadaId,
@@ -699,7 +697,6 @@ export default {
               },
             });
           } else {
-            // Get warehouseId from product - product is validated in controller
             const product = await tx.product.findUnique({
               where: {
                 id: item.productId,
@@ -836,23 +833,8 @@ export default {
   /**
    * Delete a shipment (soft delete)
    */
-  async deleteShipment(id: string, performedById: string) {
+  async deleteShipment(id: string, performedById: string, existingShipment: any) {
     return prisma.$transaction(async (tx) => {
-      // Get the current shipment data before deletion
-      const existingShipment = await tx.shipment.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          armada: true,
-          shipmentItems: true,
-        },
-      });
-
-      if (!existingShipment) {
-        return null;
-      }
-
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
