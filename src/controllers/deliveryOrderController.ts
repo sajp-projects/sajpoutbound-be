@@ -401,6 +401,14 @@ export default {
         });
       }
 
+      if (existingDeliveryOrder.status === STATUS.PROSES) {
+        throw new CustomError({
+          message: 'Pesanan pengiriman dengan status PROSES tidak dapat diarsipkan',
+          errorCode: 'TIDAK_BISA_ARSIPKAN_STATUS_PROSES',
+          status: 400,
+        });
+      }
+
       const performedById = req.user?.id;
 
       if (!performedById) {
@@ -411,7 +419,7 @@ export default {
         });
       }
 
-      const deletedDeliveryOrder = await deliveryOrderService.deleteDeliveryOrder(
+      const deletedDeliveryOrder = await deliveryOrderService.softDeleteDeliveryOrder(
         existingDeliveryOrder,
         performedById,
       );

@@ -97,7 +97,7 @@ process.on('SIGINT', async () => {
 // Start the server
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
-  console.log(`API Documentation available at http://localhost:${port}/api-docs`);
+  console.log(`API Documentation available at :${port}/api-docs`);
 });
 
 export default app;

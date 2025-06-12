@@ -62,7 +62,7 @@ export default {
         action: ACTION.CREATE,
         entityType: ENTITY_TYPE.SHIPMENT,
         newData: shipmentData,
-        description: 'Shipment created',
+        description: 'Pengiriman dibuat',
       },
     });
   },
@@ -87,7 +87,7 @@ export default {
         entityType: ENTITY_TYPE.SHIPMENT,
         oldData,
         newData,
-        description: 'Shipment updated',
+        description: 'Pengiriman diperbarui',
       },
     });
   },
@@ -110,7 +110,7 @@ export default {
         action: ACTION.DELETE,
         entityType: ENTITY_TYPE.SHIPMENT,
         oldData: shipmentData,
-        description: 'Shipment deleted',
+        description: 'Pengiriman dihapus',
       },
     });
   },
@@ -133,7 +133,7 @@ export default {
         action: ACTION.RESTORE,
         entityType: ENTITY_TYPE.SHIPMENT,
         newData: shipmentData,
-        description: 'Shipment restored',
+        description: 'Pengiriman dipulihkan',
       },
     });
   },
@@ -188,7 +188,7 @@ export default {
           isVerified: true,
           plateNumber,
         },
-        description: `Shipment verified with plate number ${plateNumber}`,
+        description: `Pengiriman diverifikasi dengan nomor plat ${plateNumber}`,
       },
     });
   },

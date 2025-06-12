@@ -521,6 +521,7 @@ export default {
         customerId: existingDeliveryOrder.customerId,
         customerName: existingDeliveryOrder.customer.name,
         address: existingDeliveryOrder.address,
+        doNumber: existingDeliveryOrder.doNumber,
         internalNote: existingDeliveryOrder.internalNote,
         items: existingDeliveryOrder.items.map((item: any) => ({
           id: item.id,
