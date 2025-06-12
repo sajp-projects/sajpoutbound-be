@@ -269,6 +269,7 @@ model DeliveryOrderLog {
 
 model Shipment {
   id             String                  @id @default(uuid())
+  shipmentNumber String?                 @unique
   type           SHIPMENT_TYPE           @default(ANTAR)
   status         STATUS                  @default(PENDING)
   armadaId       String?

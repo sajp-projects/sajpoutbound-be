@@ -2,6 +2,7 @@ import { STATUS } from '@prisma/client';
 import {
   NextFunction, Request, Response, 
 } from 'express';
+import { customAlphabet } from 'nanoid';
 import path from 'path';
 import { CustomError } from '../middlewares/error';
 import {
@@ -247,7 +248,33 @@ export default {
         }
       }
 
-      const shipment = await shipmentService.createShipment(validated, performedById);
+      const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+      let shipmentNumber;
+      let attempts = 0;
+      const maxAttempts = 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        shipmentNumber = nanoid();
+        const existing = await shipmentService.getShipmentByShipmentNumber(shipmentNumber);
+        if (!existing) {
+          break;
+        }
+        attempts++;
+
+        if (attempts >= maxAttempts) {
+          throw new CustomError({
+            message: 'Terjadi kesalahan saat membuat nomor Pengiriman, harap coba lagi.',
+            errorCode: 'DUPLIKASI_NOMOR_PENGIRIMAN',
+            status: 500,
+          });
+        }
+      }
+
+      const shipment = await shipmentService.createShipment(
+        validated,
+        performedById,
+        shipmentNumber,
+      );
 
       res.status(201).json(success(shipment));
     } catch (error) {

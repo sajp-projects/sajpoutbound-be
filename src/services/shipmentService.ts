@@ -410,7 +410,7 @@ export default {
   /**
    * Create a new shipment with items
    */
-  async createShipment(data: ShipmentCreateInput, performedById: string) {
+  async createShipment(data: ShipmentCreateInput, performedById: string, shipmentNumber: string) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
@@ -445,7 +445,10 @@ export default {
 
       // Create the shipment
       const shipment = await tx.shipment.create({
-        data: shipmentData,
+        data: {
+          ...shipmentData,
+          shipmentNumber,
+        },
         include: {
           armada: true,
         },
@@ -2025,6 +2028,14 @@ export default {
       },
       orderBy: {
         createdAt: 'desc',
+      },
+    });
+  },
+
+  async getShipmentByShipmentNumber(shipmentNumber: string) {
+    return prisma.shipment.findUnique({
+      where: {
+        shipmentNumber,
       },
     });
   },
