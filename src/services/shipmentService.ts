@@ -19,12 +19,16 @@ export default {
   /**
    * Get all shipments with pagination and search
    */
-  async getAllShipments(page: number = 1, limit: number = 10, search?: string) {
+  async getAllShipments(page: number = 1, limit: number = 10, search?: string, status?: STATUS) {
     const skip = (page - 1) * limit;
 
     const whereConditions: any = {
       deletedAt: null,
     };
+
+    if (status) {
+      whereConditions.status = status;
+    }
 
     if (search) {
       whereConditions.OR = [

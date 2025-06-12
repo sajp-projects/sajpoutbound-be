@@ -1,4 +1,6 @@
-import { ACTION, ENTITY_TYPE } from '@prisma/client';
+import {
+  ACTION, ENTITY_TYPE, STATUS, 
+} from '@prisma/client';
 import prisma from '../config/prisma';
 import { DeliveryOrderCreateInput, DeliveryOrderUpdateInput } from '../schemas/deliveryOrder';
 import deliveryOrderLogService from './deliveryOrderLogService';
@@ -15,12 +17,21 @@ export default {
    * @param search Optional search term
    * @returns Object containing delivery orders array and total count
    */
-  async getAllDeliveryOrders(page: number = 1, limit: number = 10, search?: string) {
+  async getAllDeliveryOrders(
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    status?: STATUS,
+  ) {
     const skip = (page - 1) * limit;
 
     const whereConditions: any = {
       deletedAt: null,
     };
+
+    if (status) {
+      whereConditions.status = status;
+    }
 
     if (search) {
       whereConditions.OR = [

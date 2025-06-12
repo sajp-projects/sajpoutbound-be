@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, STATUS } from '@prisma/client';
 import {
   NextFunction, Request, Response, 
 } from 'express';
@@ -24,6 +24,15 @@ export default {
       const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
       const search = req.query.search as string | undefined;
+      const status = req.query.status as STATUS | undefined;
+
+      if (status && !Object.values(STATUS).includes(status as STATUS)) {
+        throw new CustomError({
+          message: 'Invalid status',
+          errorCode: 'INVALID_STATUS',
+          status: 400,
+        });
+      }
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
@@ -41,7 +50,7 @@ export default {
         });
       }
 
-      const result = await deliveryOrderService.getAllDeliveryOrders(page, limit, search);
+      const result = await deliveryOrderService.getAllDeliveryOrders(page, limit, search, status);
 
       res.status(200).json(
         success({
