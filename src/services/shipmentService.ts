@@ -1,4 +1,6 @@
-import { SHIPMENT_ITEM_STATUS, STATUS } from '@prisma/client';
+import {
+  SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, 
+} from '@prisma/client';
 import prisma from '../config/prisma';
 import {
   ShipmentBulkWeighInput,
@@ -19,7 +21,13 @@ export default {
   /**
    * Get all shipments with pagination and search
    */
-  async getAllShipments(page: number = 1, limit: number = 10, search?: string, status?: STATUS) {
+  async getAllShipments(
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    status?: STATUS,
+    type?: SHIPMENT_TYPE,
+  ) {
     const skip = (page - 1) * limit;
 
     const whereConditions: any = {
@@ -28,6 +36,10 @@ export default {
 
     if (status) {
       whereConditions.status = status;
+    }
+
+    if (type) {
+      whereConditions.type = type;
     }
 
     if (search) {

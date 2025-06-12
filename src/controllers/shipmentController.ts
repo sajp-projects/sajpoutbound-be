@@ -1,4 +1,4 @@
-import { STATUS } from '@prisma/client';
+import { SHIPMENT_TYPE, STATUS } from '@prisma/client';
 import {
   NextFunction, Request, Response, 
 } from 'express';
@@ -39,6 +39,7 @@ export default {
       const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
       const search = req.query.search as string | undefined;
       const status = req.query.status as STATUS | undefined;
+      const type = req.query.type as SHIPMENT_TYPE | undefined;
 
       if (status && !Object.values(STATUS).includes(status as STATUS)) {
         throw new CustomError({
@@ -64,7 +65,7 @@ export default {
         });
       }
 
-      const result = await shipmentService.getAllShipments(page, limit, search, status);
+      const result = await shipmentService.getAllShipments(page, limit, search, status, type);
 
       res.status(200).json(
         success({
