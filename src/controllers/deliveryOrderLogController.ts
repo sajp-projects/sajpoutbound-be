@@ -18,16 +18,16 @@ export default {
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
@@ -71,8 +71,8 @@ export default {
       const deliveryOrder = await deliveryOrderService.getDeliveryOrderById(deliveryOrderId);
       if (!deliveryOrder) {
         throw new CustomError({
-          message: 'Delivery order not found',
-          errorCode: 'DELIVERY_ORDER_NOT_FOUND',
+          message: 'Pesanan pengiriman tidak ditemukan',
+          errorCode: 'PESANAN_PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }

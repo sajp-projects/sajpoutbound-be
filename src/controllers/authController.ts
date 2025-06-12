@@ -27,8 +27,8 @@ export default {
       // If user not found, throw authentication error
       if (!user) {
         throw new CustomError({
-          message: 'Invalid email or password',
-          errorCode: 'INVALID_CREDENTIALS',
+          message: 'Email atau password tidak valid',
+          errorCode: 'EMAIL_ATAU_PASSWORD_TIDAK_VALID',
           status: 401,
         });
       }
@@ -39,8 +39,8 @@ export default {
       // If password is invalid, throw authentication error
       if (!isPasswordValid) {
         throw new CustomError({
-          message: 'Invalid email or password',
-          errorCode: 'INVALID_CREDENTIALS',
+          message: 'Email atau password tidak valid',
+          errorCode: 'EMAIL_ATAU_PASSWORD_TIDAK_VALID',
           status: 401,
         });
       }
@@ -96,8 +96,8 @@ export default {
 
       if (!token) {
         throw new CustomError({
-          message: 'No token provided',
-          errorCode: 'NO_TOKEN_PROVIDED',
+          message: 'Token tidak ditemukan',
+          errorCode: 'TOKEN_TIDAK_DITEMUKAN',
           status: 401,
         });
       }
@@ -107,8 +107,8 @@ export default {
 
       if (!decoded || !decoded.id) {
         throw new CustomError({
-          message: 'Invalid token format',
-          errorCode: 'INVALID_TOKEN_FORMAT',
+          message: 'Format token tidak valid',
+          errorCode: 'FORMAT_TOKEN_TIDAK_VALID',
           status: 401,
         });
       }
@@ -120,8 +120,8 @@ export default {
 
       if (!user) {
         throw new CustomError({
-          message: 'User not found',
-          errorCode: 'USER_NOT_FOUND',
+          message: 'Pengguna tidak ditemukan',
+          errorCode: 'PENGGAUNA_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -129,8 +129,8 @@ export default {
       // Check if user has a valid refresh token in database
       if (!user.refreshToken) {
         throw new CustomError({
-          message: 'No refresh token found, please login again',
-          errorCode: 'NO_REFRESH_TOKEN',
+          message: 'Token refresh tidak ditemukan, silakan login kembali',
+          errorCode: 'TOKEN_REFRESH_TIDAK_DITEMUKAN',
           status: 401,
         });
       }
@@ -141,8 +141,8 @@ export default {
       // Check if refresh token has expired
       if (user.expiresAt && user.expiresAt < jakartaTime) {
         throw new CustomError({
-          message: 'Refresh token expired, please login again',
-          errorCode: 'REFRESH_TOKEN_EXPIRED',
+          message: 'Token refresh sudah kadaluarsa, silakan login kembali',
+          errorCode: 'TOKEN_REFRESH_KADALUARSA',
           status: 401,
         });
       }
@@ -170,8 +170,8 @@ export default {
 
       if (!userId) {
         throw new CustomError({
-          message: 'Authentication required',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }

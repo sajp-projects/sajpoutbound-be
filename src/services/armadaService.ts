@@ -110,30 +110,24 @@ export default {
   /**
    * Update an armada
    *
-   * @param id The ID of the armada to update
+   * @param existingArmada The existing armada object (already fetched)
    * @param data The new armada data
    * @param performedById The ID of the user who performed the action
    * @returns The updated armada
    */
-  async updateArmada(id: string, data: ArmadaUpdateInput, performedById: string): Promise<Armada> {
+  async updateArmada(
+    existingArmada: Armada,
+    data: ArmadaUpdateInput,
+    performedById: string,
+  ): Promise<Armada> {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-      const oldArmada = await tx.armada.findUnique({
-        where: {
-          id,
-        },
-      });
-
-      if (!oldArmada) {
-        throw new Error('Armada not found');
-      }
-
       const armada = await tx.armada.update({
         where: {
-          id,
+          id: existingArmada.id,
         },
         data: {
           ...data,
@@ -147,11 +141,11 @@ export default {
 
       Object.keys(data).forEach((key) => {
         if (
-          oldArmada &&
-          oldArmada[key as keyof typeof oldArmada] !== data[key as keyof typeof data]
+          existingArmada &&
+          existingArmada[key as keyof typeof existingArmada] !== data[key as keyof typeof data]
         ) {
           changedFields[key] = data[key as keyof typeof data];
-          oldDataChanges[key] = oldArmada[key as keyof typeof oldArmada];
+          oldDataChanges[key] = existingArmada[key as keyof typeof existingArmada];
         }
       });
 
@@ -172,36 +166,19 @@ export default {
   /**
    * Delete an armada
    *
-   * @param id The ID of the armada to delete
+   * @param existingArmada The existing armada object (already fetched)
    * @param performedById The ID of the user who performed the action
    * @returns The deleted armada
    */
-  async deleteArmada(id: string, performedById: string): Promise<Armada> {
+  async deleteArmada(existingArmada: Armada, performedById: string): Promise<Armada> {
     return prisma.$transaction(async (tx) => {
-      const oldArmada = await tx.armada.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          _count: {
-            select: {
-              armadaLogs: true,
-            },
-          },
-        },
-      });
-
-      if (!oldArmada) {
-        throw new Error('Armada not found');
-      }
-
       // Create minimal armada data for logging
       const armadaDataToLog = {
-        id: oldArmada.id,
-        model: oldArmada.model,
-        id_sl: oldArmada.id_sl,
-        plateNumber: oldArmada.plateNumber,
-        description: oldArmada.description,
+        id: existingArmada.id,
+        model: existingArmada.model,
+        id_sl: existingArmada.id_sl,
+        plateNumber: existingArmada.plateNumber,
+        description: existingArmada.description,
       };
 
       // Log the deletion before actually deleting
@@ -211,7 +188,7 @@ export default {
       // This preserves the logs but removes their reference to the armada
       await tx.armadaLog.updateMany({
         where: {
-          armadaId: id,
+          armadaId: existingArmada.id,
         },
         data: {
           armadaId: null,
@@ -221,11 +198,11 @@ export default {
       // Delete the armada
       await tx.armada.delete({
         where: {
-          id,
+          id: existingArmada.id,
         },
       });
 
-      return oldArmada;
+      return existingArmada;
     });
   },
 };

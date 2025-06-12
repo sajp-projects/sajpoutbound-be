@@ -26,16 +26,16 @@ export default {
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
@@ -82,8 +82,8 @@ export default {
 
       if (!user) {
         throw new CustomError({
-          message: 'User not found',
-          errorCode: 'USER_NOT_FOUND',
+          message: 'Pengguna tidak ditemukan',
+          errorCode: 'PENGGUNA_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -108,8 +108,8 @@ export default {
         const warehouse = await warehouseService.getWarehouseById(validated.warehouseId);
         if (!warehouse) {
           throw new CustomError({
-            message: 'Warehouse not found',
-            errorCode: 'WAREHOUSE_NOT_FOUND',
+            message: 'Gudang tidak ditemukan',
+            errorCode: 'GUDANG_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
@@ -122,8 +122,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -145,8 +145,8 @@ export default {
           const target = (error.meta?.target as string[]) || [];
           if (target.includes('email')) {
             throw new CustomError({
-              message: `User with email: ${req.body.email}, already exists`,
-              errorCode: 'USER_EMAIL_DUPLICATE',
+              message: `Pengguna dengan email: ${req.body.email}, sudah ada`,
+              errorCode: 'EMAIL_PENGGUNA_DUPLIKAT',
               status: 409,
             });
           }
@@ -159,15 +159,15 @@ export default {
               : 'Foreign key';
 
           throw new CustomError({
-            message: `${fieldName} not found`,
-            errorCode: 'FOREIGN_KEY_NOT_FOUND',
+            message: `${fieldName} tidak ditemukan`,
+            errorCode: 'FOREIGN_KEY_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
 
         // For other Prisma errors
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -194,8 +194,8 @@ export default {
 
       if (!existingUser) {
         throw new CustomError({
-          message: 'User not found',
-          errorCode: 'USER_NOT_FOUND',
+          message: 'Pengguna tidak ditemukan',
+          errorCode: 'PENGGUNA_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -205,8 +205,8 @@ export default {
 
       if (Object.keys(validated).length === 0) {
         throw new CustomError({
-          message: 'At least one field is required for update',
-          errorCode: 'VALIDATION_ERROR',
+          message: 'Minimal satu field harus diisi untuk pembaruan',
+          errorCode: 'VALIDASI_ERROR',
           status: 400,
         });
       }
@@ -216,8 +216,8 @@ export default {
         const warehouse = await warehouseService.getWarehouseById(validated.warehouseId);
         if (!warehouse) {
           throw new CustomError({
-            message: `Warehouse with ID ${validated.warehouseId} not found`,
-            errorCode: 'WAREHOUSE_NOT_FOUND',
+            message: `Gudang dengan ID ${validated.warehouseId} tidak ditemukan`,
+            errorCode: 'GUDANG_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
@@ -227,8 +227,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -242,8 +242,8 @@ export default {
           const target = (error.meta?.target as string[]) || [];
           if (target.includes('email')) {
             throw new CustomError({
-              message: `User with email: ${req.body.email}, already exists`,
-              errorCode: 'USER_EMAIL_DUPLICATE',
+              message: `Pengguna dengan email: ${req.body.email}, sudah ada`,
+              errorCode: 'EMAIL_PENGGUNA_DUPLIKAT',
               status: 409,
             });
           }
@@ -256,14 +256,14 @@ export default {
               : 'Foreign key';
 
           throw new CustomError({
-            message: `${fieldName} not found`,
-            errorCode: 'FOREIGN_KEY_NOT_FOUND',
+            message: `${fieldName} tidak ditemukan`,
+            errorCode: 'FOREIGN_KEY_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
 
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -286,8 +286,8 @@ export default {
 
       if (!existingUser) {
         throw new CustomError({
-          message: 'User not found',
-          errorCode: 'USER_NOT_FOUND',
+          message: 'Pengguna tidak ditemukan',
+          errorCode: 'PENGGUNA_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -296,8 +296,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -323,8 +323,8 @@ export default {
 
       if (!existingUser) {
         throw new CustomError({
-          message: 'User not found',
-          errorCode: 'USER_NOT_FOUND',
+          message: 'Pengguna tidak ditemukan',
+          errorCode: 'PENGGUNA_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -333,8 +333,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }

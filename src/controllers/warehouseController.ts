@@ -25,16 +25,16 @@ export default {
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
@@ -71,8 +71,8 @@ export default {
 
       if (!warehouse) {
         throw new CustomError({
-          message: 'Warehouse not found',
-          errorCode: 'WAREHOUSE_NOT_FOUND',
+          message: 'Gudang tidak ditemukan',
+          errorCode: 'GUDANG_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -95,8 +95,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -108,14 +108,14 @@ export default {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new CustomError({
-            message: 'Warehouse with this name already exists',
-            errorCode: 'WAREHOUSE_NAME_DUPLICATE',
+            message: 'Gudang dengan nama ini sudah ada',
+            errorCode: 'NAMA_GUDANG_DUPLIKAT',
             status: 409,
           });
         }
 
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -141,8 +141,8 @@ export default {
 
       if (!existingWarehouse) {
         throw new CustomError({
-          message: 'Warehouse not found',
-          errorCode: 'WAREHOUSE_NOT_FOUND',
+          message: 'Gudang tidak ditemukan',
+          errorCode: 'GUDANG_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -153,27 +153,31 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
 
-      const updatedWarehouse = await warehouseService.updateWarehouse(id, validated, performedById);
+      const updatedWarehouse = await warehouseService.updateWarehouse(
+        existingWarehouse,
+        validated,
+        performedById,
+      );
 
       res.status(200).json(success(updatedWarehouse));
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new CustomError({
-            message: 'Warehouse with this name already exists',
-            errorCode: 'WAREHOUSE_NAME_DUPLICATE',
+            message: 'Gudang dengan nama ini sudah ada',
+            errorCode: 'NAMA_GUDANG_DUPLIKAT',
             status: 409,
           });
         }
 
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -195,8 +199,8 @@ export default {
 
       if (!existingWarehouse) {
         throw new CustomError({
-          message: 'Warehouse not found',
-          errorCode: 'WAREHOUSE_NOT_FOUND',
+          message: 'Gudang tidak ditemukan',
+          errorCode: 'GUDANG_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -205,8 +209,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -214,8 +218,8 @@ export default {
       // Check if warehouse is assigned to any user
       if (existingWarehouse.users.length > 0) {
         throw new CustomError({
-          message: 'Cannot delete warehouse as it is still assigned to a user',
-          errorCode: 'WAREHOUSE_IN_USE',
+          message: 'Tidak dapat menghapus gudang karena masih terhubung dengan pengguna',
+          errorCode: 'GUDANG_SEDANG_DIGUNAKAN',
           status: 400,
         });
       }
@@ -224,13 +228,16 @@ export default {
       const productsCount = await warehouseService.getWarehouseProductsCount(id);
       if (productsCount > 0) {
         throw new CustomError({
-          message: 'Cannot delete warehouse as it has products associated with it',
-          errorCode: 'WAREHOUSE_HAS_PRODUCTS',
+          message: 'Tidak dapat menghapus gudang karena masih memiliki produk terkait',
+          errorCode: 'GUDANG_MEMILIKI_PRODUK',
           status: 400,
         });
       }
 
-      const deletedWarehouse = await warehouseService.deleteWarehouse(id, performedById);
+      const deletedWarehouse = await warehouseService.deleteWarehouse(
+        existingWarehouse,
+        performedById,
+      );
 
       res.status(200).json(
         success({
@@ -262,8 +269,8 @@ export default {
 
       if (!existingWarehouse) {
         throw new CustomError({
-          message: 'Warehouse not found',
-          errorCode: 'WAREHOUSE_NOT_FOUND',
+          message: 'Gudang tidak ditemukan',
+          errorCode: 'GUDANG_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -283,16 +290,16 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
 
       // Assign user to warehouse
       const updatedWarehouse = await warehouseService.assignUserToWarehouse(
-        warehouseId,
-        userId,
+        existingWarehouse,
+        existingUser,
         performedById,
       );
 
@@ -300,7 +307,7 @@ export default {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -327,8 +334,8 @@ export default {
 
       if (!existingWarehouse) {
         throw new CustomError({
-          message: 'Warehouse not found',
-          errorCode: 'WAREHOUSE_NOT_FOUND',
+          message: 'Gudang tidak ditemukan',
+          errorCode: 'GUDANG_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -356,16 +363,16 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
 
       // Unassign user from warehouse
       const updatedWarehouse = await warehouseService.unassignUserFromWarehouse(
-        warehouseId,
-        userId,
+        existingWarehouse,
+        existingUser,
         performedById,
       );
 
@@ -373,7 +380,7 @@ export default {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });

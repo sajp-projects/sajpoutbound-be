@@ -18,16 +18,16 @@ export default {
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
@@ -68,16 +68,16 @@ export default {
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }

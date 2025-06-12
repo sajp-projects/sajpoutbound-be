@@ -24,16 +24,16 @@ export default {
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
@@ -70,8 +70,8 @@ export default {
 
       if (!product) {
         throw new CustomError({
-          message: 'Product not found',
-          errorCode: 'PRODUCT_NOT_FOUND',
+          message: 'Produk tidak ditemukan',
+          errorCode: 'PRODUK_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -95,8 +95,8 @@ export default {
 
       if (!warehouse) {
         throw new CustomError({
-          message: 'Warehouse not found',
-          errorCode: 'WAREHOUSE_NOT_FOUND',
+          message: 'Gudang tidak ditemukan',
+          errorCode: 'GUDANG_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -105,8 +105,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -118,14 +118,14 @@ export default {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new CustomError({
-            message: 'Product with this ID SL already exists',
-            errorCode: 'PRODUCT_ID_SL_DUPLICATE',
+            message: 'Produk dengan ID SL ini sudah ada',
+            errorCode: 'ID_SL_PRODUK_DUPLIKAT',
             status: 409,
           });
         }
 
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -151,8 +151,8 @@ export default {
 
       if (!existingProduct) {
         throw new CustomError({
-          message: 'Product not found',
-          errorCode: 'PRODUCT_NOT_FOUND',
+          message: 'Produk tidak ditemukan',
+          errorCode: 'PRODUK_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -165,8 +165,8 @@ export default {
 
         if (!warehouse) {
           throw new CustomError({
-            message: 'Warehouse not found',
-            errorCode: 'WAREHOUSE_NOT_FOUND',
+            message: 'Gudang tidak ditemukan',
+            errorCode: 'GUDANG_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
@@ -176,17 +176,16 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
 
       const updatedProduct = await productService.updateProduct(
-        id,
+        existingProduct,
         validated,
         performedById,
-        existingProduct,
       );
 
       res.status(200).json(success(updatedProduct));
@@ -194,14 +193,14 @@ export default {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new CustomError({
-            message: 'Product with this ID SL already exists',
-            errorCode: 'PRODUCT_ID_SL_DUPLICATE',
+            message: 'Produk dengan ID SL ini sudah ada',
+            errorCode: 'ID_SL_PRODUK_DUPLIKAT',
             status: 409,
           });
         }
 
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -223,8 +222,8 @@ export default {
 
       if (!existingProduct) {
         throw new CustomError({
-          message: 'Product not found',
-          errorCode: 'PRODUCT_NOT_FOUND',
+          message: 'Produk tidak ditemukan',
+          errorCode: 'PRODUK_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -235,8 +234,8 @@ export default {
       if (deliveryOrderItems.length > 0) {
         throw new CustomError({
           message:
-            'Cannot delete product as it is used in active delivery orders. Please archive the related delivery orders first.',
-          errorCode: 'PRODUCT_IN_USE',
+            'Produk sedang digunakan dalam pesanan pengiriman aktif. Arsipkan pesanan pengiriman terkait terlebih dahulu.',
+          errorCode: 'PRODUK_SEDANG_DIGUNAKAN',
           status: 409,
         });
       }
@@ -245,13 +244,13 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
 
-      const deletedProduct = await productService.deleteProduct(id, performedById);
+      const deletedProduct = await productService.deleteProduct(existingProduct, performedById);
       res.status(200).json(success(deletedProduct));
     } catch (error) {
       next(error);

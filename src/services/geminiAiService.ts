@@ -4,13 +4,18 @@ import {
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
+import { CustomError } from '../middlewares/error';
 
 const readFileAsync = promisify(fs.readFile);
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!GEMINI_API_KEY) {
-  throw new Error('GEMINI_API_KEY is not set');
+  throw new CustomError({
+    message: 'GEMINI_API_KEY is not set',
+    errorCode: 'GEMINI_API_KEY_NOT_SET',
+    status: 500,
+  });
 }
 
 // Initialize the Google Generative AI with API key

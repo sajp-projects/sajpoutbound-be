@@ -377,45 +377,16 @@ export default {
   /**
    * Delete a delivery order
    */
-  async deleteDeliveryOrder(id: string, performedById: string) {
+  async deleteDeliveryOrder(existingDeliveryOrder: any, performedById: string) {
     return prisma.$transaction(async (tx) => {
-      // Get delivery order data for logging
-      const deliveryOrder = await tx.deliveryOrder.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      if (!deliveryOrder) {
-        throw new Error('Delivery order not found');
-      }
-
       // Prepare data for logging
       const deliveryOrderDataToLog = {
-        id: deliveryOrder.id,
-        customerId: deliveryOrder.customerId,
-        customerName: deliveryOrder.customer.name,
-        address: deliveryOrder.address,
-        internalNote: deliveryOrder.internalNote,
-        items: deliveryOrder.items.map((item) => ({
+        id: existingDeliveryOrder.id,
+        customerId: existingDeliveryOrder.customerId,
+        customerName: existingDeliveryOrder.customer.name,
+        address: existingDeliveryOrder.address,
+        internalNote: existingDeliveryOrder.internalNote,
+        items: existingDeliveryOrder.items.map((item: any) => ({
           id: item.id,
           productId: item.productId,
           productName: item.product.name,
@@ -433,14 +404,14 @@ export default {
       // Delete all items first
       await tx.deliveryOrderItem.deleteMany({
         where: {
-          deliveryOrderId: id,
+          deliveryOrderId: existingDeliveryOrder.id,
         },
       });
 
       // Then delete the delivery order
       return tx.deliveryOrder.delete({
         where: {
-          id,
+          id: existingDeliveryOrder.id,
         },
       });
     });
@@ -527,49 +498,20 @@ export default {
   /**
    * Soft delete a delivery order
    */
-  async softDeleteDeliveryOrder(id: string, performedById: string) {
+  async softDeleteDeliveryOrder(existingDeliveryOrder: any, performedById: string) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-      // Get delivery order data for logging
-      const deliveryOrder = await tx.deliveryOrder.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      if (!deliveryOrder) {
-        throw new Error('Delivery order not found');
-      }
-
       // Prepare data for logging
       const deliveryOrderDataToLog = {
-        id: deliveryOrder.id,
-        customerId: deliveryOrder.customerId,
-        customerName: deliveryOrder.customer.name,
-        address: deliveryOrder.address,
-        internalNote: deliveryOrder.internalNote,
-        items: deliveryOrder.items.map((item) => ({
+        id: existingDeliveryOrder.id,
+        customerId: existingDeliveryOrder.customerId,
+        customerName: existingDeliveryOrder.customer.name,
+        address: existingDeliveryOrder.address,
+        internalNote: existingDeliveryOrder.internalNote,
+        items: existingDeliveryOrder.items.map((item: any) => ({
           id: item.id,
           productId: item.productId,
           productName: item.product.name,
@@ -587,7 +529,7 @@ export default {
       // Update the delivery order with deletedAt timestamp
       return tx.deliveryOrder.update({
         where: {
-          id,
+          id: existingDeliveryOrder.id,
         },
         data: {
           deletedAt: jakartaTime,
@@ -600,53 +542,20 @@ export default {
   /**
    * Restore (unarchive) a delivery order
    */
-  async restoreDeliveryOrder(id: string, performedById: string) {
+  async restoreDeliveryOrder(existingDeliveryOrder: any, performedById: string) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-      // Get delivery order data for logging
-      const deliveryOrder = await tx.deliveryOrder.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      });
-
-      if (!deliveryOrder) {
-        throw new Error('Delivery order not found');
-      }
-
-      if (!deliveryOrder.deletedAt) {
-        throw new Error('Delivery order is not archived');
-      }
-
       // Prepare data for logging
       const deliveryOrderDataToLog = {
-        id: deliveryOrder.id,
-        customerId: deliveryOrder.customerId,
-        customerName: deliveryOrder.customer.name,
-        address: deliveryOrder.address,
-        internalNote: deliveryOrder.internalNote,
-        items: deliveryOrder.items.map((item) => ({
+        id: existingDeliveryOrder.id,
+        customerId: existingDeliveryOrder.customerId,
+        customerName: existingDeliveryOrder.customer.name,
+        address: existingDeliveryOrder.address,
+        internalNote: existingDeliveryOrder.internalNote,
+        items: existingDeliveryOrder.items.map((item: any) => ({
           id: item.id,
           productId: item.productId,
           productName: item.product.name,
@@ -657,12 +566,12 @@ export default {
       // Create log entry for restoration
       await tx.deliveryOrderLog.create({
         data: {
-          deliveryOrderId: id,
+          deliveryOrderId: existingDeliveryOrder.id,
           performedById,
           action: ACTION.RESTORE,
           entityType: ENTITY_TYPE.DELIVERY_ORDER,
           oldData: {
-            deletedAt: deliveryOrder.deletedAt,
+            deletedAt: existingDeliveryOrder.deletedAt,
           },
           newData: deliveryOrderDataToLog,
           description: 'Delivery Order restored',
@@ -672,7 +581,7 @@ export default {
       // Update the delivery order to remove deletedAt
       return tx.deliveryOrder.update({
         where: {
-          id,
+          id: existingDeliveryOrder.id,
         },
         data: {
           deletedAt: null,

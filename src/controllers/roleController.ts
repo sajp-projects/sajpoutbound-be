@@ -23,16 +23,16 @@ export default {
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
@@ -72,8 +72,8 @@ export default {
 
       if (!role) {
         throw new CustomError({
-          message: 'Role not found',
-          errorCode: 'ROLE_NOT_FOUND',
+          message: 'Peran tidak ditemukan',
+          errorCode: 'PERAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -104,15 +104,15 @@ export default {
           const target = (error.meta?.target as string[]) || [];
           if (target.includes('name')) {
             throw new CustomError({
-              message: `Role with name: ${req.body.name}, already exists`,
-              errorCode: 'ROLE_NAME_DUPLICATE',
+              message: `Peran dengan nama: ${req.body.name}, sudah ada`,
+              errorCode: 'NAMA_PERAN_DUPLIKAT',
               status: 409,
             });
           }
         }
 
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -140,8 +140,8 @@ export default {
 
       if (!existingRole) {
         throw new CustomError({
-          message: 'Role not found',
-          errorCode: 'ROLE_NOT_FOUND',
+          message: 'Peran tidak ditemukan',
+          errorCode: 'PERAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -162,15 +162,15 @@ export default {
           const target = (error.meta?.target as string[]) || [];
           if (target.includes('name')) {
             throw new CustomError({
-              message: `Role with name: ${req.body.name}, already exists`,
-              errorCode: 'ROLE_NAME_DUPLICATE',
+              message: `Peran dengan nama: ${req.body.name}, sudah ada`,
+              errorCode: 'NAMA_PERAN_DUPLIKAT',
               status: 409,
             });
           }
         }
 
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -194,8 +194,8 @@ export default {
 
       if (!existingRole) {
         throw new CustomError({
-          message: 'Role not found',
-          errorCode: 'ROLE_NOT_FOUND',
+          message: 'Peran tidak ditemukan',
+          errorCode: 'PERAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -205,8 +205,8 @@ export default {
 
       if (activeUsersWithRole > 0) {
         throw new CustomError({
-          message: `Cannot delete role. It is currently assigned to ${activeUsersWithRole} active users. Please reassign or archive these users first.`,
-          errorCode: 'ROLE_IN_USE',
+          message: `Tidak dapat menghapus peran. Saat ini sedang digunakan oleh ${activeUsersWithRole} pengguna aktif. Silakan alihkan atau arsipkan pengguna-pengguna tersebut terlebih dahulu.`,
+          errorCode: 'PERAN_SEDANG_DIGUNAKAN',
           status: 409,
         });
       }
@@ -216,8 +216,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }

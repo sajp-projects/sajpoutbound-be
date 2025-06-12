@@ -147,36 +147,15 @@ export default {
   /**
    * Update warehouse information
    */
-  async updateWarehouse(id: string, data: WarehouseUpdateInput, performedById: string) {
+  async updateWarehouse(existingWarehouse: any, data: WarehouseUpdateInput, performedById: string) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-      const oldWarehouse = await tx.warehouse.findUnique({
-        where: {
-          id,
-        },
-        select: {
-          name: true,
-          description: true,
-          users: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      if (!oldWarehouse) {
-        throw new Error('Warehouse not found');
-      }
-
       const warehouse = await tx.warehouse.update({
         where: {
-          id,
+          id: existingWarehouse.id,
         },
         data: {
           ...data,
@@ -197,8 +176,9 @@ export default {
       const changedFields: Record<string, any> = {};
       Object.keys(data).forEach((key) => {
         if (
-          oldWarehouse &&
-          oldWarehouse[key as keyof typeof oldWarehouse] !== data[key as keyof typeof data]
+          existingWarehouse &&
+          existingWarehouse[key as keyof typeof existingWarehouse] !==
+            data[key as keyof typeof data]
         ) {
           changedFields[key] = data[key as keyof typeof data];
         }
@@ -206,9 +186,9 @@ export default {
 
       if (Object.keys(changedFields).length > 0) {
         const oldDataForLog = {
-          name: oldWarehouse.name,
-          description: oldWarehouse.description,
-          users: oldWarehouse.users,
+          name: existingWarehouse.name,
+          description: existingWarehouse.description,
+          users: existingWarehouse.users,
         };
 
         await warehouseLogService.logWarehouseUpdate(
@@ -228,35 +208,12 @@ export default {
    * Delete a warehouse (hard delete)
    * The warehouse logs will be kept with warehouseId set to null
    */
-  async deleteWarehouse(id: string, performedById: string) {
+  async deleteWarehouse(existingWarehouse: any, performedById: string) {
     return prisma.$transaction(async (tx) => {
-      const oldWarehouse = await tx.warehouse.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          users: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      if (!oldWarehouse) {
-        throw new Error('Warehouse not found');
-      }
-
-      if (oldWarehouse.users.length > 0) {
-        throw new Error('Cannot delete warehouse as it is still assigned to users');
-      }
-
       const warehouseDataToLog = {
-        id: oldWarehouse.id,
-        name: oldWarehouse.name,
-        description: oldWarehouse.description,
+        id: existingWarehouse.id,
+        name: existingWarehouse.name,
+        description: existingWarehouse.description,
       };
 
       // Log the deletion before actually deleting
@@ -265,64 +222,33 @@ export default {
       // Delete the warehouse
       await tx.warehouse.delete({
         where: {
-          id,
+          id: existingWarehouse.id,
         },
       });
 
-      return oldWarehouse;
+      return existingWarehouse;
     });
   },
 
   /**
    * Assign a user to a warehouse
    */
-  async assignUserToWarehouse(warehouseId: string, userId: string, performedById: string) {
+  async assignUserToWarehouse(existingWarehouse: any, existingUser: any, performedById: string) {
     return prisma.$transaction(async (tx) => {
-      // Check if warehouse exists
-      const warehouse = await tx.warehouse.findUnique({
-        where: {
-          id: warehouseId,
-        },
-        include: {
-          users: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      if (!warehouse) {
-        throw new Error('Warehouse not found');
-      }
-
-      // Check if user exists
-      const user = await tx.user.findUnique({
-        where: {
-          id: userId,
-        },
-      });
-
-      if (!user) {
-        throw new Error('User not found');
-      }
-
       // Update user's warehouse
       await tx.user.update({
         where: {
-          id: userId,
+          id: existingUser.id,
         },
         data: {
-          warehouseId: warehouseId,
+          warehouseId: existingWarehouse.id,
         },
       });
 
       // Get updated warehouse
       const updatedWarehouse = await tx.warehouse.findUnique({
         where: {
-          id: warehouseId,
+          id: existingWarehouse.id,
         },
         include: {
           users: {
@@ -337,7 +263,7 @@ export default {
 
       // Log the update
       const oldData = {
-        users: warehouse.users,
+        users: existingWarehouse.users,
       };
 
       const newData = {
@@ -345,7 +271,7 @@ export default {
       };
 
       await warehouseLogService.logWarehouseUpdate(
-        warehouseId,
+        existingWarehouse.id,
         performedById,
         oldData,
         newData,
@@ -359,44 +285,16 @@ export default {
   /**
    * Unassign a user from a warehouse
    */
-  async unassignUserFromWarehouse(warehouseId: string, userId: string, performedById: string) {
+  async unassignUserFromWarehouse(
+    existingWarehouse: any,
+    existingUser: any,
+    performedById: string,
+  ) {
     return prisma.$transaction(async (tx) => {
-      // Check if warehouse exists
-      const warehouse = await tx.warehouse.findUnique({
-        where: {
-          id: warehouseId,
-        },
-        include: {
-          users: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      if (!warehouse) {
-        throw new Error('Warehouse not found');
-      }
-
-      // Check if user exists and is assigned to this warehouse
-      const user = await tx.user.findFirst({
-        where: {
-          id: userId,
-          warehouseId: warehouseId,
-        },
-      });
-
-      if (!user) {
-        throw new Error('User not found or not assigned to this warehouse');
-      }
-
       // Update user's warehouse to null
       await tx.user.update({
         where: {
-          id: userId,
+          id: existingUser.id,
         },
         data: {
           warehouse: {
@@ -408,7 +306,7 @@ export default {
       // Get updated warehouse
       const updatedWarehouse = await tx.warehouse.findUnique({
         where: {
-          id: warehouseId,
+          id: existingWarehouse.id,
         },
         include: {
           users: {
@@ -423,7 +321,7 @@ export default {
 
       // Log the update
       const oldData = {
-        users: warehouse.users,
+        users: existingWarehouse.users,
       };
 
       const newData = {
@@ -431,7 +329,7 @@ export default {
       };
 
       await warehouseLogService.logWarehouseUpdate(
-        warehouseId,
+        existingWarehouse.id,
         performedById,
         oldData,
         newData,

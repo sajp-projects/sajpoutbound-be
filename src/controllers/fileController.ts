@@ -16,8 +16,8 @@ export default {
       const fileExists = await fileService.fileExists(filePath);
       if (!fileExists) {
         throw new CustomError({
-          message: 'Image not found',
-          errorCode: 'IMAGE_NOT_FOUND',
+          message: 'Gambar tidak ditemukan',
+          errorCode: 'GAMBAR_TIDAK_DITEMUKAN',
           status: 404,
         });
       }

@@ -470,9 +470,7 @@ export default {
       for (const item of data.items) {
         // Get warehouseId from product
         const product = products.find((p) => p.id === item.productId);
-        if (!product || !product.warehouseId) {
-          throw new Error(`Product ${item.productId} does not have a warehouse assigned`);
-        }
+        if (!product || !product.warehouseId) continue;
 
         const shipmentItem = await tx.shipmentItem.create({
           data: {
@@ -1196,7 +1194,7 @@ export default {
   /**
    * Choose a product for a shipment
    */
-  async chooseProductForShipment(data: ShipmentChosenProductInput) {
+  async chooseProductForShipment(data: ShipmentChosenProductInput, product: any) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
@@ -1276,16 +1274,6 @@ export default {
         },
       });
 
-      // Get the product details
-      const product = await tx.product.findUnique({
-        where: {
-          id: data.productId,
-        },
-        include: {
-          warehouse: true,
-        },
-      });
-
       // Get the chosen product record
       const chosenProduct = await tx.shipmentChosenProduct.findFirst({
         where: {
@@ -1299,7 +1287,7 @@ export default {
 
       // If we don't have a product or chosen product record, something went wrong
       if (!product || !chosenProduct) {
-        throw new Error('Failed to retrieve product information after choosing');
+        return null;
       }
 
       // Build a combined response

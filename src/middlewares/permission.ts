@@ -21,8 +21,8 @@ export const checkPermission = (resource: string, action: PERMISSION_ACTION) => 
       // Check if user exists in request (authenticateToken middleware should have set this)
       if (!req.user || !req.user.id) {
         throw new CustomError({
-          message: 'Authentication required',
-          errorCode: 'AUTHENTICATION_REQUIRED',
+          message: 'Autentikasi diperlukan',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -33,8 +33,8 @@ export const checkPermission = (resource: string, action: PERMISSION_ACTION) => 
       // If roleId is missing, user doesn't have any role assigned
       if (!roleId) {
         throw new CustomError({
-          message: 'No role assigned to user',
-          errorCode: 'NO_ROLE_ASSIGNED',
+          message: 'Tidak ada peran yang ditugaskan kepada pengguna',
+          errorCode: 'TIDAK_ADA_PERAN_DITUGASKAN',
           status: 403,
         });
       }
@@ -48,8 +48,8 @@ export const checkPermission = (resource: string, action: PERMISSION_ACTION) => 
       // If permission doesn't exist, configuration error
       if (!permission) {
         throw new CustomError({
-          message: `Permission not configured for ${resource}:${action}`,
-          errorCode: 'PERMISSION_NOT_CONFIGURED',
+          message: `Izin tidak dikonfigurasi untuk ${resource}:${action}`,
+          errorCode: 'IZIN_TIDAK_DIKONFIGURASI',
           status: 500,
         });
       }
@@ -59,8 +59,8 @@ export const checkPermission = (resource: string, action: PERMISSION_ACTION) => 
 
       if (!hasPermission) {
         throw new CustomError({
-          message: 'You do not have permission to perform this action',
-          errorCode: 'PERMISSION_DENIED',
+          message: 'Anda tidak memiliki izin untuk melakukan tindakan ini',
+          errorCode: 'IZIN_DITOLAK',
           status: 403,
         });
       }
@@ -88,8 +88,8 @@ export const checkAnyPermission = (
       // Check if user exists in request (authenticateToken middleware should have set this)
       if (!req.user || !req.user.id) {
         throw new CustomError({
-          message: 'Authentication required',
-          errorCode: 'AUTHENTICATION_REQUIRED',
+          message: 'Autentikasi diperlukan',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -100,8 +100,8 @@ export const checkAnyPermission = (
       // If roleId is missing, user doesn't have any role assigned
       if (!roleId) {
         throw new CustomError({
-          message: 'No role assigned to user',
-          errorCode: 'NO_ROLE_ASSIGNED',
+          message: 'Tidak ada peran yang ditugaskan kepada pengguna',
+          errorCode: 'TIDAK_ADA_PERAN_DITUGASKAN',
           status: 403,
         });
       }
@@ -133,8 +133,8 @@ export const checkAnyPermission = (
 
       // If we reach here, user doesn't have any of the required permissions
       throw new CustomError({
-        message: 'You do not have permission to perform this action',
-        errorCode: 'PERMISSION_DENIED',
+        message: 'Anda tidak memiliki izin untuk melakukan tindakan ini',
+        errorCode: 'IZIN_DITOLAK',
         status: 403,
       });
     } catch (error) {
@@ -154,8 +154,8 @@ export const checkWarehouseAccess = () => {
       // Check if user exists in request (authenticateToken middleware should have set this)
       if (!req.user || !req.user.id) {
         throw new CustomError({
-          message: 'Authentication required',
-          errorCode: 'AUTHENTICATION_REQUIRED',
+          message: 'Autentikasi diperlukan',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -166,8 +166,8 @@ export const checkWarehouseAccess = () => {
       // If no product ID is provided, throw an error
       if (!productId) {
         throw new CustomError({
-          message: 'Product ID is required for warehouse access check',
-          errorCode: 'PRODUCT_ID_REQUIRED',
+          message: 'ID produk diperlukan untuk pemeriksaan akses gudang',
+          errorCode: 'ID_PRODUK_DIPERLUKAN',
           status: 400,
         });
       }
@@ -178,8 +178,8 @@ export const checkWarehouseAccess = () => {
       // If user doesn't exist, throw error
       if (!user) {
         throw new CustomError({
-          message: 'User not found',
-          errorCode: 'USER_NOT_FOUND',
+          message: 'Pengguna tidak ditemukan',
+          errorCode: 'PENGGAUNA_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -195,8 +195,8 @@ export const checkWarehouseAccess = () => {
       // If product doesn't exist, throw error
       if (!product) {
         throw new CustomError({
-          message: 'Product not found',
-          errorCode: 'PRODUCT_NOT_FOUND',
+          message: 'Produk tidak ditemukan',
+          errorCode: 'PRODUK_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -204,8 +204,8 @@ export const checkWarehouseAccess = () => {
       // If product has no warehouse, throw error
       if (!product.warehouseId) {
         throw new CustomError({
-          message: 'Product does not have a warehouse assigned',
-          errorCode: 'PRODUCT_WITHOUT_WAREHOUSE',
+          message: 'Produk tidak memiliki gudang yang ditugaskan',
+          errorCode: 'PRODUK_TIDAK_MEMILIKI_GUDANG_DITUGASKAN',
           status: 400,
         });
       }
@@ -213,8 +213,8 @@ export const checkWarehouseAccess = () => {
       // Check if user's warehouse matches product's warehouse
       if (user.warehouseId !== product.warehouseId) {
         throw new CustomError({
-          message: 'You do not have permission to access products from this warehouse',
-          errorCode: 'WAREHOUSE_ACCESS_DENIED',
+          message: 'Anda tidak memiliki izin untuk mengakses produk dari gudang ini',
+          errorCode: 'IZIN_DITOLAK',
           status: 403,
         });
       }

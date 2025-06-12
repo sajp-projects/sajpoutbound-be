@@ -143,25 +143,15 @@ export default {
   /**
    * Update customer information
    */
-  async updateCustomer(id: string, data: CustomerUpdateInput, performedById: string) {
+  async updateCustomer(existingCustomer: any, data: CustomerUpdateInput, performedById: string) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-      const oldCustomer = await tx.customer.findUnique({
-        where: {
-          id,
-        },
-      });
-
-      if (!oldCustomer) {
-        throw new Error('Customer not found');
-      }
-
       const customer = await tx.customer.update({
         where: {
-          id,
+          id: existingCustomer.id,
         },
         data: {
           ...data,
@@ -175,11 +165,11 @@ export default {
 
       Object.keys(data).forEach((key) => {
         if (
-          oldCustomer &&
-          oldCustomer[key as keyof typeof oldCustomer] !== data[key as keyof typeof data]
+          existingCustomer &&
+          existingCustomer[key as keyof typeof existingCustomer] !== data[key as keyof typeof data]
         ) {
           changedFields[key] = data[key as keyof typeof data];
-          oldDataChanges[key] = oldCustomer[key as keyof typeof oldCustomer];
+          oldDataChanges[key] = existingCustomer[key as keyof typeof existingCustomer];
         }
       });
 
@@ -201,31 +191,14 @@ export default {
    * Delete a customer (hard delete)
    * The customer logs will be kept with customerId set to null
    */
-  async deleteCustomer(id: string, performedById: string) {
+  async deleteCustomer(existingCustomer: any, performedById: string) {
     return prisma.$transaction(async (tx) => {
-      const oldCustomer = await tx.customer.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          _count: {
-            select: {
-              customerLogs: true,
-            },
-          },
-        },
-      });
-
-      if (!oldCustomer) {
-        throw new Error('Customer not found');
-      }
-
       // Create minimal customer data for logging
       const customerDataToLog = {
-        id: oldCustomer.id,
-        name: oldCustomer.name,
-        id_sl: oldCustomer.id_sl,
-        address: oldCustomer.address,
+        id: existingCustomer.id,
+        name: existingCustomer.name,
+        id_sl: existingCustomer.id_sl,
+        address: existingCustomer.address,
       };
 
       // Log the deletion before actually deleting
@@ -235,7 +208,7 @@ export default {
       // This preserves the logs but removes their reference to the customer
       await tx.customerLog.updateMany({
         where: {
-          customerId: id,
+          customerId: existingCustomer.id,
         },
         data: {
           customerId: null,
@@ -245,11 +218,11 @@ export default {
       // Delete the customer
       await tx.customer.delete({
         where: {
-          id,
+          id: existingCustomer.id,
         },
       });
 
-      return oldCustomer;
+      return existingCustomer;
     });
   },
 };

@@ -28,24 +28,24 @@ export default {
 
       if (status && !Object.values(STATUS).includes(status as STATUS)) {
         throw new CustomError({
-          message: 'Invalid status',
-          errorCode: 'INVALID_STATUS',
+          message: 'Status tidak valid',
+          errorCode: 'STATUS_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
@@ -81,16 +81,16 @@ export default {
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
@@ -130,8 +130,8 @@ export default {
 
       if (!deliveryOrder) {
         throw new CustomError({
-          message: 'Delivery order not found',
-          errorCode: 'DELIVERY_ORDER_NOT_FOUND',
+          message: 'Pesanan pengiriman tidak ditemukan',
+          errorCode: 'PESANAN_PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -157,8 +157,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -168,8 +168,8 @@ export default {
 
         if (!customer) {
           throw new CustomError({
-            message: 'Customer not found',
-            errorCode: 'CUSTOMER_NOT_FOUND',
+            message: 'Pelanggan tidak ditemukan',
+            errorCode: 'PELANGGAN_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
@@ -183,8 +183,8 @@ export default {
         if (uniqueProductIds.size !== productIds.length) {
           const duplicates = productIds.filter((id, index) => productIds.indexOf(id) !== index);
           throw new CustomError({
-            message: `Duplicate products not allowed. Found duplicate product ID(s): ${duplicates.join(', ')}`,
-            errorCode: 'DUPLICATE_PRODUCTS',
+            message: `Produk duplikat tidak diperbolehkan. Ditemukan ID produk duplikat: ${duplicates.join(', ')}`,
+            errorCode: 'PRODUK_DUPLIKAT',
             status: 400,
           });
         }
@@ -199,8 +199,8 @@ export default {
         for (const item of validated.items) {
           if (!productMap.has(item.productId)) {
             throw new CustomError({
-              message: 'Product not found',
-              errorCode: 'PRODUCT_NOT_FOUND',
+              message: 'Produk tidak ditemukan',
+              errorCode: 'PRODUK_TIDAK_DITEMUKAN',
               status: 404,
             });
           }
@@ -218,14 +218,14 @@ export default {
         // Handle specific Prisma errors
         if (error.code === 'P2003') {
           throw new CustomError({
-            message: 'Referenced entity does not exist',
-            errorCode: 'REFERENCE_ERROR',
+            message: 'Entitas referensi tidak ada',
+            errorCode: 'REFERENSI_TIDAK_DITEMUKAN',
             status: 400,
           });
         }
 
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -254,8 +254,8 @@ export default {
 
       if (!existingDeliveryOrder) {
         throw new CustomError({
-          message: 'Delivery order not found',
-          errorCode: 'DELIVERY_ORDER_NOT_FOUND',
+          message: 'Pesanan pengiriman tidak ditemukan',
+          errorCode: 'PESANAN_PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -268,8 +268,8 @@ export default {
 
         if (!customer) {
           throw new CustomError({
-            message: 'Customer not found',
-            errorCode: 'CUSTOMER_NOT_FOUND',
+            message: 'Pelanggan tidak ditemukan',
+            errorCode: 'PELANGGAN_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
@@ -284,8 +284,8 @@ export default {
           // Find the duplicated product IDs
           const duplicates = productIds.filter((id, index) => productIds.indexOf(id) !== index);
           throw new CustomError({
-            message: `Duplicate products not allowed. Found duplicate product ID(s): ${duplicates.join(', ')}`,
-            errorCode: 'DUPLICATE_PRODUCTS',
+            message: `Produk duplikat tidak diperbolehkan. Ditemukan ID produk duplikat: ${duplicates.join(', ')}`,
+            errorCode: 'PRODUK_DUPLIKAT',
             status: 400,
           });
         }
@@ -300,8 +300,8 @@ export default {
         for (const item of validated.items) {
           if (!productMap.has(item.productId)) {
             throw new CustomError({
-              message: 'Product not found',
-              errorCode: 'PRODUCT_NOT_FOUND',
+              message: 'Produk tidak ditemukan',
+              errorCode: 'PRODUK_TIDAK_DITEMUKAN',
               status: 404,
             });
           }
@@ -312,8 +312,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -331,14 +331,14 @@ export default {
         // Handle specific Prisma errors
         if (error.code === 'P2003') {
           throw new CustomError({
-            message: 'Referenced entity does not exist',
-            errorCode: 'REFERENCE_ERROR',
+            message: 'Entitas referensi tidak ada',
+            errorCode: 'REFERENSI_TIDAK_DITEMUKAN',
             status: 400,
           });
         }
 
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -363,16 +363,16 @@ export default {
 
       if (!existingDeliveryOrder) {
         throw new CustomError({
-          message: 'Delivery order not found',
-          errorCode: 'DELIVERY_ORDER_NOT_FOUND',
+          message: 'Pesanan pengiriman tidak ditemukan',
+          errorCode: 'PESANAN_PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
 
       if (existingDeliveryOrder.deletedAt) {
         throw new CustomError({
-          message: 'Delivery order is already archived',
-          errorCode: 'DELIVERY_ORDER_ALREADY_ARCHIVED',
+          message: 'Pesanan pengiriman sudah diarsipkan',
+          errorCode: 'PESANAN_PENGIRIMAN_SUDAH_DIARSIPKAN',
           status: 400,
         });
       }
@@ -381,20 +381,18 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
 
-      await deliveryOrderService.softDeleteDeliveryOrder(id, performedById);
-
-      res.status(200).json(
-        success({
-          message: 'Delivery order archived successfully',
-          id,
-        }),
+      const deletedDeliveryOrder = await deliveryOrderService.deleteDeliveryOrder(
+        existingDeliveryOrder,
+        performedById,
       );
+
+      res.status(200).json(success(deletedDeliveryOrder));
     } catch (error) {
       next(error);
     }
@@ -415,16 +413,16 @@ export default {
 
       if (!existingDeliveryOrder) {
         throw new CustomError({
-          message: 'Delivery order not found',
-          errorCode: 'DELIVERY_ORDER_NOT_FOUND',
+          message: 'Pesanan pengiriman tidak ditemukan',
+          errorCode: 'PESANAN_PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
 
       if (!existingDeliveryOrder.deletedAt) {
         throw new CustomError({
-          message: 'Delivery order is not archived',
-          errorCode: 'DELIVERY_ORDER_NOT_ARCHIVED',
+          message: 'Pesanan pengiriman belum diarsipkan',
+          errorCode: 'PESANAN_PENGIRIMAN_BELUM_DIARSIPKAN',
           status: 400,
         });
       }
@@ -433,20 +431,20 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
 
       const restoredDeliveryOrder = await deliveryOrderService.restoreDeliveryOrder(
-        id,
+        existingDeliveryOrder,
         performedById,
       );
 
       res.status(200).json(
         success({
-          message: 'Delivery order restored successfully',
+          message: 'Pesanan pengiriman berhasil dipulihkan',
           deliveryOrder: restoredDeliveryOrder,
         }),
       );

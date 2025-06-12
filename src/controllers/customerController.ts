@@ -23,16 +23,16 @@ export default {
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
@@ -69,8 +69,8 @@ export default {
 
       if (!customer) {
         throw new CustomError({
-          message: 'Customer not found',
-          errorCode: 'CUSTOMER_NOT_FOUND',
+          message: 'Pelanggan tidak ditemukan',
+          errorCode: 'PELANGGAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -93,8 +93,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -106,14 +106,14 @@ export default {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new CustomError({
-            message: 'Customer with this name or ID SL already exists',
-            errorCode: 'CUSTOMER_DUPLICATE',
+            message: 'Pelanggan dengan nama atau ID SL ini sudah ada',
+            errorCode: 'DUPLIKAT_PELANGGAN',
             status: 409,
           });
         }
 
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -139,8 +139,8 @@ export default {
 
       if (!existingCustomer) {
         throw new CustomError({
-          message: 'Customer not found',
-          errorCode: 'CUSTOMER_NOT_FOUND',
+          message: 'Pelanggan tidak ditemukan',
+          errorCode: 'PELANGGAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -151,27 +151,31 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
 
-      const updatedCustomer = await customerService.updateCustomer(id, validated, performedById);
+      const updatedCustomer = await customerService.updateCustomer(
+        existingCustomer,
+        validated,
+        performedById,
+      );
 
       res.status(200).json(success(updatedCustomer));
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           throw new CustomError({
-            message: 'Customer with this name or ID SL already exists',
-            errorCode: 'CUSTOMER_DUPLICATE',
+            message: 'Pelanggan dengan nama atau ID SL ini sudah ada',
+            errorCode: 'DUPLIKAT_PELANGGAN',
             status: 409,
           });
         }
 
         throw new CustomError({
-          message: error.message || 'Database error occurred',
+          message: error.message || 'Terjadi kesalahan pada basis data',
           errorCode: `PRISMA_ERROR_${error.code}`,
           status: 400,
         });
@@ -193,8 +197,8 @@ export default {
 
       if (!existingCustomer) {
         throw new CustomError({
-          message: 'Customer not found',
-          errorCode: 'CUSTOMER_NOT_FOUND',
+          message: 'Pelanggan tidak ditemukan',
+          errorCode: 'PELANGGAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -205,8 +209,8 @@ export default {
       if (deliveryOrders.length > 0) {
         throw new CustomError({
           message:
-            'Cannot delete customer as it is associated with active delivery orders. Please archive the delivery orders first.',
-          errorCode: 'CUSTOMER_IN_USE',
+            'Tidak dapat menghapus pelanggan karena masih terkait dengan pesanan pengiriman aktif. Silakan arsipkan pesanan pengiriman terlebih dahulu.',
+          errorCode: 'PELANGGAN_SEDANG_DIGUNAKAN',
           status: 409,
         });
       }
@@ -215,13 +219,13 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
 
-      const deletedCustomer = await customerService.deleteCustomer(id, performedById);
+      const deletedCustomer = await customerService.deleteCustomer(existingCustomer, performedById);
       res.status(200).json(success(deletedCustomer));
     } catch (error) {
       next(error);

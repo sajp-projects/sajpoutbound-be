@@ -26,8 +26,8 @@ export default {
       const role = await roleService.getRoleById(id);
       if (!role) {
         throw new CustomError({
-          message: 'Role not found',
-          errorCode: 'ROLE_NOT_FOUND',
+          message: 'Peran tidak ditemukan',
+          errorCode: 'PERAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -42,8 +42,8 @@ export default {
 
         if (missingPermissions.length > 0) {
           throw new CustomError({
-            message: `Some permissions not found: ${missingPermissions.join(', ')}`,
-            errorCode: 'PERMISSIONS_NOT_FOUND',
+            message: `Beberapa izin tidak ditemukan: ${missingPermissions.join(', ')}`,
+            errorCode: 'IZIN_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
@@ -74,8 +74,8 @@ export default {
       const role = await roleService.getRoleById(id);
       if (!role) {
         throw new CustomError({
-          message: 'Role not found',
-          errorCode: 'ROLE_NOT_FOUND',
+          message: 'Peran tidak ditemukan',
+          errorCode: 'PERAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }

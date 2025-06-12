@@ -41,24 +41,24 @@ export default {
 
       if (status && !Object.values(STATUS).includes(status as STATUS)) {
         throw new CustomError({
-          message: 'Invalid status',
-          errorCode: 'INVALID_STATUS',
+          message: 'Status tidak valid',
+          errorCode: 'STATUS_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
@@ -94,16 +94,16 @@ export default {
 
       if (isNaN(page) || page < 1) {
         throw new CustomError({
-          message: 'Page must be a positive integer',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
 
       if (isNaN(limit) || limit < 1 || limit > 100) {
         throw new CustomError({
-          message: 'Limit must be a positive integer between 1 and 100',
-          errorCode: 'INVALID_PAGINATION',
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
           status: 400,
         });
       }
@@ -143,8 +143,8 @@ export default {
 
       if (!shipment) {
         throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -170,8 +170,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -181,8 +181,8 @@ export default {
         const armada = await armadaService.getArmadaById(validated.armadaId);
         if (!armada) {
           throw new CustomError({
-            message: 'Armada not found',
-            errorCode: 'ARMADA_NOT_FOUND',
+            message: 'Armada tidak ditemukan',
+            errorCode: 'ARMADA_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
@@ -197,8 +197,8 @@ export default {
         const deliveryOrders = await deliveryOrderService.getDeliveryOrdersByIds(deliveryOrderIds);
         if (deliveryOrders.length !== deliveryOrderIds.length) {
           throw new CustomError({
-            message: 'One or more delivery orders not found',
-            errorCode: 'DELIVERY_ORDER_NOT_FOUND',
+            message: 'Satu atau lebih pesanan pengiriman tidak ditemukan',
+            errorCode: 'PESANAN_PENGIRIMAN_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
@@ -207,8 +207,8 @@ export default {
         const products = await productService.getProductsByIds(productIds);
         if (products.length !== productIds.length) {
           throw new CustomError({
-            message: 'One or more products not found',
-            errorCode: 'PRODUCT_NOT_FOUND',
+            message: 'Satu atau lebih produk tidak ditemukan',
+            errorCode: 'PRODUK_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
@@ -217,8 +217,8 @@ export default {
         const productsWithoutWarehouse = products.filter((product) => !product.warehouseId);
         if (productsWithoutWarehouse.length > 0) {
           throw new CustomError({
-            message: `Products with IDs ${productsWithoutWarehouse.map((p) => p.id).join(', ')} don't have warehouses assigned`,
-            errorCode: 'PRODUCT_WITHOUT_WAREHOUSE',
+            message: `Produk dengan ID ${productsWithoutWarehouse.map((p) => p.id).join(', ')} belum memiliki gudang yang ditetapkan`,
+            errorCode: 'PRODUK_TANPA_GUDANG',
             status: 400,
           });
         }
@@ -231,16 +231,16 @@ export default {
           const doItem = deliveryOrder.items.find((doItem) => doItem.productId === item.productId);
           if (!doItem) {
             throw new CustomError({
-              message: `Product ${item.productId} not found in delivery order ${item.deliveryOrderId}`,
-              errorCode: 'PRODUCT_NOT_IN_DO',
+              message: `Produk ${item.productId} tidak ditemukan dalam pesanan pengiriman ${item.deliveryOrderId}`,
+              errorCode: 'PRODUK_TIDAK_DITEMUKAN_DI_DO',
               status: 400,
             });
           }
 
           if (doItem.pendingQuantity < item.requestedQuantity) {
             throw new CustomError({
-              message: `Not enough pending quantity for product ${item.productId} in delivery order ${item.deliveryOrderId}. Available: ${doItem.pendingQuantity}, Requested: ${item.requestedQuantity}`,
-              errorCode: 'INSUFFICIENT_QUANTITY',
+              message: `Jumlah pending tidak cukup untuk produk ${item.productId} dalam pesanan pengiriman ${item.deliveryOrderId}. Tersedia: ${doItem.pendingQuantity}, Diminta: ${item.requestedQuantity}`,
+              errorCode: 'JUMLAH_TIDAK_MENCUKUPI',
               status: 400,
             });
           }
@@ -282,8 +282,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -293,8 +293,8 @@ export default {
         const armada = await armadaService.getArmadaById(validated.armadaId);
         if (!armada) {
           throw new CustomError({
-            message: 'Armada not found',
-            errorCode: 'ARMADA_NOT_FOUND',
+            message: 'Armada tidak ditemukan',
+            errorCode: 'ARMADA_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
@@ -316,8 +316,8 @@ export default {
             await deliveryOrderService.getDeliveryOrdersByIds(deliveryOrderIds);
           if (deliveryOrders.length !== deliveryOrderIds.length) {
             throw new CustomError({
-              message: 'One or more delivery orders not found',
-              errorCode: 'DELIVERY_ORDER_NOT_FOUND',
+              message: 'Satu atau lebih pesanan pengiriman tidak ditemukan',
+              errorCode: 'PESANAN_PENGIRIMAN_TIDAK_DITEMUKAN',
               status: 404,
             });
           }
@@ -326,8 +326,8 @@ export default {
           const products = await productService.getProductsByIds(productIds);
           if (products.length !== productIds.length) {
             throw new CustomError({
-              message: 'One or more products not found',
-              errorCode: 'PRODUCT_NOT_FOUND',
+              message: 'Satu atau lebih produk tidak ditemukan',
+              errorCode: 'PRODUK_TIDAK_DITEMUKAN',
               status: 404,
             });
           }
@@ -336,8 +336,8 @@ export default {
           const productsWithoutWarehouse = products.filter((product) => !product.warehouseId);
           if (productsWithoutWarehouse.length > 0) {
             throw new CustomError({
-              message: `Products with IDs ${productsWithoutWarehouse.map((p) => p.id).join(', ')} don't have warehouses assigned`,
-              errorCode: 'PRODUCT_WITHOUT_WAREHOUSE',
+              message: `Produk dengan ID ${productsWithoutWarehouse.map((p) => p.id).join(', ')} belum memiliki gudang yang ditetapkan`,
+              errorCode: 'PRODUK_TANPA_GUDANG',
               status: 400,
             });
           }
@@ -346,16 +346,16 @@ export default {
           const shipment = await shipmentService.getShipmentById(id);
           if (!shipment) {
             throw new CustomError({
-              message: 'Shipment not found',
-              errorCode: 'SHIPMENT_NOT_FOUND',
+              message: 'Pengiriman tidak ditemukan',
+              errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
               status: 404,
             });
           }
 
           if (shipment.status !== 'PENDING') {
             throw new CustomError({
-              message: 'Cannot update shipment items when status is not PENDING',
-              errorCode: 'INVALID_STATUS_FOR_ITEM_UPDATE',
+              message: 'Tidak dapat memperbarui item pengiriman saat status tidak PENDING',
+              errorCode: 'TIDAK_DAPAT_MEMPERBARUI_ITEM_PENGIRIMAN',
               status: 400,
             });
           }
@@ -366,8 +366,8 @@ export default {
 
       if (!shipment) {
         throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -393,8 +393,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -403,8 +403,8 @@ export default {
 
       if (!shipment) {
         throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -430,8 +430,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -440,8 +440,8 @@ export default {
 
       if (!shipment) {
         throw new CustomError({
-          message: 'Shipment not found or not deleted',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Pengiriman tidak ditemukan atau tidak dihapus',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -489,7 +489,7 @@ export default {
       if (!auth || auth !== process.env.X_AUTH_KEY) {
         throw new CustomError({
           message: 'Tolong cek API Key kembali.',
-          errorCode: 'UNAUTHORIZED',
+          errorCode: 'TIDAK_DIIZINKAN',
           status: 401,
         });
       }
@@ -504,8 +504,8 @@ export default {
 
       if (!shipment) {
         throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -540,8 +540,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -551,8 +551,8 @@ export default {
 
       if (!existingItem) {
         throw new CustomError({
-          message: 'Shipment item not found',
-          errorCode: 'SHIPMENT_ITEM_NOT_FOUND',
+          message: 'Item pengiriman tidak ditemukan',
+          errorCode: 'ITEM_PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -560,8 +560,8 @@ export default {
       // Check if item is in CHOSEN status
       if (existingItem.status !== 'CHOSEN') {
         throw new CustomError({
-          message: 'You have not added this product for weighing',
-          errorCode: 'INVALID_ITEM_STATUS',
+          message: 'Anda belum menambahkan produk ini untuk diukur',
+          errorCode: 'TIDAK_DAPAT_MENAMBAHKAN_PRODUK',
           status: 400,
         });
       }
@@ -574,8 +574,8 @@ export default {
 
       if (!shipmentChosenProduct) {
         throw new CustomError({
-          message: 'Shipment chosen product not found',
-          errorCode: 'CHOSEN_PRODUCT_NOT_FOUND',
+          message: 'Produk dipilih untuk pengiriman tidak ditemukan',
+          errorCode: 'PRODUK_DIPILIH_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -632,8 +632,8 @@ export default {
       const userId = req.user?.id;
       if (!userId) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -642,27 +642,18 @@ export default {
       const shipment = await shipmentService.getShipmentById(shipmentId);
       if (!shipment) {
         throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
-
-      // // Check if shipment is in valid status
-      // if (shipment.status !== 'PENDING') {
-      //   throw new CustomError({
-      //     message: 'Cannot choose products for shipment with non-PENDING status',
-      //     errorCode: 'INVALID_SHIPMENT_STATUS',
-      //     status: 400,
-      //   });
-      // }
 
       // Check if product exists
       const product = await productService.getProductById(productId);
       if (!product) {
         throw new CustomError({
-          message: 'Product not found',
-          errorCode: 'PRODUCT_NOT_FOUND',
+          message: 'Produk tidak ditemukan',
+          errorCode: 'PRODUK_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -674,8 +665,8 @@ export default {
 
       if (isDuplicate) {
         throw new CustomError({
-          message: 'This product is already chosen for this shipment',
-          errorCode: 'DUPLICATE_PRODUCT',
+          message: 'Produk ini sudah dipilih untuk pengiriman ini',
+          errorCode: 'PRODUK_DUPLIKAT',
           status: 400,
         });
       }
@@ -687,13 +678,13 @@ export default {
 
       if (pendingItems.length <= 0) {
         throw new CustomError({
-          message: 'No pending shipment items found for this product',
-          errorCode: 'NO_PENDING_ITEMS',
+          message: 'Tidak ada item pengiriman pending untuk produk ini',
+          errorCode: 'TIDAK_ADA_ITEM_PENDING',
           status: 400,
         });
       }
 
-      const chosenProduct = await shipmentService.chooseProductForShipment(data);
+      const chosenProduct = await shipmentService.chooseProductForShipment(data, product);
 
       res.status(200).json(success(chosenProduct));
     } catch (error) {
@@ -721,8 +712,8 @@ export default {
       const shipment = await shipmentService.getShipmentById(shipmentId);
       if (!shipment) {
         throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -760,8 +751,8 @@ export default {
       const shipment = await shipmentService.getShipmentById(shipmentId);
       if (!shipment) {
         throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -769,8 +760,8 @@ export default {
       // Check if shipment is in valid status
       if (shipment.status !== 'PENDING') {
         throw new CustomError({
-          message: 'Cannot remove products from shipment with non-PENDING status',
-          errorCode: 'INVALID_SHIPMENT_STATUS',
+          message: 'Tidak dapat menghapus produk dari pengiriman dengan status tidak PENDING',
+          errorCode: 'TIDAK_DAPAT_MENGHAPUS_PRODUK_DARI_PENGIRIMAN',
           status: 400,
         });
       }
@@ -780,7 +771,7 @@ export default {
 
       res.status(200).json(
         success({
-          message: 'Product removed from shipment',
+          message: 'Produk dihapus dari pengiriman',
         }),
       );
     } catch (error) {
@@ -805,8 +796,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -816,16 +807,16 @@ export default {
 
       if (incompleteItems === false) {
         throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
 
       if (incompleteItems !== null && incompleteItems.length > 0) {
         throw new CustomError({
-          message: 'All shipment items must be completed before uploading plate photo',
-          errorCode: 'INCOMPLETE_ITEMS',
+          message: 'Semua item pengiriman harus selesai sebelum mengunggah foto plat',
+          errorCode: 'SEMUA_ITEM_PENGIRIMAN_MUSTI_SELESAI_SEBELUM_MENGGUNGGUH_FOTO_PLAT',
           status: 400,
         });
       }
@@ -843,8 +834,8 @@ export default {
 
         if (!shipment) {
           throw new CustomError({
-            message: 'Shipment not found',
-            errorCode: 'SHIPMENT_NOT_FOUND',
+            message: 'Pengiriman tidak ditemukan',
+            errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
             status: 404,
           });
         }
@@ -852,8 +843,8 @@ export default {
         res.status(200).json(success(shipment));
       } catch (uploadError: any) {
         throw new CustomError({
-          message: uploadError.message || 'Error uploading plate photo',
-          errorCode: 'UPLOAD_ERROR',
+          message: uploadError.message || 'Gagal mengunggah foto plat',
+          errorCode: 'GAGAL_MENGGUNGGUH_FOTO_PLAT',
           status: 400,
         });
       }
@@ -879,8 +870,8 @@ export default {
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Authentication required for this action',
-          errorCode: 'AUTH_REQUIRED',
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
@@ -890,8 +881,8 @@ export default {
 
       if (!existingShipment) {
         throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -903,8 +894,10 @@ export default {
 
       if (invalidItems.length > 0) {
         throw new CustomError({
-          message: 'All shipment items must be chosen or completed before verifying plate number',
-          errorCode: 'INVALID_ITEMS',
+          message:
+            'Semua item pengiriman harus dipilih atau selesai sebelum memverifikasi nomor plat',
+          errorCode:
+            'SEMUA_ITEM_PENGIRIMAN_MUSTI_DIPILIH_ATAU_SELESAI_SEBELUM_MEMVERIFIKASI_NOMOR_PLAT',
           status: 400,
         });
       }
@@ -912,8 +905,8 @@ export default {
       // Check if shipment is already verified or completed
       if (existingShipment.isVerified || existingShipment.status === 'SELESAI') {
         throw new CustomError({
-          message: 'Shipment has already been verified',
-          errorCode: 'ALREADY_VERIFIED',
+          message: 'Pengiriman sudah diverifikasi',
+          errorCode: 'PENGIRIMAN_SUDAH_DIVERIFIKASI',
           status: 400,
         });
       }
@@ -921,16 +914,16 @@ export default {
       // Verify that plate number and photo exist
       if (!existingShipment.plateNumber && !existingShipment.armada?.plateNumber) {
         throw new CustomError({
-          message: 'Shipment must have a plate number before verification',
-          errorCode: 'PLATE_NUMBER_REQUIRED',
+          message: 'Pengiriman harus memiliki nomor plat sebelum verifikasi',
+          errorCode: 'PENGIRIMAN_MUSTI_MEMILIKI_NOMOR_PLAT_SEBELUM_MEMVERIFIKASI',
           status: 400,
         });
       }
 
       if (!existingShipment.platePhoto) {
         throw new CustomError({
-          message: 'Plate photo must be uploaded before verification',
-          errorCode: 'PLATE_PHOTO_REQUIRED',
+          message: 'Foto plat harus diunggah sebelum verifikasi',
+          errorCode: 'FOTO_PLAT_MUSTI_DIIGGUH_SEBELUM_MEMVERIFIKASI',
           status: 400,
         });
       }
@@ -956,8 +949,8 @@ export default {
       if (!extractedPlateNumber) {
         throw new CustomError({
           message:
-            'Failed to extract plate number from photo. Please ensure the plate is clearly visible. Please try again',
-          errorCode: 'PLATE_EXTRACTION_FAILED',
+            'Gagal mengekstrak nomor plat dari foto. Silakan pastikan plat jelas terlihat. Silakan coba lagi',
+          errorCode: 'GAGAL_MENGEKSTRAK_NOMOR_PLAT_DARI_FOTO',
           status: 400,
         });
       }
@@ -970,8 +963,8 @@ export default {
 
       if (!isMatch) {
         throw new CustomError({
-          message: `Plate number in photo (${extractedPlateNumber}) does not match the registered plate number (${expectedPlateNumber}) Please try again`,
-          errorCode: 'PLATE_MISMATCH',
+          message: `Nomor plat dalam foto (${extractedPlateNumber}) tidak cocok dengan nomor plat yang terdaftar (${expectedPlateNumber}) Silakan coba lagi`,
+          errorCode: 'NOMOR_PLAT_TIDAK_COCOK',
           status: 400,
         });
       }
@@ -986,7 +979,7 @@ export default {
       res.status(200).json(
         success({
           ...shipment,
-          plateVerification: {
+          verifikasiPlat: {
             expectedPlateNumber,
             extractedPlateNumber,
             isMatch,
@@ -1018,7 +1011,7 @@ export default {
       if (!auth || auth !== process.env.X_AUTH_KEY) {
         throw new CustomError({
           message: 'Tolong cek API Key kembali.',
-          errorCode: 'UNAUTHORIZED',
+          errorCode: 'TIDAK_DIIZINKAN',
           status: 401,
         });
       }
@@ -1038,8 +1031,8 @@ export default {
       const shipment = await shipmentService.getShipmentById(validated.shipmentId);
       if (!shipment) {
         throw new CustomError({
-          message: 'Shipment not found',
-          errorCode: 'SHIPMENT_NOT_FOUND',
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -1048,8 +1041,8 @@ export default {
       const product = await productService.getProductById(validated.productId);
       if (!product) {
         throw new CustomError({
-          message: 'Product not found',
-          errorCode: 'PRODUCT_NOT_FOUND',
+          message: 'Produk tidak ditemukan',
+          errorCode: 'PRODUK_TIDAK_DITEMUKAN',
           status: 404,
         });
       }
@@ -1061,8 +1054,8 @@ export default {
 
       if (chosenItems.length === 0) {
         throw new CustomError({
-          message: 'No chosen items found for this product in the shipment',
-          errorCode: 'NO_CHOSEN_ITEMS',
+          message: 'Tidak ada item dipilih untuk produk ini dalam pengiriman',
+          errorCode: 'TIDAK_ADA_ITEM_DIPILIH_UNTUK_PRODUK',
           status: 404,
         });
       }
@@ -1073,8 +1066,8 @@ export default {
       // If the service returns null, it means no items were found
       if (!result) {
         throw new CustomError({
-          message: 'No chosen items found for this product in the shipment',
-          errorCode: 'NO_CHOSEN_ITEMS',
+          message: 'Tidak ada item dipilih untuk produk ini dalam pengiriman',
+          errorCode: 'TIDAK_ADA_ITEM_DIPILIH_UNTUK_PRODUK',
           status: 404,
         });
       }

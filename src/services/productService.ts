@@ -143,12 +143,7 @@ export default {
   /**
    * Update product information
    */
-  async updateProduct(
-    id: string,
-    data: ProductUpdateInput,
-    performedById: string,
-    oldProduct: NonNullable<Awaited<ReturnType<typeof this.getProductById>>>,
-  ) {
+  async updateProduct(existingProduct: any, data: ProductUpdateInput, performedById: string) {
     const { warehouseId, ...productData } = data;
 
     return prisma.$transaction(async (tx) => {
@@ -158,7 +153,7 @@ export default {
 
       const product = await tx.product.update({
         where: {
-          id,
+          id: existingProduct.id,
         },
         data: {
           ...productData,
@@ -188,19 +183,19 @@ export default {
 
       Object.keys(productData).forEach((key) => {
         if (
-          oldProduct &&
-          oldProduct[key as keyof typeof oldProduct] !==
+          existingProduct &&
+          existingProduct[key as keyof typeof existingProduct] !==
             productData[key as keyof typeof productData]
         ) {
           changedFields[key] = productData[key as keyof typeof productData];
-          oldDataChanges[key] = oldProduct[key as keyof typeof oldProduct];
+          oldDataChanges[key] = existingProduct[key as keyof typeof existingProduct];
         }
       });
 
       // Add warehouseId changes if any
-      if (warehouseId && oldProduct.warehouseId !== warehouseId) {
+      if (warehouseId && existingProduct.warehouseId !== warehouseId) {
         changedFields.warehouseId = warehouseId;
-        oldDataChanges.warehouseId = oldProduct.warehouseId;
+        oldDataChanges.warehouseId = existingProduct.warehouseId;
       }
 
       if (Object.keys(changedFields).length > 0) {
@@ -248,46 +243,17 @@ export default {
    * Delete a product (hard delete)
    * The product logs will be kept with productId set to null
    */
-  async deleteProduct(id: string, performedById: string) {
+  async deleteProduct(existingProduct: any, performedById: string) {
     return prisma.$transaction(async (tx) => {
-      const oldProduct = await tx.product.findUnique({
-        where: {
-          id,
-        },
-        select: {
-          id: true,
-          name: true,
-          id_sl: true,
-          description: true,
-          satuan: true,
-          warehouseId: true,
-          warehouse: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          _count: {
-            select: {
-              productLogs: true,
-            },
-          },
-        },
-      });
-
-      if (!oldProduct) {
-        throw new Error('Product not found');
-      }
-
       // Create minimal product data for logging
       const productDataToLog = {
-        id: oldProduct.id,
-        name: oldProduct.name,
-        id_sl: oldProduct.id_sl,
-        description: oldProduct.description,
-        satuan: oldProduct.satuan,
-        warehouseId: oldProduct.warehouseId,
-        warehouseName: oldProduct.warehouse?.name,
+        id: existingProduct.id,
+        name: existingProduct.name,
+        id_sl: existingProduct.id_sl,
+        description: existingProduct.description,
+        satuan: existingProduct.satuan,
+        warehouseId: existingProduct.warehouseId,
+        warehouseName: existingProduct.warehouse?.name,
       };
 
       // Log the deletion before actually deleting
@@ -297,7 +263,7 @@ export default {
       // This preserves the logs but removes their reference to the product
       await tx.productLog.updateMany({
         where: {
-          productId: id,
+          productId: existingProduct.id,
         },
         data: {
           productId: null,
@@ -307,11 +273,11 @@ export default {
       // Delete the product
       await tx.product.delete({
         where: {
-          id,
+          id: existingProduct.id,
         },
       });
 
-      return oldProduct;
+      return existingProduct;
     });
   },
 };
