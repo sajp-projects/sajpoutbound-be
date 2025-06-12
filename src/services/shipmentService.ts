@@ -1896,7 +1896,6 @@ export default {
         product: items[0].product,
         warehouse: items[0].warehouse,
         totalRequestedQuantity,
-        totalWeightedQuantity: data.grossWeight, // This is now the actual weighed amount
         deliveryOrders,
         customers,
         itemIds: updatedItems.map((item) => item.id),
@@ -1915,6 +1914,60 @@ export default {
         // Only include individual items if needed for reference
         individualItems: updatedItems,
       };
+
+      // Fetch the updated shipment with all includes
+      const updatedShipment = await tx.shipment.findUnique({
+        where: {
+          id: data.shipmentId,
+        },
+        include: {
+          armada: {
+            select: {
+              id: true,
+              model: true,
+              plateNumber: true,
+            },
+          },
+          shipmentItems: {
+            omit: {
+              chosenProduct: true,
+              weightedQuantity: true,
+            },
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  satuan: true,
+                },
+              },
+              deliveryOrder: {
+                select: {
+                  id: true,
+                  doNumber: true,
+                  customer: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+              warehouse: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Replace the shipment in the result with the updated one if found
+      if (updatedShipment) {
+        combinedData.shipment = updatedShipment;
+      }
 
       return combinedData;
     });

@@ -1078,17 +1078,10 @@ export default {
         success({
           product: result.product,
           shipment: result.shipment,
-          totalRequestedQuantity: result.totalRequestedQuantity,
-          totalWeightedQuantity: result.totalWeightedQuantity,
-          deliveryOrders: result.deliveryOrders,
-          customers: result.customers,
           weights: result.weights,
           status: result.status,
           locationType: result.locationType,
           weighedAt: result.weighedAt,
-
-          // Keep the individual items data for reference if needed
-          individualItems: result.individualItems,
         }),
       );
     } catch (error) {
