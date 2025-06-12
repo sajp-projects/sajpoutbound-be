@@ -1,7 +1,6 @@
 import {
   ACTION, ENTITY_TYPE, STATUS, 
 } from '@prisma/client';
-import shortid from 'shortid';
 import prisma from '../config/prisma';
 import { DeliveryOrderCreateInput, DeliveryOrderUpdateInput } from '../schemas/deliveryOrder';
 import deliveryOrderLogService from './deliveryOrderLogService';
@@ -129,7 +128,11 @@ export default {
   /**
    * Create a new delivery order with items
    */
-  async createDeliveryOrder(data: DeliveryOrderCreateInput, performedById: string) {
+  async createDeliveryOrder(
+    data: DeliveryOrderCreateInput,
+    performedById: string,
+    doNumber: string,
+  ) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
@@ -141,7 +144,7 @@ export default {
           customerId: data.customerId,
           address: data.address,
           internalNote: data.internalNote,
-          doNumber: `${shortid.generate()}`,
+          doNumber,
           createdAt: jakartaTime,
           updatedAt: jakartaTime,
           items: {
@@ -676,6 +679,14 @@ export default {
             },
           },
         },
+      },
+    });
+  },
+
+  async getDeliveryOrderByDoNumber(doNumber: string) {
+    return prisma.deliveryOrder.findUnique({
+      where: {
+        doNumber,
       },
     });
   },

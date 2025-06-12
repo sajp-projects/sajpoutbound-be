@@ -1919,4 +1919,56 @@ export default {
       return combinedData;
     });
   },
+
+  /**
+   * Get all shipments with status PENDING (not yet weighed)
+   */
+  async getPendingShipments() {
+    return prisma.shipment.findMany({
+      where: {
+        status: STATUS.PENDING,
+        deletedAt: null,
+      },
+      include: {
+        armada: {
+          select: {
+            id: true,
+            model: true,
+            plateNumber: true,
+          },
+        },
+        shipmentItems: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                satuan: true,
+              },
+            },
+            deliveryOrder: {
+              select: {
+                id: true,
+                customer: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            warehouse: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  },
 };

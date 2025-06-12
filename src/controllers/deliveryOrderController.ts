@@ -2,6 +2,7 @@ import { Prisma, STATUS } from '@prisma/client';
 import {
   NextFunction, Request, Response, 
 } from 'express';
+import { customAlphabet } from 'nanoid';
 import { CustomError } from '../middlewares/error';
 import {
   createDeliveryOrderSchema,
@@ -207,9 +208,32 @@ export default {
         }
       }
 
+      const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+      let doNumber;
+      let attempts = 0;
+      const maxAttempts = 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        doNumber = nanoid();
+        const existing = await deliveryOrderService.getDeliveryOrderByDoNumber(doNumber);
+        if (!existing) {
+          break;
+        }
+        attempts++;
+
+        if (attempts >= maxAttempts) {
+          throw new CustomError({
+            message: 'Terjadi kesalahan saat membuat nomor DO, harap coba lagi.',
+            errorCode: 'DUPLIKASI_NOMOR_DO',
+            status: 500,
+          });
+        }
+      }
+
       const deliveryOrder = await deliveryOrderService.createDeliveryOrder(
         validated,
         performedById,
+        doNumber,
       );
 
       res.status(201).json(success(deliveryOrder));

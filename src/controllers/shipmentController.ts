@@ -453,10 +453,7 @@ export default {
   },
 
   /**
-   * Get all available items for weighing in a shipment
-   *
-   * Note: Items with the same product ID are combined for easier weighing.
-   * These can be weighed at once using the bulk weighing endpoint.
+   * Get all available shipments that have not yet been weighed (status PENDING)
    */
   async getAvailableItemsForWeighing(req: Request, res: Response, next: NextFunction) {
     try {
@@ -470,9 +467,13 @@ export default {
         });
       }
 
-      const items = await shipmentService.getAvailableItemsForWeighing();
+      const shipments = await shipmentService.getPendingShipments();
 
-      res.status(200).json(success(items));
+      res.status(200).json(
+        success({
+          shipments,
+        }),
+      );
     } catch (error) {
       next(error);
     }
