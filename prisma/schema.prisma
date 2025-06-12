@@ -215,6 +215,7 @@ model ArmadaLog {
 
 model DeliveryOrder {
   id            String              @id @default(uuid())
+  doNumber      String?             @unique
   customerId    String
   address       String?
   internalNote  String?

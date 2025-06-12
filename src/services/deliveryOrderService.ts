@@ -1,6 +1,7 @@
 import {
   ACTION, ENTITY_TYPE, STATUS, 
 } from '@prisma/client';
+import shortid from 'shortid';
 import prisma from '../config/prisma';
 import { DeliveryOrderCreateInput, DeliveryOrderUpdateInput } from '../schemas/deliveryOrder';
 import deliveryOrderLogService from './deliveryOrderLogService';
@@ -140,6 +141,7 @@ export default {
           customerId: data.customerId,
           address: data.address,
           internalNote: data.internalNote,
+          doNumber: `${shortid.generate()}`,
           createdAt: jakartaTime,
           updatedAt: jakartaTime,
           items: {
@@ -181,6 +183,7 @@ export default {
         customerId: deliveryOrder.customerId,
         customerName: deliveryOrder.customer.name,
         address: deliveryOrder.address,
+        doNumber: deliveryOrder.doNumber,
         internalNote: deliveryOrder.internalNote,
         items: deliveryOrder.items.map((item) => ({
           id: item.id,
