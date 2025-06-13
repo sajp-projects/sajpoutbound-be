@@ -13,6 +13,8 @@ export default {
    * @param page The page number (1-based)
    * @param limit The number of items per page
    * @param search Optional search term
+   * @param status Optional status filter
+   * @param availableOnly Optional filter to only show DOs with available items (pendingQuantity > 0)
    * @returns Object containing delivery orders array and total count
    */
   async getAllDeliveryOrders(
@@ -20,6 +22,7 @@ export default {
     limit: number = 10,
     search?: string,
     status?: STATUS,
+    availableOnly?: boolean,
   ) {
     const skip = (page - 1) * limit;
 
@@ -29,6 +32,17 @@ export default {
 
     if (status) {
       whereConditions.status = status;
+    }
+
+    // Filter untuk DO yang masih memiliki barang dengan pendingQuantity > 0
+    if (availableOnly) {
+      whereConditions.items = {
+        some: {
+          pendingQuantity: {
+            gt: 0,
+          },
+        },
+      };
     }
 
     if (search) {
