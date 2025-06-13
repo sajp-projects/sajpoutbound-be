@@ -236,7 +236,7 @@ export default {
    * Get a shipment by ID
    */
   async getShipmentById(id: string) {
-    return prisma.shipment.findUnique({
+    const shipment = await prisma.shipment.findUnique({
       where: {
         id,
       },
@@ -288,6 +288,53 @@ export default {
         spmbs: true,
       },
     });
+
+    if (!shipment) return null;
+
+    // Collect all (deliveryOrderId, productId) pairs
+    const doProductPairs = shipment.shipmentItems.map((item) => ({
+      deliveryOrderId: item.deliveryOrderId,
+      productId: item.productId,
+    }));
+
+    // Remove duplicates
+    const uniquePairs = Array.from(
+      new Set(doProductPairs.map((p) => p.deliveryOrderId + '-' + p.productId)),
+    ).map((key) => {
+      const [deliveryOrderId, productId] = key.split('-');
+      return {
+        deliveryOrderId,
+        productId,
+      };
+    });
+
+    // Fetch all relevant DeliveryOrderItems
+    const doItems = await prisma.deliveryOrderItem.findMany({
+      where: {
+        OR: uniquePairs.map((pair) => ({
+          deliveryOrderId: pair.deliveryOrderId,
+          productId: pair.productId,
+        })),
+      },
+      select: {
+        deliveryOrderId: true,
+        productId: true,
+        quantity: true,
+      },
+    });
+
+    // Attach originalDOQuantity to each shipmentItem
+    shipment.shipmentItems = shipment.shipmentItems.map((item) => {
+      const doItem = doItems.find(
+        (d) => d.deliveryOrderId === item.deliveryOrderId && d.productId === item.productId,
+      );
+      return {
+        ...item,
+        originalDOQuantity: doItem ? doItem.quantity : null,
+      };
+    });
+
+    return shipment;
   },
 
   /**
@@ -637,9 +684,12 @@ export default {
         updatedAt: jakartaTime,
       };
 
-      // Remove armadaId from direct update as Prisma doesn't allow it
+      // Remove armadaId and items from direct update as Prisma doesn't allow it
       if ('armadaId' in updateData) {
         delete updateData.armadaId;
+      }
+      if ('items' in updateData) {
+        delete updateData.items;
       }
 
       if (data.armadaId === null || data.armadaId === undefined || data.armadaId === '') {
@@ -682,8 +732,69 @@ export default {
 
         // Update existing items and create new ones
         for (const item of items) {
+          console.log('Processing shipment item:', item);
           if (item.shipmentItemId) {
             // Update existing item
+            const existingItem = existingItems.find((ei) => ei.id === item.shipmentItemId);
+            if (existingItem) {
+              // Check if requestedQuantity changed
+              if (item.requestedQuantity !== existingItem.requestedQuantity) {
+                // Find the related deliveryOrderItem
+                const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+                  where: {
+                    deliveryOrderId: item.deliveryOrderId,
+                    productId: item.productId,
+                  },
+                });
+                if (deliveryOrderItem) {
+                  const diff = item.requestedQuantity - existingItem.requestedQuantity;
+                  // DEBUG LOG
+                  console.log('Updating DO item:', {
+                    deliveryOrderId: item.deliveryOrderId,
+                    productId: item.productId,
+                    oldRequested: existingItem.requestedQuantity,
+                    newRequested: item.requestedQuantity,
+                    diff,
+                    before: {
+                      pendingQuantity: deliveryOrderItem.pendingQuantity,
+                      processingQuantity: deliveryOrderItem.processingQuantity,
+                    },
+                  });
+                  if (diff < 0) {
+                    // Quantity decreased: move from processing to pending
+                    await tx.deliveryOrderItem.update({
+                      where: {
+                        id: deliveryOrderItem.id,
+                      },
+                      data: {
+                        processingQuantity: deliveryOrderItem.processingQuantity + diff, // diff is negative
+                        pendingQuantity: deliveryOrderItem.pendingQuantity - diff, // -diff is positive
+                        updatedAt: jakartaTime,
+                      },
+                    });
+                  } else if (diff > 0) {
+                    // Quantity increased: move from pending to processing (if enough pending)
+                    if (deliveryOrderItem.pendingQuantity >= diff) {
+                      await tx.deliveryOrderItem.update({
+                        where: {
+                          id: deliveryOrderItem.id,
+                        },
+                        data: {
+                          processingQuantity: deliveryOrderItem.processingQuantity + diff,
+                          pendingQuantity: deliveryOrderItem.pendingQuantity - diff,
+                          updatedAt: jakartaTime,
+                        },
+                      });
+                    } else {
+                      // Not enough pending quantity, throw error
+                      throw new Error(
+                        'Not enough pending quantity in DO to increase shipment item quantity',
+                      );
+                    }
+                  }
+                }
+              }
+            }
             await tx.shipmentItem.update({
               where: {
                 id: item.shipmentItemId,
@@ -1807,6 +1918,7 @@ export default {
       const customers: Customer[] = [];
 
       for (const item of items) {
+        console.log('Processing shipment item:', item);
         // Calculate proportional weight based on requested quantity
         const proportion = item.requestedQuantity / totalRequestedQuantity;
         const itemGrossWeight = data.grossWeight * proportion;

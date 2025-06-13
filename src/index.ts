@@ -11,15 +11,12 @@ import { createErrorMiddleware } from './middlewares/error';
 import { logger, loggingMiddleware } from './middlewares/logger';
 import routes from './routes';
 
-// Load environment variables
 dotenv.config();
 
-// Initialize Express app
 const app = express();
 const port = Number(process.env.PORT) || 3000;
 const server = http.createServer(app);
 
-// Middleware
 app.use(
   cors({
     origin: [
@@ -45,13 +42,10 @@ app.use(
 
 app.use(loggingMiddleware);
 
-// Serve static files from the public directory
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
-// Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Endpoint to get Swagger JSON
 app.get('/api-docs.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
@@ -67,37 +61,30 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
 app.use('/api', routes);
-
-// Error handling middleware - use our custom error middleware with Winston logger
 app.use(createErrorMiddleware(logger));
 
-// Handle uncaught exceptions
 process.on('uncaughtException', (error: Error) => {
   logger.error(`Uncaught Exception: ${error.stack || error.message || error}`);
   // Perform any necessary cleanup here
-  process.exit(1); // It's safer to exit and let the process manager restart the app
+  process.exit(1);
 });
 
-// Handle unhandled promise rejections
 process.on('unhandledRejection', (error: Error) => {
   logger.error(`Unhandled Rejection: ${error.stack || error.message || error}`);
 
   process.exit(1);
 });
 
-// Handle graceful shutdown
 process.on('SIGINT', async () => {
   await prisma.$disconnect();
   logger.info('Disconnected from database');
   process.exit(0);
 });
 
-// Start the server
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
-  console.log(`API Documentation available at :${port}/api-docs`);
+  console.log('API Documentation available at /api-docs');
 });
 
 export default app;

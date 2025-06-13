@@ -380,14 +380,6 @@ export default {
             });
           }
 
-          if (shipment.status !== 'PENDING') {
-            throw new CustomError({
-              message: 'Tidak dapat memperbarui item pengiriman saat status tidak PENDING',
-              errorCode: 'TIDAK_DAPAT_MEMPERBARUI_ITEM_PENGIRIMAN',
-              status: 400,
-            });
-          }
-
           // Map of existing shipment items by (deliveryOrderId, productId)
           const existingItemsMap = new Map();
           for (const item of shipment.shipmentItems) {
