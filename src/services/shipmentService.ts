@@ -1,6 +1,4 @@
-import {
-  SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, 
-} from '@prisma/client';
+import { SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS } from '@prisma/client';
 import prisma from '../config/prisma';
 import {
   ShipmentBulkWeighInput,
@@ -734,7 +732,7 @@ export default {
         for (const item of items) {
           console.log('Processing shipment item:', item);
           if (item.shipmentItemId) {
-            // Update existing item
+            // Check if the shipment item actually exists
             const existingItem = existingItems.find((ei) => ei.id === item.shipmentItemId);
             if (existingItem) {
               // Check if requestedQuantity changed
@@ -748,18 +746,7 @@ export default {
                 });
                 if (deliveryOrderItem) {
                   const diff = item.requestedQuantity - existingItem.requestedQuantity;
-                  // DEBUG LOG
-                  console.log('Updating DO item:', {
-                    deliveryOrderId: item.deliveryOrderId,
-                    productId: item.productId,
-                    oldRequested: existingItem.requestedQuantity,
-                    newRequested: item.requestedQuantity,
-                    diff,
-                    before: {
-                      pendingQuantity: deliveryOrderItem.pendingQuantity,
-                      processingQuantity: deliveryOrderItem.processingQuantity,
-                    },
-                  });
+
                   if (diff < 0) {
                     // Quantity decreased: move from processing to pending
                     await tx.deliveryOrderItem.update({
@@ -794,20 +781,83 @@ export default {
                   }
                 }
               }
+
+              // Update existing item
+              await tx.shipmentItem.update({
+                where: {
+                  id: item.shipmentItemId,
+                },
+                data: {
+                  deliveryOrderId: item.deliveryOrderId,
+                  productId: item.productId,
+                  requestedQuantity: item.requestedQuantity,
+                  locationType: item.locationType,
+                  updatedAt: jakartaTime,
+                },
+              });
+            } else {
+              // shipmentItemId provided but item doesn't exist, treat as new item
+
+              const product = await tx.product.findUnique({
+                where: {
+                  id: item.productId,
+                },
+                select: {
+                  id: true,
+                  warehouseId: true,
+                },
+              });
+
+              if (!product || !product.warehouseId) {
+                throw new Error(`Product ${item.productId} not found or has no warehouse assigned`);
+              }
+
+              // Find the related deliveryOrderItem to update quantities
+              const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+                where: {
+                  deliveryOrderId: item.deliveryOrderId,
+                  productId: item.productId,
+                },
+              });
+
+              if (deliveryOrderItem) {
+                // Check if there's enough pending quantity
+                if (deliveryOrderItem.pendingQuantity >= item.requestedQuantity) {
+                  await tx.deliveryOrderItem.update({
+                    where: {
+                      id: deliveryOrderItem.id,
+                    },
+                    data: {
+                      processingQuantity:
+                        deliveryOrderItem.processingQuantity + item.requestedQuantity,
+                      pendingQuantity: deliveryOrderItem.pendingQuantity - item.requestedQuantity,
+                      updatedAt: jakartaTime,
+                    },
+                  });
+                } else {
+                  throw new Error(
+                    `Not enough pending quantity for product ${item.productId} in DO ${item.deliveryOrderId}. Available: ${deliveryOrderItem.pendingQuantity}, Requested: ${item.requestedQuantity}`,
+                  );
+                }
+              }
+
+              // Create new item
+              await tx.shipmentItem.create({
+                data: {
+                  shipmentId: id,
+                  deliveryOrderId: item.deliveryOrderId,
+                  productId: item.productId,
+                  requestedQuantity: item.requestedQuantity,
+                  locationType: item.locationType,
+                  status: SHIPMENT_ITEM_STATUS.PENDING,
+                  warehouseId: product.warehouseId,
+                  createdAt: jakartaTime,
+                  updatedAt: jakartaTime,
+                },
+              });
             }
-            await tx.shipmentItem.update({
-              where: {
-                id: item.shipmentItemId,
-              },
-              data: {
-                deliveryOrderId: item.deliveryOrderId,
-                productId: item.productId,
-                requestedQuantity: item.requestedQuantity,
-                locationType: item.locationType,
-                updatedAt: jakartaTime,
-              },
-            });
           } else {
+            // No shipmentItemId provided, create new item
             const product = await tx.product.findUnique({
               where: {
                 id: item.productId,
@@ -818,6 +868,39 @@ export default {
               },
             });
 
+            if (!product || !product.warehouseId) {
+              throw new Error(`Product ${item.productId} not found or has no warehouse assigned`);
+            }
+
+            // Find the related deliveryOrderItem to update quantities
+            const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+              where: {
+                deliveryOrderId: item.deliveryOrderId,
+                productId: item.productId,
+              },
+            });
+
+            if (deliveryOrderItem) {
+              // Check if there's enough pending quantity
+              if (deliveryOrderItem.pendingQuantity >= item.requestedQuantity) {
+                await tx.deliveryOrderItem.update({
+                  where: {
+                    id: deliveryOrderItem.id,
+                  },
+                  data: {
+                    processingQuantity:
+                      deliveryOrderItem.processingQuantity + item.requestedQuantity,
+                    pendingQuantity: deliveryOrderItem.pendingQuantity - item.requestedQuantity,
+                    updatedAt: jakartaTime,
+                  },
+                });
+              } else {
+                throw new Error(
+                  `Not enough pending quantity for product ${item.productId} in DO ${item.deliveryOrderId}. Available: ${deliveryOrderItem.pendingQuantity}, Requested: ${item.requestedQuantity}`,
+                );
+              }
+            }
+
             // Create new item with the warehouse ID from the product
             await tx.shipmentItem.create({
               data: {
@@ -827,7 +910,7 @@ export default {
                 requestedQuantity: item.requestedQuantity,
                 locationType: item.locationType,
                 status: SHIPMENT_ITEM_STATUS.PENDING,
-                warehouseId: product!.warehouseId!,
+                warehouseId: product.warehouseId,
                 createdAt: jakartaTime,
                 updatedAt: jakartaTime,
               },
@@ -897,17 +980,17 @@ export default {
 
         logOldData.armada = oldArmada
           ? {
-            id: oldArmada.id,
-            model: oldArmada.model,
-            plateNumber: oldArmada.plateNumber,
-          }
+              id: oldArmada.id,
+              model: oldArmada.model,
+              plateNumber: oldArmada.plateNumber,
+            }
           : null;
         logNewData.armada = newArmada
           ? {
-            id: newArmada.id,
-            model: newArmada.model,
-            plateNumber: newArmada.plateNumber,
-          }
+              id: newArmada.id,
+              model: newArmada.model,
+              plateNumber: newArmada.plateNumber,
+            }
           : null;
       }
 

@@ -198,7 +198,7 @@ export const shipmentFullUpdateSchema = Joi.object<ShipmentFullUpdateInput>({
   items: Joi.array()
     .items(
       Joi.object({
-        shipmentItemId: Joi.string().uuid().messages({
+        shipmentItemId: Joi.string().uuid().allow('', null).optional().messages({
           'string.guid': 'Shipment Item ID must be a valid UUID',
         }),
         deliveryOrderId: Joi.string().required().uuid().messages({
