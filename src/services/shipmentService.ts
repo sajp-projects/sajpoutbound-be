@@ -1,4 +1,7 @@
-import { SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS } from '@prisma/client';
+import {
+  SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, 
+} from '@prisma/client';
+import { customAlphabet } from 'nanoid';
 import prisma from '../config/prisma';
 import {
   ShipmentBulkWeighInput,
@@ -283,7 +286,15 @@ export default {
             },
           },
         },
-        spmbs: true,
+        spmbs: {
+          include: {
+            deliveryOrder: {
+              select: {
+                doNumber: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -617,7 +628,8 @@ export default {
 
       for (const doId of uniqueDeliveryOrderIds) {
         // Generate a unique SPMB code
-        const spmbCode = `SPMB-${Date.now()}-${doId.substring(0, 8)}`;
+        const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+        const spmbCode = `SPMB-${nanoid()}`;
 
         const spmb = await tx.sPMB.create({
           data: {
@@ -980,17 +992,17 @@ export default {
 
         logOldData.armada = oldArmada
           ? {
-              id: oldArmada.id,
-              model: oldArmada.model,
-              plateNumber: oldArmada.plateNumber,
-            }
+            id: oldArmada.id,
+            model: oldArmada.model,
+            plateNumber: oldArmada.plateNumber,
+          }
           : null;
         logNewData.armada = newArmada
           ? {
-              id: newArmada.id,
-              model: newArmada.model,
-              plateNumber: newArmada.plateNumber,
-            }
+            id: newArmada.id,
+            model: newArmada.model,
+            plateNumber: newArmada.plateNumber,
+          }
           : null;
       }
 
@@ -1049,58 +1061,60 @@ export default {
       // Log the deletion
       await shipmentLogService.logShipmentDeletion(id, performedById, existingShipment, tx);
 
-      return deletedShipment;
-    });
-  },
-
-  /**
-   * Restore a deleted shipment
-   */
-  async restoreShipment(id: string, performedById: string) {
-    return prisma.$transaction(async (tx) => {
-      // Get the current shipment data before restoration
-      const existingShipment = await tx.shipment.findUnique({
+      // --- Begin revert logic ---
+      // Fetch all shipment items for this shipment
+      const shipmentItems = await tx.shipmentItem.findMany({
         where: {
-          id,
+          shipmentId: id,
         },
       });
 
-      if (!existingShipment || !existingShipment.deletedAt) {
-        return null;
+      // Track affected delivery orders
+      const affectedDOIds = new Set<string>();
+
+      for (const item of shipmentItems) {
+        // Update the related DeliveryOrderItem
+        const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+          where: {
+            deliveryOrderId: item.deliveryOrderId,
+            productId: item.productId,
+          },
+        });
+        if (deliveryOrderItem) {
+          await tx.deliveryOrderItem.update({
+            where: {
+              id: deliveryOrderItem.id,
+            },
+            data: {
+              processingQuantity: deliveryOrderItem.processingQuantity - item.requestedQuantity,
+              pendingQuantity: deliveryOrderItem.pendingQuantity + item.requestedQuantity,
+            },
+          });
+          affectedDOIds.add(item.deliveryOrderId);
+        }
       }
 
-      // Create a Jakarta timezone date (UTC+7)
-      const jakartaTime = new Date();
-      jakartaTime.setHours(jakartaTime.getHours() + 7);
-
-      // Restore the shipment
-      const restoredShipment = await tx.shipment.update({
-        where: {
-          id,
-        },
-        data: {
-          deletedAt: null,
-          updatedAt: jakartaTime,
-        },
-        include: {
-          armada: true,
-          shipmentItems: {
-            include: {
-              product: {
-                select: {
-                  name: true,
-                  satuan: true,
-                },
-              },
-            },
+      // For each affected delivery order, check if all items have processingQuantity == 0
+      for (const doId of affectedDOIds) {
+        const doItems = await tx.deliveryOrderItem.findMany({
+          where: {
+            deliveryOrderId: doId,
           },
-        },
-      });
+        });
+        if (doItems.every((d) => d.processingQuantity === 0)) {
+          await tx.deliveryOrder.update({
+            where: {
+              id: doId,
+            },
+            data: {
+              status: STATUS.PENDING,
+            },
+          });
+        }
+      }
+      // --- End revert logic ---
 
-      // Log the restoration
-      await shipmentLogService.logShipmentRestoration(id, performedById, restoredShipment, tx);
-
-      return restoredShipment;
+      return deletedShipment;
     });
   },
 
@@ -1498,7 +1512,7 @@ export default {
           warehouseId: product.warehouseId,
           warehouse: product.warehouse,
         },
-        deliveryOrders: deliveryOrders,
+        deliveryOrders,
         customers: deliveryOrders.map((d) => d.customer).filter(Boolean),
         weighings: chosenProduct.weighings,
         createdAt: chosenProduct.createdAt,

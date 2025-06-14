@@ -1,4 +1,6 @@
-import { ACTION, ENTITY_TYPE, STATUS } from '@prisma/client';
+import {
+  ACTION, ENTITY_TYPE, STATUS, 
+} from '@prisma/client';
 import prisma from '../config/prisma';
 import { DeliveryOrderCreateInput, DeliveryOrderUpdateInput } from '../schemas/deliveryOrder';
 import deliveryOrderLogService from './deliveryOrderLogService';

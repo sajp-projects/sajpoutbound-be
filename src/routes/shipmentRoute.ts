@@ -72,13 +72,6 @@ router.delete(
   shipmentController.deleteShipment,
 );
 
-// Restore archived shipment
-router.patch(
-  '/:id/restore',
-  checkPermission('shipment', PERMISSION_ACTION.UPDATE),
-  shipmentController.restoreShipment,
-);
-
 // Upload Plate Photo (multipart/form-data with 'platePhoto' field)
 router.patch(
   '/:id/upload-plate-photo',

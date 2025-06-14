@@ -491,43 +491,6 @@ export default {
   },
 
   /**
-   * Restore a deleted shipment
-   */
-  async restoreShipment(req: Request<{ id: string }>, res: Response, next: NextFunction) {
-    try {
-      const { id } = req.params;
-
-      await shipmentIdSchema.validateAsync({
-        id,
-      });
-
-      const performedById = req.user?.id;
-
-      if (!performedById) {
-        throw new CustomError({
-          message: 'Autentikasi diperlukan untuk aksi ini',
-          errorCode: 'PERLU_AUTENTIKASI',
-          status: 401,
-        });
-      }
-
-      const shipment = await shipmentService.restoreShipment(id, performedById);
-
-      if (!shipment) {
-        throw new CustomError({
-          message: 'Pengiriman tidak ditemukan atau tidak dihapus',
-          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
-          status: 404,
-        });
-      }
-
-      res.status(200).json(success(shipment));
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  /**
    * Get all available shipments that have not yet been weighed (status PENDING)
    */
   async getAvailableItemsForWeighing(req: Request, res: Response, next: NextFunction) {
