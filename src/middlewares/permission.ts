@@ -5,6 +5,7 @@ import {
 import permissionService from '../services/permissionService';
 import productService from '../services/productService';
 import rolePermissionService from '../services/rolePermissionService';
+import shipmentService from '../services/shipmentService';
 import userService from '../services/userService';
 import { CustomError } from './error';
 
@@ -226,3 +227,32 @@ export const checkWarehouseAccess = () => {
     }
   };
 };
+
+export async function checkShipmentNotArchived(req: Request, res: Response, next: NextFunction) {
+  try {
+    const shipmentId = req.params.shipmentId || req.params.id;
+    if (!shipmentId) {
+      res.status(400).json({
+        message: 'ID pengiriman tidak ditemukan di parameter.',
+      });
+      return;
+    }
+    const shipment = await shipmentService.getShipmentById(shipmentId);
+    if (!shipment) {
+      res.status(404).json({
+        message: 'Pengiriman tidak ditemukan.',
+      });
+      return;
+    }
+    if (shipment.deletedAt || shipment.deletedAt !== null) {
+      res.status(403).json({
+        message: 'Pengiriman sudah diarsipkan, tidak dapat melakukan aksi ini.',
+        errorCode: 'PENGIRIMAN_DIARSIPKAN',
+      });
+      return;
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+}

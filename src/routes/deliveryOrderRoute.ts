@@ -9,6 +9,13 @@ const router = express.Router();
 // Delivery order logs routes
 router.use('/logs', deliveryOrderLogRoutes);
 
+// Add new endpoint to get multiple DOs by IDs
+router.post(
+  '/by-ids',
+  checkPermission('delivery_order', PERMISSION_ACTION.READ),
+  deliveryOrderController.getDeliveryOrdersByIds,
+);
+
 // Get all delivery orders
 router.get(
   '/',

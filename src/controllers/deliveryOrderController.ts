@@ -491,4 +491,38 @@ export default {
       next(error);
     }
   },
+
+  /**
+   * Get multiple delivery orders by their IDs
+   */
+  async getDeliveryOrdersByIds(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0) {
+        throw new CustomError({
+          message: 'Parameter ids harus berupa array dan tidak boleh kosong',
+          errorCode: 'PARAMETER_TIDAK_VALID',
+          status: 400,
+        });
+      }
+      // Optionally validate each id is a string
+      if (!ids.every((id) => typeof id === 'string')) {
+        throw new CustomError({
+          message: 'Setiap id harus berupa string',
+          errorCode: 'PARAMETER_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      const deliveryOrders = await deliveryOrderService.getDeliveryOrdersByIds(ids);
+
+      res.status(200).json(
+        success({
+          deliveryOrders,
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
 };

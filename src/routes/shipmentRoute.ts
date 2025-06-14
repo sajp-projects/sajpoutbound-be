@@ -1,7 +1,11 @@
 import { PERMISSION_ACTION } from '@prisma/client';
 import express from 'express';
 import shipmentController from '../controllers/shipmentController';
-import { checkPermission, checkWarehouseAccess } from '../middlewares/permission';
+import {
+  checkPermission,
+  checkShipmentNotArchived,
+  checkWarehouseAccess,
+} from '../middlewares/permission';
 import shipmentLogRoutes from './shipmentLogRoutes';
 
 const router = express.Router();
@@ -34,6 +38,7 @@ router.post(
   '/:shipmentId/choosen-product',
   checkPermission('shipment', PERMISSION_ACTION.UPDATE),
   checkWarehouseAccess(),
+  checkShipmentNotArchived,
   shipmentController.chooseProductForShipment,
 );
 
@@ -41,6 +46,7 @@ router.delete(
   '/:shipmentId/choosen-product/:productId',
   checkPermission('shipment', PERMISSION_ACTION.UPDATE),
   checkWarehouseAccess(),
+  checkShipmentNotArchived,
   shipmentController.deleteChosenProduct,
 );
 
@@ -62,6 +68,7 @@ router.post(
 router.put(
   '/:id',
   checkPermission('shipment', PERMISSION_ACTION.UPDATE),
+  checkShipmentNotArchived,
   shipmentController.updateShipment,
 );
 
@@ -69,6 +76,7 @@ router.put(
 router.delete(
   '/:id',
   checkPermission('shipment', PERMISSION_ACTION.DELETE),
+  checkShipmentNotArchived,
   shipmentController.deleteShipment,
 );
 
@@ -76,6 +84,7 @@ router.delete(
 router.patch(
   '/:id/upload-plate-photo',
   checkPermission('shipment', PERMISSION_ACTION.UPDATE),
+  checkShipmentNotArchived,
   shipmentController.uploadPlatePhoto,
 );
 
@@ -83,6 +92,7 @@ router.patch(
 router.patch(
   '/:id/verify-plate',
   checkPermission('shipment', PERMISSION_ACTION.UPDATE),
+  checkShipmentNotArchived,
   shipmentController.verifyPlateNumberAndPhoto,
 );
 
