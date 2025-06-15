@@ -1,7 +1,5 @@
 import { SHIPMENT_TYPE, STATUS } from '@prisma/client';
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import { CustomError } from '../middlewares/error';
@@ -395,9 +393,11 @@ export default {
           // 1. Prevent removing loaded items
           for (const [key, existingItem] of existingItemsMap.entries()) {
             if (!updatedItemsMap.has(key)) {
-              if (existingItem.status !== 'PENDING') {
+              // Hanya cegah penghapusan jika item sudah CHOSEN atau COMPLETED
+              if (existingItem.status === 'CHOSEN' || existingItem.status === 'COMPLETED') {
                 throw new CustomError({
-                  message: 'Item yang sudah dimuat tidak dapat dihapus dari pengiriman.',
+                  message:
+                    'Item yang sudah dimuat atau selesai tidak dapat dihapus dari pengiriman.',
                   errorCode: 'ITEM_SUDAH_DIMUAT_TIDAK_BISA_DIHAPUS',
                   status: 400,
                 });
@@ -409,12 +409,13 @@ export default {
           for (const [key, updatedItem] of updatedItemsMap.entries()) {
             if (existingItemsMap.has(key)) {
               const existingItem = existingItemsMap.get(key);
+              // Hanya cegah perubahan quantity jika item sudah CHOSEN atau COMPLETED
               if (
-                existingItem.status !== 'PENDING' &&
+                (existingItem.status === 'CHOSEN' || existingItem.status === 'COMPLETED') &&
                 updatedItem.requestedQuantity !== existingItem.requestedQuantity
               ) {
                 throw new CustomError({
-                  message: 'Kuantitas item yang sudah dimuat tidak dapat diubah.',
+                  message: 'Kuantitas item yang sudah dimuat atau selesai tidak dapat diubah.',
                   errorCode: 'KUANTITAS_ITEM_SUDAH_DIMUAT_TIDAK_BISA_DIUBAH',
                   status: 400,
                 });

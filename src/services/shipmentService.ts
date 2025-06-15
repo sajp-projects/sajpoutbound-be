@@ -1,6 +1,4 @@
-import {
-  SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, 
-} from '@prisma/client';
+import { SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS } from '@prisma/client';
 import { customAlphabet } from 'nanoid';
 import prisma from '../config/prisma';
 import {
@@ -725,12 +723,39 @@ export default {
           .filter((item: any) => item.shipmentItemId)
           .map((item: any) => item.shipmentItemId);
 
-        // Delete items that are not in the update
+        // Delete items that are not in the update (only PENDING items can be deleted)
         const itemsToDelete = existingItems
-          .filter((item) => !updatedItemIds.includes(item.id))
+          .filter((item) => !updatedItemIds.includes(item.id) && item.status === 'PENDING')
           .map((item) => item.id);
 
+        // Get the items to delete for quantity restoration
+        const itemsToDeleteData = existingItems.filter((item) => itemsToDelete.includes(item.id));
+
         if (itemsToDelete.length > 0) {
+          // First, restore quantities to delivery orders
+          for (const item of itemsToDeleteData) {
+            const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+              where: {
+                deliveryOrderId: item.deliveryOrderId,
+                productId: item.productId,
+              },
+            });
+
+            if (deliveryOrderItem) {
+              await tx.deliveryOrderItem.update({
+                where: {
+                  id: deliveryOrderItem.id,
+                },
+                data: {
+                  processingQuantity: deliveryOrderItem.processingQuantity - item.requestedQuantity,
+                  pendingQuantity: deliveryOrderItem.pendingQuantity + item.requestedQuantity,
+                  updatedAt: jakartaTime,
+                },
+              });
+            }
+          }
+
+          // Then delete the items
           await tx.shipmentItem.deleteMany({
             where: {
               id: {
@@ -992,17 +1017,17 @@ export default {
 
         logOldData.armada = oldArmada
           ? {
-            id: oldArmada.id,
-            model: oldArmada.model,
-            plateNumber: oldArmada.plateNumber,
-          }
+              id: oldArmada.id,
+              model: oldArmada.model,
+              plateNumber: oldArmada.plateNumber,
+            }
           : null;
         logNewData.armada = newArmada
           ? {
-            id: newArmada.id,
-            model: newArmada.model,
-            plateNumber: newArmada.plateNumber,
-          }
+              id: newArmada.id,
+              model: newArmada.model,
+              plateNumber: newArmada.plateNumber,
+            }
           : null;
       }
 
