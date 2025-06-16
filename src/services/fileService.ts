@@ -1,3 +1,4 @@
+import dotenv from 'dotenv';
 import { Request } from 'express';
 import formidable from 'formidable';
 import fs from 'fs';
@@ -7,8 +8,13 @@ import { promisify } from 'util';
 // Convert callback-based fs functions to Promise-based
 const mkdirAsync = promisify(fs.mkdir);
 const existsAsync = promisify(fs.exists);
+dotenv.config();
 
-const PUBLIC_DIR = path.join(process.cwd(), 'src', 'public');
+const isProd = process.env.NODE_ENV === 'production';
+
+const PUBLIC_DIR = isProd
+  ? '/var/www/benzeta.shop/public'
+  : path.join(process.cwd(), 'src', 'public');
 const PLATE_PHOTOS_DIR = path.join(PUBLIC_DIR, 'plate-photos');
 
 // Ensure directories exist
@@ -75,7 +81,8 @@ export default {
 
         const originalFilename = file.originalFilename || 'image.jpg';
         const extension = path.extname(originalFilename) || '.jpg';
-        const uniqueFilename = `${fileNamePrefix}_${extension}`;
+        const timestamp = Date.now();
+        const uniqueFilename = `${fileNamePrefix}_${timestamp}${extension}`;
 
         // Full path where the file will be saved
         const targetPath = path.join(PLATE_PHOTOS_DIR, uniqueFilename);
