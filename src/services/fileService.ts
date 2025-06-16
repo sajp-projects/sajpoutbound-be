@@ -73,11 +73,9 @@ export default {
           return;
         }
 
-        // Create a unique filename with timestamp
-        const timestamp = Date.now();
         const originalFilename = file.originalFilename || 'image.jpg';
         const extension = path.extname(originalFilename) || '.jpg';
-        const uniqueFilename = `${fileNamePrefix}_${timestamp}${extension}`;
+        const uniqueFilename = `${fileNamePrefix}_${extension}`;
 
         // Full path where the file will be saved
         const targetPath = path.join(PLATE_PHOTOS_DIR, uniqueFilename);
