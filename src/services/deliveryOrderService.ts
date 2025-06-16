@@ -310,9 +310,9 @@ export default {
             // Fetch the current item state
             const currentItem = oldDeliveryOrder.items.find((i) => i.id === item.id);
             if (currentItem) {
-              const processing = currentItem.processingQuantity || 0;
-              const completed = currentItem.completedQuantity || 0;
-              const newPending = Math.max(item.quantity - processing - completed, 0);
+              const diff = item.quantity - currentItem.quantity;
+              const newPending = Math.max(currentItem.pendingQuantity + diff, 0);
+
               await tx.deliveryOrderItem.update({
                 where: {
                   id: item.id,

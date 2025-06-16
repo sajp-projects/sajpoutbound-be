@@ -348,8 +348,7 @@ export default {
           if (item.id) {
             const oldItem = oldItemsMap.get(item.id);
             if (oldItem) {
-              const minQuantity =
-                (oldItem.processingQuantity || 0) + (oldItem.completedQuantity || 0);
+              const minQuantity = oldItem.processingQuantity + oldItem.completedQuantity;
               if (item.quantity < minQuantity) {
                 throw new CustomError({
                   message: `Kuantitas tidak boleh kurang dari jumlah yang sudah diproses/selesai untuk produk ${oldItem.product.name}. Minimal: ${minQuantity}`,
