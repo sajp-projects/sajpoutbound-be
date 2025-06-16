@@ -307,17 +307,24 @@ export default {
         // Update existing items
         for (const item of itemsToUpdate) {
           if (item.id) {
-            await tx.deliveryOrderItem.update({
-              where: {
-                id: item.id,
-              },
-              data: {
-                productId: item.productId,
-                quantity: item.quantity,
-                pendingQuantity: item.quantity,
-                updatedAt: jakartaTime,
-              },
-            });
+            // Fetch the current item state
+            const currentItem = oldDeliveryOrder.items.find((i) => i.id === item.id);
+            if (currentItem) {
+              const processing = currentItem.processingQuantity || 0;
+              const completed = currentItem.completedQuantity || 0;
+              const newPending = Math.max(item.quantity - processing - completed, 0);
+              await tx.deliveryOrderItem.update({
+                where: {
+                  id: item.id,
+                },
+                data: {
+                  productId: item.productId,
+                  quantity: item.quantity,
+                  pendingQuantity: newPending,
+                  updatedAt: jakartaTime,
+                },
+              });
+            }
           }
         }
 
@@ -710,6 +717,47 @@ export default {
     return prisma.deliveryOrder.findUnique({
       where: {
         doNumber,
+      },
+    });
+  },
+
+  /**
+   * Get all shipments that use items from a given delivery order
+   */
+  async getShipmentsByDeliveryOrderId(deliveryOrderId: string) {
+    return prisma.shipment.findMany({
+      where: {
+        shipmentItems: {
+          some: {
+            deliveryOrderId,
+          },
+        },
+      },
+      include: {
+        armada: {
+          select: {
+            id: true,
+            model: true,
+            plateNumber: true,
+          },
+        },
+        shipmentItems: {
+          where: {
+            deliveryOrderId,
+          },
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                satuan: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   },

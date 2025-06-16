@@ -1,4 +1,6 @@
-import { SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS } from '@prisma/client';
+import {
+  SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, 
+} from '@prisma/client';
 import { customAlphabet } from 'nanoid';
 import prisma from '../config/prisma';
 import {
@@ -266,6 +268,7 @@ export default {
             deliveryOrder: {
               select: {
                 id: true,
+                doNumber: true,
                 customerId: true,
                 customer: {
                   select: {
@@ -1017,17 +1020,17 @@ export default {
 
         logOldData.armada = oldArmada
           ? {
-              id: oldArmada.id,
-              model: oldArmada.model,
-              plateNumber: oldArmada.plateNumber,
-            }
+            id: oldArmada.id,
+            model: oldArmada.model,
+            plateNumber: oldArmada.plateNumber,
+          }
           : null;
         logNewData.armada = newArmada
           ? {
-              id: newArmada.id,
-              model: newArmada.model,
-              plateNumber: newArmada.plateNumber,
-            }
+            id: newArmada.id,
+            model: newArmada.model,
+            plateNumber: newArmada.plateNumber,
+          }
           : null;
       }
 

@@ -337,6 +337,30 @@ export default {
             });
           }
         }
+
+        // --- Begin: Validation for processed/completed quantities ---
+        // Create a map of old items by id for quick lookup
+        const oldItemsMap = new Map();
+        for (const oldItem of existingDeliveryOrder.items) {
+          oldItemsMap.set(oldItem.id, oldItem);
+        }
+        for (const item of validated.items) {
+          if (item.id) {
+            const oldItem = oldItemsMap.get(item.id);
+            if (oldItem) {
+              const minQuantity =
+                (oldItem.processingQuantity || 0) + (oldItem.completedQuantity || 0);
+              if (item.quantity < minQuantity) {
+                throw new CustomError({
+                  message: `Kuantitas tidak boleh kurang dari jumlah yang sudah diproses/selesai untuk produk ${oldItem.product.name}. Minimal: ${minQuantity}`,
+                  errorCode: 'KUANTITAS_TIDAK_CUKUP',
+                  status: 400,
+                });
+              }
+            }
+          }
+        }
+        // --- End: Validation for processed/completed quantities ---
       }
 
       const performedById = req.user?.id;
@@ -519,6 +543,41 @@ export default {
       res.status(200).json(
         success({
           deliveryOrders,
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Get all shipments that use items from a given delivery order
+   */
+  async getShipmentsByDeliveryOrderId(
+    req: Request<{ id: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { id } = req.params;
+
+      await deliveryOrderIdSchema.validateAsync({
+        id,
+      });
+
+      const shipments = await deliveryOrderService.getShipmentsByDeliveryOrderId(id);
+
+      if (!shipments || shipments.length === 0) {
+        throw new CustomError({
+          message: 'Tidak ada pengiriman yang menggunakan delivery order ini',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      res.status(200).json(
+        success({
+          shipments,
         }),
       );
     } catch (error) {

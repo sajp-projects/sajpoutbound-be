@@ -37,6 +37,13 @@ router.get(
   deliveryOrderController.getDeliveryOrderById,
 );
 
+// Add new endpoint to get all shipments that use items from a given DO
+router.get(
+  '/:id/shipments',
+  checkPermission('delivery_order', PERMISSION_ACTION.READ),
+  deliveryOrderController.getShipmentsByDeliveryOrderId,
+);
+
 // Create delivery order
 router.post(
   '/',

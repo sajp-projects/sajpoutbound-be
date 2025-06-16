@@ -1,5 +1,7 @@
 import { SHIPMENT_TYPE, STATUS } from '@prisma/client';
-import { NextFunction, Request, Response } from 'express';
+import {
+  NextFunction, Request, Response, 
+} from 'express';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import { CustomError } from '../middlewares/error';
