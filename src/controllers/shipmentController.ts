@@ -1,4 +1,5 @@
 import { SHIPMENT_TYPE, STATUS } from '@prisma/client';
+import dotenv from 'dotenv';
 import {
   NextFunction, Request, Response, 
 } from 'express';
@@ -28,6 +29,10 @@ import productService from '../services/productService';
 import shipmentService from '../services/shipmentService';
 import userService from '../services/userService';
 import { success } from '../types/response';
+
+dotenv.config();
+
+const isProd = process.env.NODE_ENV === 'production';
 
 export default {
   /**
@@ -976,12 +981,9 @@ export default {
 
       // Get the absolute path to the uploaded plate photo
       const platePhotoRelativePath = existingShipment.platePhoto;
-      const platePhotoAbsolutePath = path.join(
-        process.cwd(),
-        'src',
-        'public',
-        platePhotoRelativePath,
-      );
+      const platePhotoAbsolutePath = isProd
+        ? path.join('/var/www/benzeta.shop/public', platePhotoRelativePath)
+        : path.join(process.cwd(), 'src', 'public', platePhotoRelativePath);
 
       // Use Gemini AI to extract plate number from the photo
       const extractedPlateNumber =
