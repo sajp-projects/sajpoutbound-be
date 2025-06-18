@@ -291,6 +291,14 @@ export default {
         });
       }
 
+      if (existingDeliveryOrder.status === STATUS.SELESAI) {
+        throw new CustomError({
+          message: 'Pesanan pengiriman sudah selesai, tidak dapat diubah.',
+          errorCode: 'PESANAN_PENGIRIMAN_SUDAH_SELESAI',
+          status: 400,
+        });
+      }
+
       const validated = await updateDeliveryOrderSchema.validateAsync(req.body);
 
       // If customerId is provided, check if the customer exists
@@ -431,10 +439,13 @@ export default {
         });
       }
 
-      if (existingDeliveryOrder.status === STATUS.PROSES) {
+      if (
+        existingDeliveryOrder.status === STATUS.PROSES ||
+        existingDeliveryOrder.status === STATUS.SELESAI
+      ) {
         throw new CustomError({
-          message: 'Pesanan pengiriman dengan status PROSES tidak dapat diarsipkan',
-          errorCode: 'TIDAK_BISA_ARSIPKAN_STATUS_PROSES',
+          message: 'Pesanan pengiriman dengan status PROSES atau SELESAI tidak dapat diarsipkan',
+          errorCode: 'TIDAK_BISA_ARSIPKAN_STATUS_PROSES_SELESAI',
           status: 400,
         });
       }

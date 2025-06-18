@@ -377,11 +377,20 @@ export default {
 
           // Get the current shipment to check status and items
           const shipment = await shipmentService.getShipmentById(id);
+
           if (!shipment) {
             throw new CustomError({
               message: 'Pengiriman tidak ditemukan',
               errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
               status: 404,
+            });
+          }
+
+          if (shipment.status === STATUS.SELESAI) {
+            throw new CustomError({
+              message: 'Pengiriman sudah selesai, tidak dapat diubah.',
+              errorCode: 'PENGIRIMAN_SUDAH_SELESAI',
+              status: 400,
             });
           }
 
@@ -480,12 +489,20 @@ export default {
       }
 
       if (
-        existingShipment.status !== STATUS.PENDING ||
+        (existingShipment.status as STATUS) !== STATUS.PENDING ||
         existingShipment.shipmentItems.some((item) => item.status !== 'PENDING')
       ) {
         throw new CustomError({
           message: 'Pengiriman hanya dapat diarsipkan jika status dan semua item masih PENDING.',
           errorCode: 'PENGIRIMAN_TIDAK_BISA_DIARSIPKAN',
+          status: 400,
+        });
+      }
+
+      if ((existingShipment.status as STATUS) === STATUS.SELESAI) {
+        throw new CustomError({
+          message: 'Pengiriman sudah selesai, tidak dapat diarsipkan.',
+          errorCode: 'PENGIRIMAN_SUDAH_SELESAI',
           status: 400,
         });
       }

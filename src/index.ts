@@ -1,4 +1,5 @@
 import bodyParser from 'body-parser';
+import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import http from 'http';
@@ -16,22 +17,25 @@ const app = express();
 const port = Number(process.env.PORT) || 3000;
 const server = http.createServer(app);
 
-// app.use(
-//   cors({
-//     origin: [
-//       'https://www.outmanage.vercel.app',
-//       'https://outmanage.vercel.app',
-//       'http://localhost:5173',
-//       'http://localhost:5174',
-//       'http://31.97.105.79:5173',
-//       'https://demo.benzeta.shop',
-//       'https://benzeta.shop',
-//       'https://www.demo.benzeta.shop',
-//       'https://www.benzeta.shop',
-//     ],
-//     credentials: true,
-//   }),
-// );
+if (process.env.NODE_ENV !== 'production') {
+  app.use(
+    cors({
+      origin: [
+        'https://www.outmanage.vercel.app',
+        'https://outmanage.vercel.app',
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:5175',
+        'http://31.97.105.79:5173',
+        'https://demo.benzeta.shop',
+        'https://benzeta.shop',
+        'https://www.demo.benzeta.shop',
+        'https://www.benzeta.shop',
+      ],
+      credentials: true,
+    }),
+  );
+}
 app.use(express.json());
 app.use(
   bodyParser.urlencoded({
