@@ -748,7 +748,29 @@ export default {
         });
       }
 
-      const chosenProduct = await shipmentService.chooseProductForShipment(data, product);
+      const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+      let code = nanoid();
+      let attempts = 0;
+      const maxAttempts = 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        code = nanoid();
+        const existing = await shipmentService.getShipmentChosenProductByCode(code);
+        if (!existing) {
+          break;
+        }
+        attempts++;
+
+        if (attempts >= maxAttempts) {
+          throw new CustomError({
+            message: 'Terjadi kesalahan saat membuat nomor DO, harap coba lagi.',
+            errorCode: 'DUPLIKASI_NOMOR_DO',
+            status: 500,
+          });
+        }
+      }
+
+      const chosenProduct = await shipmentService.chooseProductForShipment(data, product, code);
 
       res.status(200).json(success(chosenProduct));
     } catch (error) {
@@ -1121,8 +1143,30 @@ export default {
         });
       }
 
+      const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+      let code;
+      let attempts = 0;
+      const maxAttempts = 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        code = nanoid();
+        const existing = await shipmentService.getShipmentChosenProductByCode(code);
+        if (!existing) {
+          break;
+        }
+        attempts++;
+
+        if (attempts >= maxAttempts) {
+          throw new CustomError({
+            message: 'Terjadi kesalahan saat membuat nomor DO, harap coba lagi.',
+            errorCode: 'DUPLIKASI_NOMOR_DO',
+            status: 500,
+          });
+        }
+      }
+
       // Now proceed with bulk weighing the items
-      const result = await shipmentService.bulkWeighShipmentItems(validated, performedById);
+      const result = await shipmentService.bulkWeighShipmentItems(validated, performedById, code);
 
       // If the service returns null, it means no items were found
       if (!result) {

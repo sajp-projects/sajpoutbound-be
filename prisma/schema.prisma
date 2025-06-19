@@ -351,6 +351,7 @@ model ShipmentLog {
 
 model ShipmentChosenProduct {
   id         String                          @id @default(uuid())
+  code       String                          @unique
   shipmentId String
   productId  String
   createdAt  DateTime                        @default(now())

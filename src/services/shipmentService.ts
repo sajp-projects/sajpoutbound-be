@@ -1347,6 +1347,19 @@ export default {
       },
     });
 
+    // Get chosen product codes for this shipment
+    const chosenProducts = await prisma.shipmentChosenProduct.findMany({
+      where: {
+        shipmentId,
+      },
+      select: {
+        productId: true,
+        code: true,
+      },
+    });
+
+    const codeMap = new Map(chosenProducts.map((cp) => [cp.productId, cp.code]));
+
     // Create a map to group items by product ID
     const productMap = new Map();
 
@@ -1357,7 +1370,10 @@ export default {
       if (!productMap.has(productId)) {
         productMap.set(productId, {
           shipmentId: item.shipmentId,
-          product: item.product,
+          product: {
+            ...item.product,
+            code: codeMap.get(productId) || null,
+          },
           warehouse: item.warehouse,
           // Create arrays to track all related delivery orders and their info
           deliveryOrders: [item.deliveryOrder],
@@ -1432,7 +1448,7 @@ export default {
   /**
    * Choose a product for a shipment
    */
-  async chooseProductForShipment(data: ShipmentChosenProductInput, product: any) {
+  async chooseProductForShipment(data: ShipmentChosenProductInput, product: any, code: string) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
@@ -1487,6 +1503,7 @@ export default {
         if (!existingChosen) {
           await tx.shipmentChosenProduct.create({
             data: {
+              code,
               shipmentId: data.shipmentId,
               productId: data.productId,
               createdAt: jakartaTime,
@@ -1648,6 +1665,7 @@ export default {
         // Build combined result
         return {
           id: chosenProduct.id,
+          code: chosenProduct.code,
           shipmentId,
           productId: chosenProduct.productId,
           product: {
@@ -1965,7 +1983,7 @@ export default {
   /**
    * Process multiple shipment items with the same product at once (bulk weighing)
    */
-  async bulkWeighShipmentItems(data: ShipmentBulkWeighInput, performedById: string) {
+  async bulkWeighShipmentItems(data: ShipmentBulkWeighInput, performedById: string, code: string) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
@@ -2101,6 +2119,7 @@ export default {
       if (!shipmentChosenProduct) {
         shipmentChosenProduct = await tx.shipmentChosenProduct.create({
           data: {
+            code,
             shipmentId: data.shipmentId,
             productId: data.productId,
             createdAt: jakartaTime,
@@ -2272,6 +2291,14 @@ export default {
     return prisma.shipment.findUnique({
       where: {
         shipmentNumber,
+      },
+    });
+  },
+
+  async getShipmentChosenProductByCode(code: string) {
+    return prisma.shipmentChosenProduct.findUnique({
+      where: {
+        code,
       },
     });
   },
