@@ -1,6 +1,40 @@
 import { Prisma } from '@prisma/client';
+import dotenv from 'dotenv';
 import fs from 'fs';
+import path from 'path';
 import PDFDocument from 'pdfkit';
+import { promisify } from 'util';
+
+// Convert callback-based fs functions to Promise-based
+const mkdirAsync = promisify(fs.mkdir);
+const existsAsync = promisify(fs.exists);
+dotenv.config();
+
+const isProd = process.env.NODE_ENV === 'production';
+
+const PUBLIC_DIR = isProd
+  ? '/var/www/benzeta.shop/public'
+  : path.join(process.cwd(), 'src', 'public');
+const SPMB_DIR = path.join(PUBLIC_DIR, 'spmb');
+
+// Ensure directories exist
+const ensureDirectoriesExist = async () => {
+  if (!(await existsAsync(PUBLIC_DIR))) {
+    await mkdirAsync(PUBLIC_DIR, {
+      recursive: true,
+    });
+  }
+  if (!(await existsAsync(SPMB_DIR))) {
+    await mkdirAsync(SPMB_DIR, {
+      recursive: true,
+    });
+  }
+};
+
+// Initialize directories when service is loaded
+ensureDirectoriesExist().catch((err) => {
+  console.error('Failed to create SPMB directories:', err);
+});
 
 type ShipmentWithIncludes = Prisma.ShipmentGetPayload<{
   include: {
@@ -45,6 +79,8 @@ type SPMBWithIncludes = Prisma.SPMBGetPayload<{
 
 export default {
   async generateSPMB(spmb: SPMBWithIncludes, shipment: ShipmentWithIncludes): Promise<string> {
+    await ensureDirectoriesExist();
+
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
         size: 'A5',
@@ -57,14 +93,7 @@ export default {
         },
       });
 
-      const dir = 'src/public/spmb';
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, {
-          recursive: true,
-        });
-      }
-
-      const filePath = `${dir}/${spmb.code}.pdf`;
+      const filePath = path.join(SPMB_DIR, `${spmb.code}.pdf`);
       const stream = fs.createWriteStream(filePath);
       doc.pipe(stream);
 

@@ -1,7 +1,41 @@
 import { Prisma } from '@prisma/client';
+import dotenv from 'dotenv';
 import fs from 'fs';
 import moment from 'moment';
+import path from 'path';
 import PDFDocument from 'pdfkit';
+import { promisify } from 'util';
+
+// Convert callback-based fs functions to Promise-based
+const mkdirAsync = promisify(fs.mkdir);
+const existsAsync = promisify(fs.exists);
+dotenv.config();
+
+const isProd = process.env.NODE_ENV === 'production';
+
+const PUBLIC_DIR = isProd
+  ? '/var/www/benzeta.shop/public'
+  : path.join(process.cwd(), 'src', 'public');
+const NOTA_TIMBANGAN_DIR = path.join(PUBLIC_DIR, 'nota-timbangan');
+
+// Ensure directories exist
+const ensureDirectoriesExist = async () => {
+  if (!(await existsAsync(PUBLIC_DIR))) {
+    await mkdirAsync(PUBLIC_DIR, {
+      recursive: true,
+    });
+  }
+  if (!(await existsAsync(NOTA_TIMBANGAN_DIR))) {
+    await mkdirAsync(NOTA_TIMBANGAN_DIR, {
+      recursive: true,
+    });
+  }
+};
+
+// Initialize directories when service is loaded
+ensureDirectoriesExist().catch((err) => {
+  console.error('Failed to create nota timbangan directories:', err);
+});
 
 type WeighingWithIncludes = Prisma.ShipmentChosenProductWeighingGetPayload<{
   include: {
@@ -32,6 +66,8 @@ export default {
     weighing: WeighingWithIncludes,
     ticketNumber: string,
   ): Promise<string> {
+    await ensureDirectoriesExist();
+
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
         size: [240, 400], // Custom size for receipt
@@ -43,14 +79,7 @@ export default {
         },
       });
 
-      const dir = 'src/public/nota-timbangan';
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, {
-          recursive: true,
-        });
-      }
-
-      const filePath = `${dir}/${ticketNumber}.pdf`;
+      const filePath = path.join(NOTA_TIMBANGAN_DIR, `${ticketNumber}.pdf`);
       const stream = fs.createWriteStream(filePath);
       doc.pipe(stream);
 
