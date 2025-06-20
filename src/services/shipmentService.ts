@@ -1,7 +1,9 @@
 import {
   SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, 
 } from '@prisma/client';
+import fs from 'fs';
 import { customAlphabet } from 'nanoid';
+import path from 'path';
 import prisma from '../config/prisma';
 import {
   ShipmentBulkWeighInput,
@@ -770,8 +772,12 @@ export default {
         };
       }
 
+      // Track if we need to regenerate SPMBs
+      let shouldRegenerateSpmbs = false;
+
       // If this is a full update with items, make sure the shipment is in PENDING status
       if ('items' in data && Array.isArray(data.items)) {
+        shouldRegenerateSpmbs = true;
         // Handle items update
         const items = data.items as unknown as ShipmentItemUpdateInput[];
 
@@ -1049,6 +1055,133 @@ export default {
         },
       });
 
+      // Regenerate SPMBs if items were modified
+      if (shouldRegenerateSpmbs) {
+        // Get existing SPMBs to delete their PDF files
+        const existingSpmbs = await tx.sPMB.findMany({
+          where: {
+            shipmentId: id,
+          },
+          select: {
+            documentPath: true,
+          },
+        });
+
+        // Delete existing SPMB PDF files from file system
+        const isProd = process.env.NODE_ENV === 'production';
+        const PUBLIC_DIR = isProd
+          ? '/var/www/benzeta.shop/public'
+          : path.join(process.cwd(), 'src', 'public');
+
+        for (const spmb of existingSpmbs) {
+          if (spmb.documentPath) {
+            const filePath = path.join(PUBLIC_DIR, spmb.documentPath);
+            try {
+              if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log(`Deleted old SPMB file: ${filePath}`);
+              }
+            } catch (error) {
+              console.error(`Failed to delete SPMB file ${filePath}:`, error);
+              // Continue with regeneration even if file deletion fails
+            }
+          }
+        }
+
+        // Delete existing SPMBs from database
+        await tx.sPMB.deleteMany({
+          where: {
+            shipmentId: id,
+          },
+        });
+
+        // Get updated shipment items to determine new delivery orders
+        const updatedShipmentItems = await tx.shipmentItem.findMany({
+          where: {
+            shipmentId: id,
+          },
+        });
+
+        // Generate new SPMBs for each unique delivery order
+        const uniqueDeliveryOrderIds = [
+          ...new Set(updatedShipmentItems.map((item) => item.deliveryOrderId)),
+        ];
+        const newSpmbs = [];
+
+        for (const doId of uniqueDeliveryOrderIds) {
+          // Generate a unique SPMB code
+          const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+          const spmbCode = `SPMB-${nanoid()}`;
+
+          const spmb = await tx.sPMB.create({
+            data: {
+              shipmentId: id,
+              deliveryOrderId: doId,
+              code: spmbCode,
+              createdAt: jakartaTime,
+              updatedAt: jakartaTime,
+            },
+            include: {
+              deliveryOrder: {
+                include: {
+                  customer: true,
+                  items: {
+                    include: {
+                      product: true,
+                    },
+                  },
+                },
+              },
+              shipment: {
+                include: {
+                  armada: true,
+                  shipmentItems: {
+                    include: {
+                      product: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          // Get the complete shipment data for PDF generation
+          const shipmentForPdf = await tx.shipment.findUnique({
+            where: {
+              id,
+            },
+            include: {
+              armada: true,
+              shipmentItems: {
+                include: {
+                  product: true,
+                  deliveryOrder: {
+                    include: {
+                      customer: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          if (shipmentForPdf) {
+            const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
+            const updatedSpmb = await tx.sPMB.update({
+              where: {
+                id: spmb.id,
+              },
+              data: {
+                documentPath: pdfPath,
+              },
+            });
+            newSpmbs.push(updatedSpmb);
+          } else {
+            newSpmbs.push(spmb);
+          }
+        }
+      }
+
       // Prepare log data - only include changed fields
       const logOldData: Record<string, any> = {};
       const logNewData: Record<string, any> = {};
@@ -1127,6 +1260,47 @@ export default {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Get existing SPMBs to delete their PDF files before soft deleting the shipment
+      const existingSpmbs = await tx.sPMB.findMany({
+        where: {
+          shipmentId: id,
+        },
+        select: {
+          documentPath: true,
+        },
+      });
+
+      // Delete existing SPMB PDF files from file system
+      const isProd = process.env.NODE_ENV === 'production';
+      const PUBLIC_DIR = isProd
+        ? '/var/www/benzeta.shop/public'
+        : path.join(process.cwd(), 'src', 'public');
+
+      for (const spmb of existingSpmbs) {
+        if (spmb.documentPath) {
+          const filePath = path.join(PUBLIC_DIR, spmb.documentPath);
+          try {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log(`Deleted SPMB file during shipment deletion: ${filePath}`);
+            }
+          } catch (error) {
+            console.error(
+              `Failed to delete SPMB file during shipment deletion ${filePath}:`,
+              error,
+            );
+            // Continue with deletion even if file deletion fails
+          }
+        }
+      }
+
+      // Delete existing SPMBs from database (this will cascade delete due to foreign key)
+      await tx.sPMB.deleteMany({
+        where: {
+          shipmentId: id,
+        },
+      });
 
       // Soft delete the shipment
       const deletedShipment = await tx.shipment.update({
