@@ -320,7 +320,6 @@ model SPMB {
   shipmentId      String
   deliveryOrderId String
   code            String        @unique
-  status          SPMB_STATUS   @default(PENDING)
   documentPath    String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -329,6 +328,18 @@ model SPMB {
 
   @@index([shipmentId], map: "SPMB_shipmentId_fkey")
   @@index([deliveryOrderId], map: "SPMB_deliveryOrderId_fkey")
+}
+
+model NotaTimbangan {
+  id                              String                        @id @default(uuid())
+  ticketNumber                    String                        @unique
+  documentPath                    String
+  shipmentChosenProductWeighingId String                        @unique
+  createdAt                       DateTime                      @default(now())
+  updatedAt                       DateTime                      @updatedAt
+  shipmentChosenProductWeighing   ShipmentChosenProductWeighing @relation(fields: [shipmentChosenProductWeighingId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentChosenProductWeighingId], map: "NotaTimbangan_shipmentChosenProductWeighingId_fkey")
 }
 
 model ShipmentLog {
@@ -371,9 +382,12 @@ model ShipmentChosenProductWeighing {
   grossWeight             Float
   netWeight               Float?
   tareWeight              Float?
+  timeIn                  DateTime?
+  timeOut                 DateTime?
   createdAt               DateTime              @default(now())
   updatedAt               DateTime              @updatedAt
   shipmentChosenProduct   ShipmentChosenProduct @relation(fields: [shipmentChosenProductId], references: [id])
+  notaTimbangan           NotaTimbangan?
 
   @@index([shipmentChosenProductId], map: "ShipmentChosenProductWeighing_shipmentChosenProductId_fkey")
 }
@@ -414,11 +428,6 @@ enum STATUS {
 enum SHIPMENT_ITEM_STATUS {
   PENDING
   CHOSEN
-  COMPLETED
-}
-
-enum SPMB_STATUS {
-  PENDING
   COMPLETED
 }
 

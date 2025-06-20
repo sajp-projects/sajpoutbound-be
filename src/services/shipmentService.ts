@@ -13,7 +13,9 @@ import {
 } from '../schemas/shipment';
 import { SPMBCreateInput } from '../schemas/spmb';
 import armadaService from './armadaService';
+import notaTimbanganPdfService from './notaTimbanganPdfService';
 import shipmentLogService from './shipmentLogService';
+import spmbPdfService from './spmbPdfService';
 
 /**
  * Service for handling shipment operations
@@ -637,13 +639,66 @@ export default {
             shipmentId: shipment.id,
             deliveryOrderId: doId,
             code: spmbCode,
-            status: 'PENDING',
             createdAt: jakartaTime,
             updatedAt: jakartaTime,
           },
+          include: {
+            deliveryOrder: {
+              include: {
+                customer: true,
+                items: {
+                  include: {
+                    product: true,
+                  },
+                },
+              },
+            },
+            shipment: {
+              include: {
+                armada: true,
+                shipmentItems: {
+                  include: {
+                    product: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
-        spmbs.push(spmb);
+        const shipmentForPdf = await tx.shipment.findUnique({
+          where: {
+            id: shipment.id,
+          },
+          include: {
+            armada: true,
+            shipmentItems: {
+              include: {
+                product: true,
+                deliveryOrder: {
+                  include: {
+                    customer: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (shipmentForPdf) {
+          const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
+          const updatedSpmb = await tx.sPMB.update({
+            where: {
+              id: spmb.id,
+            },
+            data: {
+              documentPath: pdfPath,
+            },
+          });
+          spmbs.push(updatedSpmb);
+        } else {
+          spmbs.push(spmb);
+        }
       }
 
       // Prepare complete shipment data with items for logging
@@ -1536,7 +1591,21 @@ export default {
           productId: data.productId,
         },
         include: {
-          weighings: true,
+          weighings: {
+            select: {
+              id: true,
+              grossWeight: true,
+              netWeight: true,
+              tareWeight: true,
+              notaTimbangan: {
+                select: {
+                  id: true,
+                  ticketNumber: true,
+                  documentPath: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -1584,6 +1653,13 @@ export default {
             grossWeight: true,
             netWeight: true,
             tareWeight: true,
+            notaTimbangan: {
+              select: {
+                id: true,
+                ticketNumber: true,
+                documentPath: true,
+              },
+            },
           },
         },
       },
@@ -2136,12 +2212,64 @@ export default {
       });
 
       // Create a new weighing record with the total weight
-      await tx.shipmentChosenProductWeighing.create({
+      const weighing = await tx.shipmentChosenProductWeighing.create({
         data: {
           shipmentChosenProductId: shipmentChosenProduct.id,
           grossWeight: data.grossWeight,
           netWeight: data.netWeight || 0,
           tareWeight: data.tareWeight || 0,
+          timeIn: shipmentChosenProduct.createdAt,
+          createdAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+        include: {
+          shipmentChosenProduct: {
+            include: {
+              product: true,
+              shipment: {
+                include: {
+                  armada: true,
+                  shipmentItems: {
+                    include: {
+                      deliveryOrder: {
+                        include: {
+                          customer: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Set timeOut to weighing.createdAt
+      await tx.shipmentChosenProductWeighing.update({
+        where: {
+          id: weighing.id,
+        },
+        data: {
+          timeOut: weighing.createdAt,
+        },
+      });
+
+      // Generate Nota Timbangan PDF and save to DB
+      const nanoid = customAlphabet('1234567890', 6);
+      const ticketNumber = nanoid();
+      const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
+        {
+          ...weighing,
+          timeOut: weighing.createdAt,
+        },
+        ticketNumber,
+      );
+      await tx.notaTimbangan.create({
+        data: {
+          ticketNumber,
+          documentPath: pdfPath,
+          shipmentChosenProductWeighingId: weighing.id,
           createdAt: jakartaTime,
           updatedAt: jakartaTime,
         },

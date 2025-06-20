@@ -1,4 +1,3 @@
-import { SPMB_STATUS } from '@prisma/client';
 import Joi from 'joi';
 import { createResourceIdSchema } from './base';
 
@@ -10,7 +9,6 @@ export type SPMBCreateInput = {
 };
 
 export type SPMBUpdateInput = {
-  status?: SPMB_STATUS;
   documentPath?: string;
 };
 
@@ -36,11 +34,6 @@ export const createSPMBSchema = Joi.object<SPMBCreateInput>({
 });
 
 export const updateSPMBSchema = Joi.object<SPMBUpdateInput>({
-  status: Joi.string()
-    .valid(...Object.values(SPMB_STATUS))
-    .messages({
-      'any.only': 'Invalid SPMB status',
-    }),
   documentPath: Joi.string().allow('', null).max(500).messages({
     'string.max': 'Document path cannot exceed {#limit} characters',
   }),
