@@ -4397,6 +4397,185 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Report Management",
+      "item": [
+        {
+          "name": "Get Operational Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/operational?startDate=2024-06-01&endDate=2024-06-30&type=ANTAR&status=PENDING&warehouseId=warehouse-uuid-here",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "operational"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-06-01",
+                  "description": "Start date (YYYY-MM-DD)"
+                },
+                { "key": "endDate", "value": "2024-06-30", "description": "End date (YYYY-MM-DD)" },
+                { "key": "type", "value": "ANTAR", "description": "Shipment type (ANTAR/JEMPUT)" },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "Shipment status (PENDING/PROSES/SELESAI)"
+                },
+                {
+                  "key": "warehouseId",
+                  "value": "warehouse-uuid-here",
+                  "description": "Warehouse UUID"
+                }
+              ]
+            },
+            "description": "Get operational report with optional filters: startDate, endDate, type, status, warehouseId."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Daily Output Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/daily-output?startDate=2024-06-01&endDate=2024-06-30&groupBy=item&warehouseId=warehouse-uuid-here",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "daily-output"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-06-01",
+                  "description": "Start date (YYYY-MM-DD)"
+                },
+                { "key": "endDate", "value": "2024-06-30", "description": "End date (YYYY-MM-DD)" },
+                {
+                  "key": "groupBy",
+                  "value": "item",
+                  "description": "Group by: item, customer, vehicle, warehouse"
+                },
+                {
+                  "key": "warehouseId",
+                  "value": "warehouse-uuid-here",
+                  "description": "Warehouse UUID"
+                },
+                {
+                  "key": "customerId",
+                  "value": "customer-uuid-here",
+                  "description": "Customer UUID (optional)"
+                },
+                {
+                  "key": "armadaId",
+                  "value": "armada-uuid-here",
+                  "description": "Armada UUID (optional)"
+                },
+                {
+                  "key": "productId",
+                  "value": "product-uuid-here",
+                  "description": "Product UUID (optional)"
+                }
+              ]
+            },
+            "description": "Get daily output report grouped by item, customer, vehicle, or warehouse. Optional filters: startDate, endDate, groupBy, warehouseId, customerId, armadaId, productId."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Monthly Output Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/monthly-output?year=2024&month=6&groupBy=item&warehouseId=warehouse-uuid-here",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "monthly-output"],
+              "query": [
+                { "key": "year", "value": "2024", "description": "Year (YYYY)" },
+                { "key": "month", "value": "6", "description": "Month (1-12)" },
+                {
+                  "key": "groupBy",
+                  "value": "item",
+                  "description": "Group by: item, customer, vehicle, warehouse"
+                },
+                {
+                  "key": "warehouseId",
+                  "value": "warehouse-uuid-here",
+                  "description": "Warehouse UUID (optional)"
+                },
+                {
+                  "key": "customerId",
+                  "value": "customer-uuid-here",
+                  "description": "Customer UUID (optional)"
+                },
+                {
+                  "key": "armadaId",
+                  "value": "armada-uuid-here",
+                  "description": "Armada UUID (optional)"
+                },
+                {
+                  "key": "productId",
+                  "value": "product-uuid-here",
+                  "description": "Product UUID (optional)"
+                }
+              ]
+            },
+            "description": "Get monthly output report for a given year and month, grouped by item, customer, vehicle, or warehouse."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Shipment Assignment Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/shipment-assignment?startDate=2024-06-01&endDate=2024-06-30&armadaId=armada-uuid-here&warehouseId=warehouse-uuid-here&status=PROSES",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "shipment-assignment"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-06-01",
+                  "description": "Start date (YYYY-MM-DD)"
+                },
+                { "key": "endDate", "value": "2024-06-30", "description": "End date (YYYY-MM-DD)" },
+                {
+                  "key": "armadaId",
+                  "value": "armada-uuid-here",
+                  "description": "Armada UUID (optional)"
+                },
+                {
+                  "key": "warehouseId",
+                  "value": "warehouse-uuid-here",
+                  "description": "Warehouse UUID (optional)"
+                },
+                {
+                  "key": "status",
+                  "value": "PROSES",
+                  "description": "Shipment status (PENDING/PROSES/SELESAI) (optional)"
+                }
+              ]
+            },
+            "description": "Get shipment assignment report showing which armada are assigned to active shipments. Optional filters: startDate, endDate, armadaId, warehouseId, status."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dashboard Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/dashboard-summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "dashboard-summary"]
+            },
+            "description": "Get dashboard summary for all reports (operational, output, assignments) for today and this month."
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "event": [

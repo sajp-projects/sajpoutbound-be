@@ -7,6 +7,7 @@ import customerRoutes from './customerRoute';
 import deliveryOrderRoutes from './deliveryOrderRoute';
 import permissionRoutes from './permissionRoutes';
 import productRoutes from './productRoute';
+import reportRoutes from './reportRoute';
 import rolePermissionRoutes from './rolePermissionRoutes';
 import roleRoutes from './roleRoute';
 import shipmentRoutes from './shipmentRoute';
@@ -382,5 +383,8 @@ router.use('/delivery-orders', deliveryOrderRoutes);
 
 // Shipment routes
 router.use('/shipments', shipmentRoutes);
+
+// Report routes
+router.use('/reports', reportRoutes);
 
 export default router;

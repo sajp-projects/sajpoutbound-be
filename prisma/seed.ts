@@ -76,6 +76,7 @@ async function main() {
       'armada',
       'delivery_order',
       'shipment',
+      'report',
     ];
     const actions = Object.values(PERMISSION_ACTION);
 
