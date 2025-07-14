@@ -1,6 +1,7 @@
 import {
   NextFunction, Request, Response, 
 } from 'express';
+import { CustomError } from '../middlewares/error';
 import {
   dailyOutputReportFilterSchema,
   monthlyOutputReportFilterSchema,
@@ -26,8 +27,24 @@ export default {
     next: NextFunction,
   ) {
     try {
-      const page = req.query.page && !isNaN(Number(req.query.page)) ? parseInt(String(req.query.page), 10) : 1;
-      const limit = req.query.limit && !isNaN(Number(req.query.limit)) ? parseInt(String(req.query.limit), 10) : 10;
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+
+      if (isNaN(page) || page < 1) {
+        throw new CustomError({
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new CustomError({
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
       const {
         page: _p, limit: _l, ...rawFilters 
       } = req.query;
@@ -36,7 +53,6 @@ export default {
       res.status(200).json(
         success({
           report,
-          message: 'Laporan operasional berhasil dibuat',
         }),
       );
     } catch (error) {
@@ -53,8 +69,25 @@ export default {
     next: NextFunction,
   ) {
     try {
-      const page = req.query.page && !isNaN(Number(req.query.page)) ? parseInt(String(req.query.page), 10) : 1;
-      const limit = req.query.limit && !isNaN(Number(req.query.limit)) ? parseInt(String(req.query.limit), 10) : 10;
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+
+      if (isNaN(page) || page < 1) {
+        throw new CustomError({
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new CustomError({
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
       const {
         page: _p, limit: _l, ...rawFilters 
       } = req.query;
@@ -63,7 +96,6 @@ export default {
       res.status(200).json(
         success({
           report,
-          message: 'Laporan pengeluaran harian berhasil dibuat',
         }),
       );
     } catch (error) {
@@ -80,8 +112,24 @@ export default {
     next: NextFunction,
   ) {
     try {
-      const page = req.query.page && !isNaN(Number(req.query.page)) ? parseInt(String(req.query.page), 10) : 1;
-      const limit = req.query.limit && !isNaN(Number(req.query.limit)) ? parseInt(String(req.query.limit), 10) : 10;
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+
+      if (isNaN(page) || page < 1) {
+        throw new CustomError({
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new CustomError({
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
       const {
         page: _p, limit: _l, ...rawFilters 
       } = req.query;
@@ -90,7 +138,6 @@ export default {
       res.status(200).json(
         success({
           report,
-          message: 'Laporan pengeluaran bulanan berhasil dibuat',
         }),
       );
     } catch (error) {
@@ -107,17 +154,34 @@ export default {
     next: NextFunction,
   ) {
     try {
-      const page = req.query.page && !isNaN(Number(req.query.page)) ? parseInt(String(req.query.page), 10) : 1;
-      const limit = req.query.limit && !isNaN(Number(req.query.limit)) ? parseInt(String(req.query.limit), 10) : 10;
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+
+      if (isNaN(page) || page < 1) {
+        throw new CustomError({
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new CustomError({
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
       const {
         page: _p, limit: _l, ...rawFilters 
       } = req.query;
-      const filters = await shipmentAssignmentReportFilterSchema.validateAsync(rawFilters as unknown);
+      const filters = await shipmentAssignmentReportFilterSchema.validateAsync(
+        rawFilters as unknown,
+      );
       const report = await reportService.getShipmentAssignmentReport(filters, page, limit);
       res.status(200).json(
         success({
           report,
-          message: 'Laporan penugasan pengiriman berhasil dibuat',
         }),
       );
     } catch (error) {
@@ -135,7 +199,6 @@ export default {
       res.status(200).json(
         success({
           summary,
-          message: 'Ringkasan dashboard berhasil dibuat',
         }),
       );
     } catch (error) {

@@ -38,8 +38,8 @@ export type ShipmentAssignmentReportFilter = ReportDateFilter & {
 
 // Pagination type
 export type Pagination = {
-  page: number;
-  limit: number;
+  page: string;
+  limit: string;
 };
 
 // Query types for controller (all fields as string, as from req.query)
