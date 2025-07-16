@@ -1,5 +1,6 @@
-import { SHIPMENT_TYPE, STATUS } from '@prisma/client';
-
+import {
+  SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, 
+} from '@prisma/client';
 // Report filter types
 export type ReportDateFilter = {
   startDate?: string;
@@ -18,6 +19,7 @@ export type DailyOutputReportFilter = ReportDateFilter & {
   customerId?: string;
   armadaId?: string;
   productId?: string;
+  status?: STATUS;
 };
 
 export type MonthlyOutputReportFilter = {
@@ -62,3 +64,177 @@ export type ShipmentAssignmentReportQuery = ShipmentAssignmentReportFilter &
   Pagination & {
     [key: string]: string | undefined;
   };
+
+// Report data structure types
+export interface ReportArmada {
+  id: string;
+  model: string;
+  plateNumber: string;
+  id_sl?: string;
+  description?: string;
+}
+
+export interface ReportShipmentItem {
+  id: string;
+  product: {
+    id: string;
+    name: string;
+    satuan: string;
+  };
+  warehouse: {
+    id: string;
+    name: string;
+  };
+  requestedQuantity: number;
+  weightedQuantity: number | null;
+  status: STATUS;
+  locationType: string | null;
+  deliveryOrder: ReportDeliveryOrder;
+}
+
+export interface ReportDeliveryOrder {
+  id: string;
+  doNumber: string;
+  customer: {
+    id: string;
+    name: string;
+    address: string;
+  };
+  items: ReportShipmentItemSimple[];
+}
+
+export interface ReportShipmentItemSimple {
+  id: string;
+  product: {
+    id: string;
+    name: string;
+    satuan: string;
+  };
+  warehouse: {
+    id: string;
+    name: string;
+  };
+  requestedQuantity: number;
+  weightedQuantity: number | null;
+  status: SHIPMENT_ITEM_STATUS;
+  locationType: string | null;
+}
+
+export interface ReportShipment {
+  id: string;
+  shipmentNumber: string;
+  type: SHIPMENT_TYPE;
+  status: STATUS;
+  plateNumber: string;
+  armada: ReportArmada | null;
+  createdAt: Date;
+  updatedAt: Date;
+  verifiedAt: Date | null;
+  isVerified: boolean;
+  deliveryOrders: ReportDeliveryOrder[];
+  totalItems: number;
+  totalWeight: number;
+}
+
+export interface OperationalReportGroup {
+  PENDING: ReportShipment[];
+  PROSES: ReportShipment[];
+  SELESAI: ReportShipment[];
+}
+
+export interface OperationalReportGroupedData {
+  ANTAR: OperationalReportGroup;
+  JEMPUT: OperationalReportGroup;
+}
+
+export interface OperationalReportSummary {
+  ANTAR: { PENDING: number; PROSES: number; SELESAI: number; total: number };
+  JEMPUT: { PENDING: number; PROSES: number; SELESAI: number; total: number };
+  overall: { PENDING: number; PROSES: number; SELESAI: number; total: number };
+}
+
+export interface OperationalReportResult {
+  data: OperationalReportGroupedData;
+  summary: OperationalReportSummary;
+  filters: OperationalReportFilter;
+}
+
+export type DailyGroupType = 'item' | 'customer' | 'vehicle' | 'warehouse';
+
+export interface DailyOutputGroupBase {
+  id: string | null;
+  name: string;
+  type: DailyGroupType;
+  satuan?: string; // Unit of measurement for this group, if applicable
+  totalQuantity: number;
+  totalWeight: number;
+  shipmentCount: number;
+  shipments: DailyOutputShipment[];
+}
+
+export interface DailyOutputShipment {
+  shipmentId: string;
+  shipmentNumber: string;
+  type: SHIPMENT_TYPE;
+  verifiedAt: Date | null;
+  item: ReportShipmentItemSimple;
+  armada: ReportArmada | null;
+  plateNumber: string;
+}
+
+export interface DailyOutputReportSummary {
+  totalGroups: number;
+  totalQuantity: number;
+  totalWeight: number;
+  totalShipments: number;
+  dateRange: { start: string; end: string };
+}
+
+export interface DailyOutputReportResult {
+  data: DailyOutputGroupBase[];
+  summary: DailyOutputReportSummary;
+  filters: DailyOutputReportFilter;
+  allGroups?: DailyOutputGroupBase[];
+}
+
+export interface MonthlyOutputReportResult extends DailyOutputReportResult {
+  monthInfo: {
+    year: number;
+    month: number;
+    monthName: string;
+    daysInMonth: number;
+  };
+}
+
+export interface ShipmentAssignment {
+  armada: ReportArmada;
+  assignments: OperationalReportGroup;
+  summary: { PENDING: number; PROSES: number; SELESAI: number; total: number };
+}
+
+export interface ShipmentAssignmentReportSummary {
+  totalArmada: number;
+  totalAssignments: number;
+  byStatus: { PENDING: number; PROSES: number; SELESAI: number };
+}
+
+export interface ShipmentAssignmentReportResult {
+  data: ShipmentAssignment[];
+  summary: ShipmentAssignmentReportSummary;
+  filters: ShipmentAssignmentReportFilter;
+}
+
+export interface DashboardSummary {
+  today: {
+    date: string;
+    operational: OperationalReportSummary;
+    output: DailyOutputReportSummary;
+  };
+  thisMonth: {
+    year: number;
+    month: number;
+    monthName: string;
+    output: DailyOutputReportSummary;
+  };
+  activeAssignments: ShipmentAssignmentReportSummary;
+}

@@ -65,6 +65,12 @@ export const dailyOutputReportFilterSchema = Joi.object<DailyOutputReportFilter>
   productId: Joi.string().uuid().optional().messages({
     'string.uuid': 'ID produk harus berupa UUID yang valid',
   }),
+  status: Joi.string()
+    .valid(...Object.values(STATUS))
+    .optional()
+    .messages({
+      'any.only': 'Status harus PENDING, PROSES, atau SELESAI',
+    }),
 });
 
 export const monthlyOutputReportFilterSchema = Joi.object<MonthlyOutputReportFilter>({

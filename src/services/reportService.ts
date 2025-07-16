@@ -1,215 +1,23 @@
-import {
-  SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, 
-} from '@prisma/client';
+import { STATUS } from '@prisma/client';
 import moment from 'moment';
 import prisma from '../config/prisma';
+import type {
+  DailyOutputGroupBase,
+  DailyOutputReportFilter,
+  DailyOutputReportResult,
+  DashboardSummary,
+  MonthlyOutputReportFilter,
+  MonthlyOutputReportResult,
+  OperationalReportFilter,
+  OperationalReportGroupedData,
+  OperationalReportResult,
+  ReportShipment,
+  ShipmentAssignment,
+  ShipmentAssignmentReportFilter,
+  ShipmentAssignmentReportResult,
+} from '../types/report';
 
-// Type definitions for report data structures
-
-// Shipment, Armada, Customer, Product, Warehouse, and ShipmentItem types
-export interface ReportArmada {
-  id: string;
-  model: string;
-  plateNumber: string;
-  id_sl?: string;
-  description?: string;
-}
-
-export interface ReportShipmentItem {
-  id: string;
-  product: {
-    id: string;
-    name: string;
-    satuan: string;
-  };
-  warehouse: {
-    id: string;
-    name: string;
-  };
-  requestedQuantity: number;
-  weightedQuantity: number | null;
-  status: SHIPMENT_ITEM_STATUS;
-  locationType: string | null;
-  deliveryOrder: ReportDeliveryOrder;
-}
-
-export interface ReportDeliveryOrder {
-  id: string;
-  doNumber: string;
-  customer: {
-    id: string;
-    name: string;
-    address: string;
-  };
-  items: ReportShipmentItemSimple[];
-}
-
-export interface ReportShipmentItemSimple {
-  id: string;
-  product: {
-    id: string;
-    name: string;
-    satuan: string;
-  };
-  warehouse: {
-    id: string;
-    name: string;
-  };
-  requestedQuantity: number;
-  weightedQuantity: number | null;
-  status: SHIPMENT_ITEM_STATUS;
-  locationType: string | null;
-}
-
-export interface ReportShipment {
-  id: string;
-  shipmentNumber: string;
-  type: SHIPMENT_TYPE;
-  status: STATUS;
-  plateNumber: string;
-  armada: ReportArmada | null;
-  createdAt: Date;
-  updatedAt: Date;
-  verifiedAt: Date | null;
-  isVerified: boolean;
-  deliveryOrders: ReportDeliveryOrder[];
-  totalItems: number;
-  totalWeight: number;
-}
-
-// Operational report groupings
-export interface OperationalReportGroup {
-  PENDING: ReportShipment[];
-  PROSES: ReportShipment[];
-  SELESAI: ReportShipment[];
-}
-
-export interface OperationalReportGroupedData {
-  ANTAR: OperationalReportGroup;
-  JEMPUT: OperationalReportGroup;
-}
-
-export interface OperationalReportSummary {
-  ANTAR: { PENDING: number; PROSES: number; SELESAI: number; total: number };
-  JEMPUT: { PENDING: number; PROSES: number; SELESAI: number; total: number };
-  overall: { PENDING: number; PROSES: number; SELESAI: number; total: number };
-}
-
-export interface OperationalReportResult {
-  data: OperationalReportGroupedData;
-  summary: OperationalReportSummary;
-  filters: OperationalReportFilter;
-}
-
-// Daily/Monthly output report groupings
-export type DailyGroupType = 'item' | 'customer' | 'vehicle' | 'warehouse';
-
-export interface DailyOutputGroupBase {
-  id: string | null;
-  name: string;
-  type: DailyGroupType;
-  totalQuantity: number;
-  totalWeight: number;
-  shipmentCount: number;
-  shipments: DailyOutputShipment[];
-}
-
-export interface DailyOutputShipment {
-  shipmentId: string;
-  shipmentNumber: string;
-  type: SHIPMENT_TYPE;
-  verifiedAt: Date | null;
-  item: ReportShipmentItemSimple;
-  armada: ReportArmada | null;
-  plateNumber: string;
-}
-
-export interface DailyOutputReportSummary {
-  totalGroups: number;
-  totalQuantity: number;
-  totalWeight: number;
-  totalShipments: number;
-  dateRange: { start: string; end: string };
-}
-
-export interface DailyOutputReportResult {
-  data: DailyOutputGroupBase[];
-  summary: DailyOutputReportSummary;
-  filters: DailyOutputReportFilter;
-}
-
-export interface MonthlyOutputReportResult extends DailyOutputReportResult {
-  monthInfo: {
-    year: number;
-    month: number;
-    monthName: string;
-    daysInMonth: number;
-  };
-}
-
-// Shipment assignment report groupings
-export interface ShipmentAssignment {
-  armada: ReportArmada;
-  assignments: OperationalReportGroup;
-  summary: { PENDING: number; PROSES: number; SELESAI: number; total: number };
-}
-
-export interface ShipmentAssignmentReportSummary {
-  totalArmada: number;
-  totalAssignments: number;
-  byStatus: { PENDING: number; PROSES: number; SELESAI: number };
-}
-
-export interface ShipmentAssignmentReportResult {
-  data: ShipmentAssignment[];
-  summary: ShipmentAssignmentReportSummary;
-  filters: ShipmentAssignmentReportFilter;
-}
-
-// Dashboard summary
-export interface DashboardSummary {
-  today: {
-    date: string;
-    operational: OperationalReportSummary;
-    output: DailyOutputReportSummary;
-  };
-  thisMonth: {
-    year: number;
-    month: number;
-    monthName: string;
-    output: DailyOutputReportSummary;
-  };
-  activeAssignments: ShipmentAssignmentReportSummary;
-}
-
-// Add filter types
-export type ReportDateFilter = { startDate?: string; endDate?: string };
-export type OperationalReportFilter = ReportDateFilter & {
-  type?: SHIPMENT_TYPE;
-  status?: STATUS;
-  warehouseId?: string;
-};
-export type DailyOutputReportFilter = ReportDateFilter & {
-  groupBy?: DailyGroupType;
-  warehouseId?: string;
-  customerId?: string;
-  armadaId?: string;
-  productId?: string;
-};
-export type MonthlyOutputReportFilter = {
-  year: number;
-  month: number;
-  groupBy?: DailyGroupType;
-  warehouseId?: string;
-  customerId?: string;
-  armadaId?: string;
-  productId?: string;
-};
-export type ShipmentAssignmentReportFilter = ReportDateFilter & {
-  armadaId?: string;
-  warehouseId?: string;
-  status?: STATUS;
-};
+// Remove all type/interface definitions for report data structures from this file.
 
 /**
  * Service for handling report operations
@@ -332,6 +140,7 @@ export default {
         totalItems: 0,
         totalWeight: 0,
       };
+
       const deliveryOrderMap = new Map();
       let totalItems = 0;
       let totalWeight = 0;
@@ -449,6 +258,7 @@ export default {
       customerId,
       armadaId,
       productId,
+      status,
     } = filters;
     const defaultStartDate = moment().startOf('day');
     const defaultEndDate = moment().endOf('day');
@@ -456,12 +266,21 @@ export default {
     const end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
     const whereConditions: any = {
       deletedAt: null,
-      status: STATUS.SELESAI,
-      verifiedAt: {
+    };
+    if (status === STATUS.SELESAI || !status) {
+      whereConditions.verifiedAt = {
         gte: start.toDate(),
         lte: end.toDate(),
-      },
-    };
+      };
+    } else if (status === STATUS.PENDING || status === STATUS.PROSES) {
+      whereConditions.createdAt = {
+        gte: start.toDate(),
+        lte: end.toDate(),
+      };
+    }
+    if (status) {
+      whereConditions.status = status;
+    }
     if (warehouseId) {
       whereConditions.shipmentItems = {
         some: {
@@ -516,8 +335,8 @@ export default {
       },
     });
     const groupedData: DailyOutputGroupBase[] = [];
-    let totalQuantity = 0;
-    let totalWeight = 0;
+    let _totalQuantity: number = 0;
+    let _totalWeight: number = 0;
     shipments.forEach((shipment) => {
       shipment.shipmentItems.forEach((item) => {
         if (productId && item.product.id !== productId) return;
@@ -528,6 +347,7 @@ export default {
           id: null,
           name: '',
           type: groupBy,
+          satuan: undefined,
           totalQuantity: 0,
           totalWeight: 0,
           shipmentCount: 0,
@@ -540,6 +360,7 @@ export default {
             id: item.product.id,
             name: item.product.name,
             type: 'item',
+            satuan: item.product.satuan,
             totalQuantity: 0,
             totalWeight: 0,
             shipmentCount: 0,
@@ -552,6 +373,7 @@ export default {
             id: item.deliveryOrder.customer.id,
             name: item.deliveryOrder.customer.name,
             type: 'customer',
+            satuan: undefined, // will be set after grouping
             totalQuantity: 0,
             totalWeight: 0,
             shipmentCount: 0,
@@ -564,6 +386,7 @@ export default {
             id: shipment.armada?.id || 'no-vehicle',
             name: shipment.armada?.model || 'Tanpa Armada',
             type: 'vehicle',
+            satuan: undefined, // will be set after grouping
             totalQuantity: 0,
             totalWeight: 0,
             shipmentCount: 0,
@@ -576,6 +399,7 @@ export default {
             id: item.warehouse.id,
             name: item.warehouse.name,
             type: 'warehouse',
+            satuan: undefined, // will be set after grouping
             totalQuantity: 0,
             totalWeight: 0,
             shipmentCount: 0,
@@ -615,14 +439,41 @@ export default {
           });
           group.shipmentCount++;
         }
-        totalQuantity += item.requestedQuantity;
-        totalWeight += item.weightedQuantity || 0;
+        _totalQuantity += item.requestedQuantity;
+        _totalWeight += item.weightedQuantity || 0;
       });
     });
+    // After grouping, set satuan for non-item groupings
+    if (groupBy !== 'item') {
+      groupedData.forEach((group) => {
+        const satuanSet = new Set<string>();
+        group.shipments.forEach((s) => {
+          if (s.item.product.satuan) satuanSet.add(s.item.product.satuan);
+        });
+        if (satuanSet.size === 1) {
+          group.satuan = Array.from(satuanSet)[0];
+        } else if (satuanSet.size > 1) {
+          group.satuan = 'Campuran';
+        } else {
+          group.satuan = undefined;
+        }
+      });
+    }
     const data = groupedData.sort(
       (a: DailyOutputGroupBase, b: DailyOutputGroupBase) => b.totalQuantity - a.totalQuantity,
     );
-    const allData = data; // replace with actual data array
+    // Calculate summary from all groups (not just paginated)
+    const summary = {
+      totalGroups: data.length,
+      totalQuantity: data.reduce((sum, g) => sum + g.totalQuantity, 0),
+      totalWeight: data.reduce((sum, g) => sum + g.totalWeight, 0),
+      totalShipments: data.reduce((sum, g) => sum + g.shipmentCount, 0),
+      dateRange: {
+        start: start.format('YYYY-MM-DD'),
+        end: end.format('YYYY-MM-DD'),
+      },
+    };
+    const allData = data;
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     const paginatedData = allData.slice(startIndex, endIndex);
@@ -636,16 +487,8 @@ export default {
     };
     return {
       data: paginatedData,
-      summary: {
-        totalGroups: data.length,
-        totalQuantity,
-        totalWeight,
-        totalShipments: shipments.length,
-        dateRange: {
-          start: start.format('YYYY-MM-DD'),
-          end: end.format('YYYY-MM-DD'),
-        },
-      },
+      allGroups: allData,
+      summary,
       filters: {
         startDate,
         endDate,
@@ -654,6 +497,7 @@ export default {
         customerId,
         armadaId,
         productId,
+        status,
       },
       pagination,
     };
@@ -768,6 +612,10 @@ export default {
         },
       };
     }
+    console.log(
+      'whereConditions for shipment assignment:',
+      JSON.stringify(whereConditions, null, 2),
+    );
     const shipments = await prisma.shipment.findMany({
       where: whereConditions,
       include: {
