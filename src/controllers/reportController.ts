@@ -46,9 +46,21 @@ export default {
         });
       }
       const {
-        page: _p, limit: _l, ...rawFilters 
+        page: _p, limit: _l, status: rawStatus, ...rawFilters 
       } = req.query;
-      const filters = await operationalReportFilterSchema.validateAsync(rawFilters as unknown);
+      let status = rawStatus as string | undefined;
+      if (status === 'ALL') status = undefined;
+      if (status && !['PENDING', 'PROSES', 'SELESAI'].includes(status)) {
+        throw new CustomError({
+          message: 'Status pengiriman tidak valid',
+          errorCode: 'STATUS_TIDAK_VALID',
+          status: 400,
+        });
+      }
+      const filters = await operationalReportFilterSchema.validateAsync({
+        ...rawFilters,
+        status,
+      } as unknown);
       const report = await reportService.getOperationalReport(filters, page, limit);
       res.status(200).json(
         success({

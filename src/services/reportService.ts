@@ -1,7 +1,7 @@
 import { STATUS } from '@prisma/client';
 import moment from 'moment';
 import prisma from '../config/prisma';
-import type {
+import {
   DailyOutputGroupBase,
   DailyOutputReportFilter,
   DailyOutputReportResult,
@@ -16,8 +16,6 @@ import type {
   ShipmentAssignmentReportFilter,
   ShipmentAssignmentReportResult,
 } from '../types/report';
-
-// Remove all type/interface definitions for report data structures from this file.
 
 /**
  * Service for handling report operations
@@ -209,6 +207,148 @@ export default {
         warehouseId,
       },
     };
+    // --- KPI CALCULATION START ---
+    // Use filtered shipments for all KPIs
+    const filteredShipments = status ? shipments.filter((s) => s.status === status) : shipments;
+    const today = moment().startOf('day');
+    // 1. Total Shipments Created Today (all statuses)
+    const totalShipmentsCreatedToday = filteredShipments.filter((s) =>
+      moment(s.createdAt).isSame(today, 'day'),
+    ).length;
+    // 2. Total Shipments Verified Today (filtered only)
+    const totalShipmentsVerifiedToday = filteredShipments.filter(
+      (s) => s.verifiedAt && moment(s.verifiedAt).isSame(today, 'day'),
+    ).length;
+    // 3. Unique Products Moved (filtered only)
+    const productSet = new Set<string>();
+    filteredShipments.forEach((s) => s.shipmentItems.forEach((i) => productSet.add(i.product.id)));
+    const uniqueProductsMoved = productSet.size;
+    // 4. Dispatched Totals by Unit (satuan, filtered only)
+    const unitMap = new Map<string, number>();
+    filteredShipments.forEach((s) =>
+      s.shipmentItems.forEach((i) => {
+        if (!i.product.satuan) return;
+        unitMap.set(
+          String(i.product.satuan),
+          (unitMap.get(String(i.product.satuan)) || 0) + (i.weightedQuantity || 0),
+        );
+      }),
+    );
+    const dispatchedTotalsByUnit = Array.from(unitMap.entries()).map(([satuan, totalQuantity]) => ({
+      satuan,
+      totalQuantity,
+    }));
+    // 5. Top 3 Shipped Products (filtered only)
+    const productQtyMap = new Map<
+      string,
+      { id: string; name: string; satuan: string; totalQuantity: number }
+    >();
+    filteredShipments.forEach((s) =>
+      s.shipmentItems.forEach((i) => {
+        if (!productQtyMap.has(i.product.id)) {
+          productQtyMap.set(i.product.id, {
+            id: i.product.id,
+            name: i.product.name,
+            satuan: i.product.satuan,
+            totalQuantity: 0,
+          });
+        }
+        productQtyMap.get(i.product.id)!.totalQuantity += i.weightedQuantity || 0;
+      }),
+    );
+    const topShippedProducts = Array.from(productQtyMap.values())
+      .sort((a, b) => b.totalQuantity - a.totalQuantity)
+      .slice(0, 3);
+    // 6. Most Active Vehicle (filtered only)
+    const vehicleMap = new Map<
+      string,
+      { id: string; model: string; plateNumber: string; shipmentCount: number }
+    >();
+    filteredShipments.forEach((s) => {
+      if (s.armada) {
+        const key = s.armada.id;
+        if (!vehicleMap.has(key)) {
+          vehicleMap.set(key, {
+            id: s.armada.id,
+            model: s.armada.model,
+            plateNumber: s.armada.plateNumber || '',
+            shipmentCount: 0,
+          });
+        }
+        vehicleMap.get(key)!.shipmentCount += 1;
+      }
+    });
+    const mostActiveVehicle =
+      Array.from(vehicleMap.values()).sort((a, b) => b.shipmentCount - a.shipmentCount)[0] || null;
+    // 7. Top Customers by Shipment Count (filtered only)
+    const customerCountMap = new Map<string, { id: string; name: string; shipmentCount: number }>();
+    filteredShipments.forEach((s) =>
+      s.shipmentItems.forEach((i) => {
+        const c = i.deliveryOrder.customer;
+        if (!customerCountMap.has(c.id)) {
+          customerCountMap.set(c.id, {
+            id: c.id,
+            name: c.name,
+            shipmentCount: 0,
+          });
+        }
+        customerCountMap.get(c.id)!.shipmentCount += 1;
+      }),
+    );
+    const topCustomersByShipmentCount = Array.from(customerCountMap.values())
+      .sort((a, b) => b.shipmentCount - a.shipmentCount)
+      .slice(0, 3);
+    // 8. Top Customers by Volume (filtered only)
+    const customerVolumeMap = new Map<
+      string,
+      { id: string; name: string; totalQuantity: number }
+    >();
+    filteredShipments.forEach((s) =>
+      s.shipmentItems.forEach((i) => {
+        const c = i.deliveryOrder.customer;
+        if (!customerVolumeMap.has(c.id)) {
+          customerVolumeMap.set(c.id, {
+            id: c.id,
+            name: c.name,
+            totalQuantity: 0,
+          });
+        }
+        customerVolumeMap.get(c.id)!.totalQuantity += i.weightedQuantity || 0;
+      }),
+    );
+    const topCustomersByVolume = Array.from(customerVolumeMap.values())
+      .sort((a, b) => b.totalQuantity - a.totalQuantity)
+      .slice(0, 3);
+    // 9. Vehicle Usage Count (filtered only)
+    const vehicleUsageCount = vehicleMap.size;
+    // 10. Trendline 7 Days (filtered only)
+    const trendline7Days: Array<{ date: string; shipmentCount: number }> = [];
+    for (let i = 6; i >= 0; i--) {
+      const day = moment().subtract(i, 'days').startOf('day');
+      const count = filteredShipments.filter((s) => moment(s.createdAt).isSame(day, 'day')).length;
+      trendline7Days.push({
+        date: String(day.format('YYYY-MM-DD')),
+        shipmentCount: Number(count),
+      });
+    }
+    // 11. Units Used (filtered only)
+    const unitsUsed = Array.from(unitMap.keys()).filter(
+      (u): u is string => typeof u === 'string' && u !== 'null' && u !== 'undefined',
+    );
+    // --- KPI CALCULATION END ---
+    const kpi = {
+      totalShipmentsCreatedToday,
+      totalShipmentsVerifiedToday,
+      uniqueProductsMoved,
+      dispatchedTotalsByUnit,
+      topShippedProducts,
+      mostActiveVehicle,
+      topCustomersByShipmentCount,
+      topCustomersByVolume,
+      vehicleUsageCount,
+      trendline7Days,
+      unitsUsed,
+    };
     // At the end, paginate each group (example: ANTAR.PENDING)
     // For demonstration, paginate ANTAR.PENDING only (customize as needed)
     const groupToPaginate = result.data.ANTAR.PENDING;
@@ -220,12 +360,13 @@ export default {
       total: groupToPaginate.length,
       page,
       limit,
-      totalPages: Math.ceil(groupToPaginate.length / limit),
+      totalPages: Math.max(1, Math.ceil(groupToPaginate.length / limit)),
       hasNext: endIndex < groupToPaginate.length,
       hasPrev: page > 1,
     };
     return {
       ...result,
+      kpi,
       pagination,
     };
   },
@@ -463,10 +604,28 @@ export default {
       (a: DailyOutputGroupBase, b: DailyOutputGroupBase) => b.totalQuantity - a.totalQuantity,
     );
     // Calculate summary from all groups (not just paginated)
+    // Group totalQuantity and totalWeight by satuan
+    const quantityBySatuanMap = new Map<string, number>();
+    const weightBySatuanMap = new Map<string, number>();
+    data.forEach((g) => {
+      const satuan = g.satuan || 'Unknown';
+      quantityBySatuanMap.set(satuan, (quantityBySatuanMap.get(satuan) || 0) + g.totalQuantity);
+      weightBySatuanMap.set(satuan, (weightBySatuanMap.get(satuan) || 0) + g.totalWeight);
+    });
+    const totalQuantityBySatuan = Array.from(quantityBySatuanMap.entries()).map(
+      ([satuan, total]) => ({
+        satuan,
+        total,
+      }),
+    );
+    const totalWeightBySatuan = Array.from(weightBySatuanMap.entries()).map(([satuan, total]) => ({
+      satuan,
+      total,
+    }));
     const summary = {
       totalGroups: data.length,
-      totalQuantity: data.reduce((sum, g) => sum + g.totalQuantity, 0),
-      totalWeight: data.reduce((sum, g) => sum + g.totalWeight, 0),
+      totalQuantityBySatuan,
+      totalWeightBySatuan,
       totalShipments: data.reduce((sum, g) => sum + g.shipmentCount, 0),
       dateRange: {
         start: start.format('YYYY-MM-DD'),
@@ -544,6 +703,7 @@ export default {
       productId,
     };
     const dailyReport = await this.getDailyOutputReport(dailyFilters, page, limit);
+    // summary is already grouped by satuan in dailyReport
     const allData = dailyReport.data; // replace with actual data array
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
@@ -597,6 +757,7 @@ export default {
       armadaId: {
         not: null,
       },
+      type: 'ANTAR',
     };
     if (startDate || endDate) {
       whereConditions.createdAt = {};
@@ -612,10 +773,6 @@ export default {
         },
       };
     }
-    console.log(
-      'whereConditions for shipment assignment:',
-      JSON.stringify(whereConditions, null, 2),
-    );
     const shipments = await prisma.shipment.findMany({
       where: whereConditions,
       include: {
@@ -661,6 +818,56 @@ export default {
         createdAt: 'desc',
       },
     });
+    // KPIs
+    const today = moment().startOf('day');
+    const startOfWeek = moment().startOf('isoWeek');
+    const startOfMonth = moment().startOf('month');
+    const totalAssignedToday = shipments.filter((s) =>
+      moment(s.createdAt).isSame(today, 'day'),
+    ).length;
+    const totalAssignedWeek = shipments.filter((s) =>
+      moment(s.createdAt).isSameOrAfter(startOfWeek),
+    ).length;
+    const totalAssignedMonth = shipments.filter((s) =>
+      moment(s.createdAt).isSameOrAfter(startOfMonth),
+    ).length;
+    // Most Active Armada
+    const armadaCountMap = new Map<
+      string,
+      { id: string; model: string; plateNumber: string; count: number }
+    >();
+    shipments.forEach((s) => {
+      if (s.armada) {
+        const key = s.armada.id;
+        if (!armadaCountMap.has(key)) {
+          armadaCountMap.set(key, {
+            id: s.armada.id,
+            model: s.armada.model,
+            plateNumber: s.armada.plateNumber || '',
+            count: 0,
+          });
+        }
+        armadaCountMap.get(key)!.count += 1;
+      }
+    });
+    const mostActiveArmada =
+      Array.from(armadaCountMap.values()).sort((a, b) => b.count - a.count)[0] || null;
+    // Average Shipments per Armada per Day (for the period)
+    let periodDays = 1;
+    if (startDate && endDate) {
+      periodDays = moment(endDate).endOf('day').diff(moment(startDate).startOf('day'), 'days') + 1;
+    } else if (startDate) {
+      periodDays = moment().endOf('day').diff(moment(startDate).startOf('day'), 'days') + 1;
+    } else if (endDate) {
+      periodDays = moment(endDate).endOf('day').diff(moment().startOf('day'), 'days') + 1;
+    }
+    const avgShipmentsPerArmadaPerDay =
+      armadaCountMap.size > 0 && periodDays > 0
+        ? shipments.length / armadaCountMap.size / periodDays
+        : 0;
+    // Pending Assignments (status != SELESAI)
+    const pendingAssignments = shipments.filter((s) => s.status !== 'SELESAI').length;
+    // Grouped by armada for table/chart
     const groupedByArmada: ShipmentAssignment[] = [];
     shipments.forEach((shipment) => {
       const armadaKey = shipment.armada!.id;
@@ -779,6 +986,14 @@ export default {
         status,
       },
       pagination,
+      kpi: {
+        totalAssignedToday,
+        totalAssignedWeek,
+        totalAssignedMonth,
+        mostActiveArmada,
+        avgShipmentsPerArmadaPerDay,
+        pendingAssignments,
+      },
     };
   },
 

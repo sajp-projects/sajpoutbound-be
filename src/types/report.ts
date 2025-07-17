@@ -1,6 +1,7 @@
 import {
   SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, 
 } from '@prisma/client';
+
 // Report filter types
 export type ReportDateFilter = {
   startDate?: string;
@@ -153,10 +154,30 @@ export interface OperationalReportSummary {
   overall: { PENDING: number; PROSES: number; SELESAI: number; total: number };
 }
 
+export interface OperationalReportKPI {
+  totalShipmentsCreatedToday: number;
+  totalShipmentsVerifiedToday: number;
+  uniqueProductsMoved: number;
+  dispatchedTotalsByUnit: Array<{ satuan: string; totalQuantity: number }>;
+  topShippedProducts: Array<{ id: string; name: string; satuan: string; totalQuantity: number }>;
+  mostActiveVehicle: {
+    id: string;
+    model: string;
+    plateNumber: string;
+    shipmentCount: number;
+  } | null;
+  topCustomersByShipmentCount: Array<{ id: string; name: string; shipmentCount: number }>;
+  topCustomersByVolume: Array<{ id: string; name: string; totalQuantity: number }>;
+  vehicleUsageCount: number;
+  trendline7Days: Array<{ date: string; shipmentCount: number }>;
+  unitsUsed: string[];
+}
+
 export interface OperationalReportResult {
   data: OperationalReportGroupedData;
   summary: OperationalReportSummary;
   filters: OperationalReportFilter;
+  kpi: OperationalReportKPI;
 }
 
 export type DailyGroupType = 'item' | 'customer' | 'vehicle' | 'warehouse';
@@ -184,8 +205,8 @@ export interface DailyOutputShipment {
 
 export interface DailyOutputReportSummary {
   totalGroups: number;
-  totalQuantity: number;
-  totalWeight: number;
+  totalQuantityBySatuan: Array<{ satuan: string; total: number }>;
+  totalWeightBySatuan: Array<{ satuan: string; total: number }>;
   totalShipments: number;
   dateRange: { start: string; end: string };
 }
@@ -218,10 +239,25 @@ export interface ShipmentAssignmentReportSummary {
   byStatus: { PENDING: number; PROSES: number; SELESAI: number };
 }
 
+export interface ShipmentAssignmentKPI {
+  totalAssignedToday: number;
+  totalAssignedWeek: number;
+  totalAssignedMonth: number;
+  mostActiveArmada: {
+    id: string;
+    model: string;
+    plateNumber: string;
+    count: number;
+  } | null;
+  avgShipmentsPerArmadaPerDay: number;
+  pendingAssignments: number;
+}
+
 export interface ShipmentAssignmentReportResult {
   data: ShipmentAssignment[];
   summary: ShipmentAssignmentReportSummary;
   filters: ShipmentAssignmentReportFilter;
+  kpi?: ShipmentAssignmentKPI;
 }
 
 export interface DashboardSummary {
