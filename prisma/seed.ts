@@ -151,6 +151,126 @@ async function main() {
           warehouseId: warehouses[0].id,
         },
       }),
+      prisma.product.create({
+        data: {
+          name: 'Bata Merah Press',
+          id_sl: 'BTA-001',
+          description: 'Bata merah press kualitas premium',
+          satuan: 'Buah',
+          warehouseId: warehouses[0].id,
+        },
+      }),
+      prisma.product.create({
+        data: {
+          name: 'Pasir Beton',
+          id_sl: 'PSR-001',
+          description: 'Pasir beton untuk konstruksi',
+          satuan: 'M3',
+          warehouseId: warehouses[0].id,
+        },
+      }),
+      prisma.product.create({
+        data: {
+          name: 'Kerikil 2-3 cm',
+          id_sl: 'KRK-001',
+          description: 'Kerikil untuk beton dan aspal',
+          satuan: 'M3',
+          warehouseId: warehouses[0].id,
+        },
+      }),
+      // Products for Gudang Wilayah Timur
+      prisma.product.create({
+        data: {
+          name: 'Besi Beton 8mm',
+          id_sl: 'BSI-001',
+          description: 'Besi beton polos diameter 8mm',
+          satuan: 'Batang',
+          warehouseId: warehouses[1].id,
+        },
+      }),
+      prisma.product.create({
+        data: {
+          name: 'Besi Beton 10mm',
+          id_sl: 'BSI-002',
+          description: 'Besi beton polos diameter 10mm',
+          satuan: 'Batang',
+          warehouseId: warehouses[1].id,
+        },
+      }),
+      prisma.product.create({
+        data: {
+          name: 'Kawat Bendrat',
+          id_sl: 'KWT-001',
+          description: 'Kawat bendrat untuk pengikat besi',
+          satuan: 'Kg',
+          warehouseId: warehouses[1].id,
+        },
+      }),
+      // Products for Gudang Wilayah Barat
+      prisma.product.create({
+        data: {
+          name: 'Cat Tembok Premium',
+          id_sl: 'CAT-001',
+          description: 'Cat tembok premium anti jamur',
+          satuan: 'Kaleng',
+          warehouseId: warehouses[2].id,
+        },
+      }),
+      prisma.product.create({
+        data: {
+          name: 'Cat Plafon',
+          id_sl: 'CAT-002',
+          description: 'Cat plafon anti noda',
+          satuan: 'Kaleng',
+          warehouseId: warehouses[2].id,
+        },
+      }),
+      prisma.product.create({
+        data: {
+          name: 'Paku Beton 3 inch',
+          id_sl: 'PKU-001',
+          description: 'Paku beton untuk konstruksi',
+          satuan: 'Kg',
+          warehouseId: warehouses[2].id,
+        },
+      }),
+      // Products for Gudang Sentral
+      prisma.product.create({
+        data: {
+          name: 'Pipa PVC 4 inch',
+          id_sl: 'PIP-001',
+          description: 'Pipa PVC untuk saluran air',
+          satuan: 'Batang',
+          warehouseId: warehouses[3].id,
+        },
+      }),
+      prisma.product.create({
+        data: {
+          name: 'Pipa PVC 2 inch',
+          id_sl: 'PIP-002',
+          description: 'Pipa PVC untuk saluran air',
+          satuan: 'Batang',
+          warehouseId: warehouses[3].id,
+        },
+      }),
+      prisma.product.create({
+        data: {
+          name: 'Seng Gelombang',
+          id_sl: 'SNG-001',
+          description: 'Seng gelombang untuk atap',
+          satuan: 'Lembar',
+          warehouseId: warehouses[3].id,
+        },
+      }),
+      prisma.product.create({
+        data: {
+          name: 'Genteng Beton',
+          id_sl: 'GTL-001',
+          description: 'Genteng beton anti bocor',
+          satuan: 'Buah',
+          warehouseId: warehouses[3].id,
+        },
+      }),
     ]);
 
     console.log(`Created ${products.length} products`);
@@ -195,6 +315,166 @@ async function main() {
     ]);
 
     console.log(`Created ${customers.length} customers`);
+
+    // Create delivery orders with different customers and products
+    const deliveryOrders = await Promise.all([
+      // Delivery Order 1 - PT Pembangunan Jaya
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-001',
+          customerId: customers[0].id,
+          address: 'Jl. Gatot Subroto No. 123, Jakarta Selatan',
+          internalNote: 'Pengiriman untuk proyek apartemen',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[0].id, // Semen Portland 50kg
+                quantity: 100,
+                pendingQuantity: 100,
+              },
+              {
+                productId: products[2].id, // Bata Merah Press
+                quantity: 5000,
+                pendingQuantity: 5000,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 2 - CV Maju Bersama
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-002',
+          customerId: customers[1].id,
+          address: 'Jl. Pahlawan No. 45, Bandung',
+          internalNote: 'Pengiriman untuk renovasi rumah',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[5].id, // Besi Beton 8mm
+                quantity: 50,
+                pendingQuantity: 50,
+              },
+              {
+                productId: products[7].id, // Cat Tembok Premium
+                quantity: 20,
+                pendingQuantity: 20,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 3 - PT Konstruksi Andalan
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-003',
+          customerId: customers[2].id,
+          address: 'Jl. Ahmad Yani No. 78, Surabaya',
+          internalNote: 'Pengiriman untuk proyek jalan tol',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[3].id, // Pasir Beton
+                quantity: 100,
+                pendingQuantity: 100,
+              },
+              {
+                productId: products[4].id, // Kerikil 2-3 cm
+                quantity: 80,
+                pendingQuantity: 80,
+              },
+              {
+                productId: products[6].id, // Besi Beton 10mm
+                quantity: 100,
+                pendingQuantity: 100,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 4 - Toko Bangunan Sejahtera
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-004',
+          customerId: customers[3].id,
+          address: 'Jl. Diponegoro No. 210, Semarang',
+          internalNote: 'Pengiriman untuk toko bangunan',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[8].id, // Paku Beton 3 inch
+                quantity: 50,
+                pendingQuantity: 50,
+              },
+              {
+                productId: products[9].id, // Pipa PVC 4 inch
+                quantity: 30,
+                pendingQuantity: 30,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 5 - PT Arsitektur Modern
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-005',
+          customerId: customers[4].id,
+          address: 'Jl. Sudirman No. 56, Makassar',
+          internalNote: 'Pengiriman untuk proyek hotel',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[1].id, // Semen Putih 40kg
+                quantity: 80,
+                pendingQuantity: 0,
+              },
+              {
+                productId: products[10].id, // Pipa PVC 2 inch
+                quantity: 40,
+                pendingQuantity: 0,
+              },
+              {
+                productId: products[11].id, // Seng Gelombang
+                quantity: 200,
+                pendingQuantity: 0,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 6 - PT Pembangunan Jaya (second order)
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-006',
+          customerId: customers[0].id,
+          address: 'Jl. Gatot Subroto No. 123, Jakarta Selatan',
+          internalNote: 'Pengiriman untuk proyek mall',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[12].id, // Genteng Beton
+                quantity: 1000,
+                pendingQuantity: 1000,
+              },
+              {
+                productId: products[6].id, // Besi Beton 10mm
+                quantity: 200,
+                pendingQuantity: 200,
+              },
+            ],
+          },
+        },
+      }),
+    ]);
+
+    console.log(`Created ${deliveryOrders.length} delivery orders`);
 
     // Create armadas (vehicles)
     const armadas = await Promise.all([
@@ -369,6 +649,7 @@ async function main() {
     console.log(`- Products: ${products.length}`);
     console.log(`- Customers: ${customers.length}`);
     console.log(`- Armadas: ${armadas.length}`);
+    console.log(`- Delivery Orders: ${deliveryOrders.length}`);
   } catch (error) {
     console.error('Error seeding database:', error);
   } finally {

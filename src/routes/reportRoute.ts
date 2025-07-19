@@ -11,12 +11,22 @@ router.get(
   checkPermission('report', PERMISSION_ACTION.READ),
   reportController.getOperationalReport,
 );
+router.get(
+  '/operational/table',
+  checkPermission('report', PERMISSION_ACTION.READ),
+  reportController.getOperationalReportTable,
+);
 
 // Daily Output Report routes
 router.get(
   '/daily-output',
   checkPermission('report', PERMISSION_ACTION.READ),
   reportController.getDailyOutputReport,
+);
+router.get(
+  '/daily-output/table',
+  checkPermission('report', PERMISSION_ACTION.READ),
+  reportController.getDailyOutputReportTable,
 );
 
 // Monthly Output Report routes

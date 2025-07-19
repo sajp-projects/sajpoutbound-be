@@ -20,7 +20,7 @@ export type DailyOutputReportFilter = ReportDateFilter & {
   customerId?: string;
   armadaId?: string;
   productId?: string;
-  status?: STATUS;
+  status?: STATUS | 'ALL';
 };
 
 export type MonthlyOutputReportFilter = {
@@ -160,12 +160,12 @@ export interface OperationalReportKPI {
   uniqueProductsMoved: number;
   dispatchedTotalsByUnit: Array<{ satuan: string; totalQuantity: number }>;
   topShippedProducts: Array<{ id: string; name: string; satuan: string; totalQuantity: number }>;
-  mostActiveVehicle: {
+  mostActiveVehicle: Array<{
     id: string;
     model: string;
     plateNumber: string;
     shipmentCount: number;
-  } | null;
+  }>;
   topCustomersByShipmentCount: Array<{ id: string; name: string; shipmentCount: number }>;
   topCustomersByVolume: Array<{ id: string; name: string; totalQuantity: number }>;
   vehicleUsageCount: number;

@@ -208,16 +208,22 @@ export default {
       },
     };
     // --- KPI CALCULATION START ---
-    // Use filtered shipments for all KPIs
+    // Use filtered shipments for most KPIs, but use all shipments for customer calculations when no status filter
     const filteredShipments = status ? shipments.filter((s) => s.status === status) : shipments;
-    const today = moment().startOf('day');
-    // 1. Total Shipments Created Today (all statuses)
+    const allShipmentsForCustomerCalc = shipments; // Always use all shipments for customer calculations
+
+    // Use date filter for KPI calculations instead of just today
+    const startDateForKPI = startDate ? moment(startDate).startOf('day') : moment().startOf('day');
+    const endDateForKPI = endDate ? moment(endDate).endOf('day') : moment().endOf('day');
+
+    // 1. Total Shipments Created in Date Range (all statuses)
     const totalShipmentsCreatedToday = filteredShipments.filter((s) =>
-      moment(s.createdAt).isSame(today, 'day'),
+      moment(s.createdAt).isBetween(startDateForKPI, endDateForKPI, 'day', '[]'),
     ).length;
-    // 2. Total Shipments Verified Today (filtered only)
+    // 2. Total Shipments Verified in Date Range (filtered only)
     const totalShipmentsVerifiedToday = filteredShipments.filter(
-      (s) => s.verifiedAt && moment(s.verifiedAt).isSame(today, 'day'),
+      (s) =>
+        s.verifiedAt && moment(s.verifiedAt).isBetween(startDateForKPI, endDateForKPI, 'day', '[]'),
     ).length;
     // 3. Unique Products Moved (filtered only)
     const productSet = new Set<string>();
@@ -259,12 +265,12 @@ export default {
     const topShippedProducts = Array.from(productQtyMap.values())
       .sort((a, b) => b.totalQuantity - a.totalQuantity)
       .slice(0, 3);
-    // 6. Most Active Vehicle (filtered only)
+    // 6. Most Active Vehicle (use all shipments when no status filter)
     const vehicleMap = new Map<
       string,
       { id: string; model: string; plateNumber: string; shipmentCount: number }
     >();
-    filteredShipments.forEach((s) => {
+    allShipmentsForCustomerCalc.forEach((s) => {
       if (s.armada) {
         const key = s.armada.id;
         if (!vehicleMap.has(key)) {
@@ -278,32 +284,42 @@ export default {
         vehicleMap.get(key)!.shipmentCount += 1;
       }
     });
-    const mostActiveVehicle =
-      Array.from(vehicleMap.values()).sort((a, b) => b.shipmentCount - a.shipmentCount)[0] || null;
-    // 7. Top Customers by Shipment Count (filtered only)
+    const mostActiveVehicle = Array.from(vehicleMap.values())
+      .sort((a, b) => b.shipmentCount - a.shipmentCount)
+      .slice(0, 3);
+    // 7. Top Customers by Shipment Count (use all shipments for customer calculations)
     const customerCountMap = new Map<string, { id: string; name: string; shipmentCount: number }>();
-    filteredShipments.forEach((s) =>
+    allShipmentsForCustomerCalc.forEach((s) => {
+      // Count unique customers per shipment, not per item
+      const customerIds = new Set<string>();
       s.shipmentItems.forEach((i) => {
-        const c = i.deliveryOrder.customer;
-        if (!customerCountMap.has(c.id)) {
-          customerCountMap.set(c.id, {
-            id: c.id,
-            name: c.name,
+        customerIds.add(i.deliveryOrder.customer.id);
+      });
+
+      customerIds.forEach((customerId) => {
+        const customer = s.shipmentItems.find((i) => i.deliveryOrder.customer.id === customerId)
+          ?.deliveryOrder.customer;
+        if (!customer) return;
+
+        if (!customerCountMap.has(customerId)) {
+          customerCountMap.set(customerId, {
+            id: customerId,
+            name: customer.name,
             shipmentCount: 0,
           });
         }
-        customerCountMap.get(c.id)!.shipmentCount += 1;
-      }),
-    );
+        customerCountMap.get(customerId)!.shipmentCount += 1;
+      });
+    });
     const topCustomersByShipmentCount = Array.from(customerCountMap.values())
       .sort((a, b) => b.shipmentCount - a.shipmentCount)
       .slice(0, 3);
-    // 8. Top Customers by Volume (filtered only)
+    // 8. Top Customers by Volume (use all shipments for customer calculations)
     const customerVolumeMap = new Map<
       string,
       { id: string; name: string; totalQuantity: number }
     >();
-    filteredShipments.forEach((s) =>
+    allShipmentsForCustomerCalc.forEach((s) =>
       s.shipmentItems.forEach((i) => {
         const c = i.deliveryOrder.customer;
         if (!customerVolumeMap.has(c.id)) {
@@ -313,7 +329,7 @@ export default {
             totalQuantity: 0,
           });
         }
-        customerVolumeMap.get(c.id)!.totalQuantity += i.weightedQuantity || 0;
+        customerVolumeMap.get(c.id)!.totalQuantity += i.requestedQuantity || 0;
       }),
     );
     const topCustomersByVolume = Array.from(customerVolumeMap.values())
@@ -336,6 +352,7 @@ export default {
       (u): u is string => typeof u === 'string' && u !== 'null' && u !== 'undefined',
     );
     // --- KPI CALCULATION END ---
+
     const kpi = {
       totalShipmentsCreatedToday,
       totalShipmentsVerifiedToday,
@@ -349,24 +366,213 @@ export default {
       trendline7Days,
       unitsUsed,
     };
-    // At the end, paginate each group (example: ANTAR.PENDING)
-    // For demonstration, paginate ANTAR.PENDING only (customize as needed)
-    const groupToPaginate = result.data.ANTAR.PENDING;
+
+    // Apply pagination to all groups combined
+    const allShipments = [
+      ...groupedData.ANTAR.PENDING,
+      ...groupedData.ANTAR.PROSES,
+      ...groupedData.ANTAR.SELESAI,
+      ...groupedData.JEMPUT.PENDING,
+      ...groupedData.JEMPUT.PROSES,
+      ...groupedData.JEMPUT.SELESAI,
+    ];
+
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
-    const paginatedGroup = groupToPaginate.slice(startIndex, endIndex);
-    result.data.ANTAR.PENDING = paginatedGroup;
+    const paginatedShipments = allShipments.slice(startIndex, endIndex);
+
+    // Re-group the paginated shipments
+    const paginatedGroupedData: OperationalReportGroupedData = {
+      ANTAR: {
+        PENDING: [],
+        PROSES: [],
+        SELESAI: [],
+      },
+      JEMPUT: {
+        PENDING: [],
+        PROSES: [],
+        SELESAI: [],
+      },
+    };
+
+    paginatedShipments.forEach((shipment) => {
+      paginatedGroupedData[shipment.type][shipment.status].push(shipment);
+    });
+
+    result.data = paginatedGroupedData;
+
     const pagination = {
-      total: groupToPaginate.length,
+      total: allShipments.length,
       page,
       limit,
-      totalPages: Math.max(1, Math.ceil(groupToPaginate.length / limit)),
-      hasNext: endIndex < groupToPaginate.length,
+      totalPages: Math.ceil(allShipments.length / limit),
+      hasNext: endIndex < allShipments.length,
       hasPrev: page > 1,
     };
+
+    console.log(pagination, 'pagniaton');
+
     return {
       ...result,
       kpi,
+      pagination,
+    };
+  },
+
+  /**
+   * Get operational report table data only (for pagination)
+   * Returns only the shipment data without KPI calculations
+   */
+  async getOperationalReportTable(
+    filters: OperationalReportFilter = {},
+    page: number = 1,
+    limit: number = 5,
+  ): Promise<{
+    data: ReportShipment[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  }> {
+    const {
+      startDate, endDate, type, status, warehouseId, 
+    } = filters;
+    const whereConditions: any = {
+      deletedAt: null,
+    };
+    if (startDate || endDate) {
+      whereConditions.createdAt = {};
+      if (startDate) whereConditions.createdAt.gte = moment(startDate).startOf('day').toDate();
+      if (endDate) whereConditions.createdAt.lte = moment(endDate).endOf('day').toDate();
+    }
+    if (type) whereConditions.type = type;
+    if (status) whereConditions.status = status;
+    if (warehouseId) {
+      whereConditions.shipmentItems = {
+        some: {
+          warehouseId,
+        },
+      };
+    }
+
+    const shipments = await prisma.shipment.findMany({
+      where: whereConditions,
+      include: {
+        armada: {
+          select: {
+            id: true,
+            model: true,
+            plateNumber: true,
+          },
+        },
+        shipmentItems: {
+          include: {
+            deliveryOrder: {
+              include: {
+                customer: {
+                  select: {
+                    id: true,
+                    name: true,
+                    address: true,
+                  },
+                },
+              },
+            },
+            product: {
+              select: {
+                id: true,
+                name: true,
+                satuan: true,
+              },
+            },
+            warehouse: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    const tableData: ReportShipment[] = shipments.map((shipment) => {
+      const deliveryOrderMap = new Map();
+      let totalItems = 0;
+      let totalWeight = 0;
+
+      shipment.shipmentItems.forEach((item) => {
+        const doId = item.deliveryOrder.id;
+        if (!deliveryOrderMap.has(doId)) {
+          deliveryOrderMap.set(doId, {
+            id: item.deliveryOrder.id,
+            doNumber: item.deliveryOrder.doNumber,
+            customer: item.deliveryOrder.customer,
+            items: [],
+          });
+        }
+        const deliveryOrder = deliveryOrderMap.get(doId);
+        deliveryOrder.items.push({
+          id: item.id || '',
+          product: item.product,
+          warehouse: item.warehouse,
+          requestedQuantity: item.requestedQuantity,
+          weightedQuantity: item.weightedQuantity,
+          status: item.status,
+          locationType: item.locationType,
+        });
+        totalItems += item.requestedQuantity;
+        totalWeight += item.weightedQuantity || 0;
+      });
+
+      return {
+        id: shipment.id,
+        shipmentNumber: shipment.shipmentNumber || '',
+        type: shipment.type,
+        status: shipment.status,
+        plateNumber: shipment.plateNumber || '',
+        armada: shipment.armada
+          ? {
+            id: shipment.armada.id,
+            model: shipment.armada.model,
+            plateNumber: shipment.armada.plateNumber || '',
+          }
+          : null,
+        createdAt: shipment.createdAt,
+        updatedAt: shipment.updatedAt,
+        verifiedAt: shipment.verifiedAt,
+        isVerified: shipment.isVerified,
+        deliveryOrders: Array.from(deliveryOrderMap.values()),
+        totalItems,
+        totalWeight,
+      };
+    });
+
+    // Get total count for pagination
+    const totalCount = await prisma.shipment.count({
+      where: whereConditions,
+    });
+
+    const pagination = {
+      total: totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+      hasNext: page * limit < totalCount,
+      hasPrev: page > 1,
+    };
+
+    return {
+      data: tableData,
       pagination,
     };
   },
@@ -408,7 +614,7 @@ export default {
     const whereConditions: any = {
       deletedAt: null,
     };
-    if (status === STATUS.SELESAI || !status) {
+    if (status === STATUS.SELESAI) {
       whereConditions.verifiedAt = {
         gte: start.toDate(),
         lte: end.toDate(),
@@ -418,8 +624,14 @@ export default {
         gte: start.toDate(),
         lte: end.toDate(),
       };
+    } else if (!status || status === 'ALL') {
+      // For "ALL" status, use createdAt to include all shipments in the date range
+      whereConditions.createdAt = {
+        gte: start.toDate(),
+        lte: end.toDate(),
+      };
     }
-    if (status) {
+    if (status && status !== 'ALL') {
       whereConditions.status = status;
     }
     if (warehouseId) {
@@ -555,30 +767,35 @@ export default {
         if (group) {
           group.totalQuantity += item.requestedQuantity;
           group.totalWeight += item.weightedQuantity || 0;
-          group.shipments.push({
-            shipmentId: shipment.id || '',
-            shipmentNumber: shipment.shipmentNumber || '',
-            type: shipment.type,
-            verifiedAt: shipment.verifiedAt,
-            item: {
-              id: item.id || '',
-              product: item.product,
-              warehouse: item.warehouse,
-              requestedQuantity: item.requestedQuantity,
-              weightedQuantity: item.weightedQuantity,
-              status: item.status,
-              locationType: item.locationType,
-            },
-            armada: shipment.armada
-              ? {
-                id: shipment.armada.id,
-                model: shipment.armada.model,
-                plateNumber: shipment.armada.plateNumber || '',
-              }
-              : null,
-            plateNumber: shipment.plateNumber || '',
-          });
-          group.shipmentCount++;
+
+          // Only add shipment if it's not already in the group's shipments
+          const shipmentExists = group.shipments.some((s) => s.shipmentId === shipment.id);
+          if (!shipmentExists) {
+            group.shipments.push({
+              shipmentId: shipment.id || '',
+              shipmentNumber: shipment.shipmentNumber || '',
+              type: shipment.type,
+              verifiedAt: shipment.verifiedAt,
+              item: {
+                id: item.id || '',
+                product: item.product,
+                warehouse: item.warehouse,
+                requestedQuantity: item.requestedQuantity,
+                weightedQuantity: item.weightedQuantity,
+                status: item.status,
+                locationType: item.locationType,
+              },
+              armada: shipment.armada
+                ? {
+                  id: shipment.armada.id,
+                  model: shipment.armada.model,
+                  plateNumber: shipment.armada.plateNumber || '',
+                }
+                : null,
+              plateNumber: shipment.plateNumber || '',
+            });
+            group.shipmentCount++;
+          }
         }
         _totalQuantity += item.requestedQuantity;
         _totalWeight += item.weightedQuantity || 0;
@@ -658,6 +875,255 @@ export default {
         productId,
         status,
       },
+      pagination,
+    };
+  },
+
+  /**
+   * Get daily output report table data only (for pagination)
+   */
+  async getDailyOutputReportTable(
+    filters: DailyOutputReportFilter = {},
+    page: number = 1,
+    limit: number = 5,
+  ): Promise<{
+    data: DailyOutputGroupBase[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  }> {
+    const {
+      startDate,
+      endDate,
+      groupBy = 'item',
+      warehouseId,
+      customerId,
+      armadaId,
+      productId,
+      status,
+    } = filters;
+    const defaultStartDate = moment().startOf('day');
+    const defaultEndDate = moment().endOf('day');
+    const start = startDate ? moment(startDate).startOf('day') : defaultStartDate;
+    const end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
+    const whereConditions: any = {
+      deletedAt: null,
+    };
+    if (status === STATUS.SELESAI) {
+      whereConditions.verifiedAt = {
+        gte: start.toDate(),
+        lte: end.toDate(),
+      };
+    } else if (status === STATUS.PENDING || status === STATUS.PROSES) {
+      whereConditions.createdAt = {
+        gte: start.toDate(),
+        lte: end.toDate(),
+      };
+    } else if (!status || status === 'ALL') {
+      // For "ALL" status, use createdAt to include all shipments in the date range
+      whereConditions.createdAt = {
+        gte: start.toDate(),
+        lte: end.toDate(),
+      };
+    }
+    if (status && status !== 'ALL') {
+      whereConditions.status = status;
+    }
+    if (warehouseId) {
+      whereConditions.shipmentItems = {
+        some: {
+          warehouseId,
+        },
+      };
+    }
+    if (armadaId) {
+      whereConditions.armadaId = armadaId;
+    }
+    const shipments = await prisma.shipment.findMany({
+      where: whereConditions,
+      include: {
+        armada: {
+          select: {
+            id: true,
+            model: true,
+            plateNumber: true,
+          },
+        },
+        shipmentItems: {
+          include: {
+            deliveryOrder: {
+              include: {
+                customer: {
+                  select: {
+                    id: true,
+                    name: true,
+                    address: true,
+                  },
+                },
+              },
+            },
+            product: {
+              select: {
+                id: true,
+                name: true,
+                satuan: true,
+              },
+            },
+            warehouse: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        verifiedAt: 'desc',
+      },
+    });
+    const groupedData: DailyOutputGroupBase[] = [];
+    shipments.forEach((shipment) => {
+      shipment.shipmentItems.forEach((item) => {
+        if (productId && item.product.id !== productId) return;
+        if (warehouseId && item.warehouse.id !== warehouseId) return;
+        if (customerId && item.deliveryOrder.customer.id !== customerId) return;
+        let groupKey = '';
+        let groupInfo: DailyOutputGroupBase = {
+          id: null,
+          name: '',
+          type: groupBy,
+          satuan: undefined,
+          totalQuantity: 0,
+          totalWeight: 0,
+          shipmentCount: 0,
+          shipments: [],
+        };
+        switch (groupBy) {
+        case 'item':
+          groupKey = item.product.id;
+          groupInfo = {
+            id: item.product.id,
+            name: item.product.name,
+            type: 'item',
+            satuan: item.product.satuan,
+            totalQuantity: 0,
+            totalWeight: 0,
+            shipmentCount: 0,
+            shipments: [],
+          };
+          break;
+        case 'customer':
+          groupKey = item.deliveryOrder.customer.id;
+          groupInfo = {
+            id: item.deliveryOrder.customer.id,
+            name: item.deliveryOrder.customer.name,
+            type: 'customer',
+            satuan: undefined,
+            totalQuantity: 0,
+            totalWeight: 0,
+            shipmentCount: 0,
+            shipments: [],
+          };
+          break;
+        case 'vehicle':
+          groupKey = shipment.armada?.id || 'no-vehicle';
+          groupInfo = {
+            id: shipment.armada?.id || 'no-vehicle',
+            name: shipment.armada?.model || 'Tanpa Armada',
+            type: 'vehicle',
+            satuan: undefined,
+            totalQuantity: 0,
+            totalWeight: 0,
+            shipmentCount: 0,
+            shipments: [],
+          };
+          break;
+        case 'warehouse':
+          groupKey = item.warehouse.id;
+          groupInfo = {
+            id: item.warehouse.id,
+            name: item.warehouse.name,
+            type: 'warehouse',
+            satuan: undefined,
+            totalQuantity: 0,
+            totalWeight: 0,
+            shipmentCount: 0,
+            shipments: [],
+          };
+          break;
+        }
+        if (!groupedData.some((g) => g.id === groupKey)) {
+          groupedData.push(groupInfo);
+        }
+        const group = groupedData.find((g) => g.id === groupKey);
+        if (group) {
+          group.totalQuantity += item.requestedQuantity;
+          group.totalWeight += item.weightedQuantity || 0;
+          group.shipments.push({
+            shipmentId: shipment.id || '',
+            shipmentNumber: shipment.shipmentNumber || '',
+            type: shipment.type,
+            verifiedAt: shipment.verifiedAt,
+            item: {
+              id: item.id || '',
+              product: item.product,
+              warehouse: item.warehouse,
+              requestedQuantity: item.requestedQuantity,
+              weightedQuantity: item.weightedQuantity,
+              status: item.status,
+              locationType: item.locationType,
+            },
+            armada: shipment.armada
+              ? {
+                id: shipment.armada.id,
+                model: shipment.armada.model,
+                plateNumber: shipment.armada.plateNumber || '',
+              }
+              : null,
+            plateNumber: shipment.plateNumber || '',
+          });
+          group.shipmentCount++;
+        }
+      });
+    });
+    // After grouping, set satuan for non-item groupings
+    if (groupBy !== 'item') {
+      groupedData.forEach((group) => {
+        const satuanSet = new Set<string>();
+        group.shipments.forEach((s) => {
+          if (s.item.product.satuan) satuanSet.add(s.item.product.satuan);
+        });
+        if (satuanSet.size === 1) {
+          group.satuan = Array.from(satuanSet)[0];
+        } else if (satuanSet.size > 1) {
+          group.satuan = 'Campuran';
+        } else {
+          group.satuan = undefined;
+        }
+      });
+    }
+    const data = groupedData.sort(
+      (a: DailyOutputGroupBase, b: DailyOutputGroupBase) => b.totalQuantity - a.totalQuantity,
+    );
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedData = data.slice(startIndex, endIndex);
+    const pagination = {
+      total: data.length,
+      page,
+      limit,
+      totalPages: Math.ceil(data.length / limit),
+      hasNext: endIndex < data.length,
+      hasPrev: page > 1,
+    };
+    return {
+      data: paginatedData,
       pagination,
     };
   },

@@ -37,9 +37,7 @@ services:
           npx prisma migrate deploy;
           npm start;
         else
-          echo 'Resetting and seeding DB...';
-          npx prisma migrate reset --force;
-          npm run seed;
+          echo 'Running the server...';
           npm run dev;
         fi
       "

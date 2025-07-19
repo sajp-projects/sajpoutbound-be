@@ -1,3 +1,4 @@
+import { STATUS } from '@prisma/client';
 import {
   NextFunction, Request, Response, 
 } from 'express';
@@ -10,8 +11,10 @@ import {
 } from '../schemas/report';
 import reportService from '../services/reportService';
 import {
+  DailyOutputReportFilter,
   DailyOutputReportQuery,
   MonthlyOutputReportQuery,
+  OperationalReportFilter,
   OperationalReportQuery,
   ShipmentAssignmentReportQuery,
 } from '../types/report';
@@ -73,6 +76,39 @@ export default {
   },
 
   /**
+   * Get operational report table data only (for pagination)
+   */
+  async getOperationalReportTable(req: Request, res: Response, next: NextFunction) {
+    try {
+      const {
+        startDate, endDate, type, status, page = 1, limit = 5, 
+      } = req.query;
+
+      const filters: OperationalReportFilter = {
+        startDate: startDate as string,
+        endDate: endDate as string,
+        type: type as 'ANTAR' | 'JEMPUT',
+        status: status as STATUS,
+      };
+
+      const result = await reportService.getOperationalReportTable(
+        filters,
+        Number(page),
+        Number(limit),
+      );
+
+      res.status(200).json(
+        success({
+          data: result.data,
+          pagination: result.pagination,
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
    * Get daily output report (Laporan Pengeluaran Harian)
    */
   async getDailyOutputReport(
@@ -108,6 +144,39 @@ export default {
       res.status(200).json(
         success({
           report,
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Get daily output report table data only (for pagination)
+   */
+  async getDailyOutputReportTable(req: Request, res: Response, next: NextFunction) {
+    try {
+      const {
+        startDate, endDate, groupBy, status, page = 1, limit = 5, 
+      } = req.query;
+
+      const filters: DailyOutputReportFilter = {
+        startDate: startDate as string,
+        endDate: endDate as string,
+        groupBy: groupBy as 'item' | 'customer' | 'vehicle' | 'warehouse',
+        status: status as STATUS | 'ALL',
+      };
+
+      const result = await reportService.getDailyOutputReportTable(
+        filters,
+        Number(page),
+        Number(limit),
+      );
+
+      res.status(200).json(
+        success({
+          data: result.data,
+          pagination: result.pagination,
         }),
       );
     } catch (error) {
