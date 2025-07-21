@@ -5,6 +5,7 @@ import express from 'express';
 import http from 'http';
 import path from 'path';
 import swaggerUi from 'swagger-ui-express';
+import comprehensiveSwaggerSpec from '../comprehensive-swagger-api.json';
 import prisma from './config/prisma';
 import swaggerSpec from './config/swagger';
 import { createErrorMiddleware } from './middlewares/error';
@@ -47,14 +48,38 @@ app.use(loggingMiddleware);
 
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Comprehensive API documentation (complete documentation)
+app.use('/api-docs', swaggerUi.serveFiles(comprehensiveSwaggerSpec));
+app.get(
+  '/api-docs',
+  swaggerUi.setup(comprehensiveSwaggerSpec, {
+    customSiteTitle: 'Outmanage API - Comprehensive Documentation',
+    customCss: '.swagger-ui .topbar { display: none }',
+  }),
+);
 
-app.get('/api-docs.json', (req, res) => {
+// Auto-generated documentation (JSDoc-based, limited coverage)
+app.use('/api-docs/auto', swaggerUi.serveFiles(swaggerSpec));
+app.get(
+  '/api-docs/auto',
+  swaggerUi.setup(swaggerSpec, {
+    customSiteTitle: 'Outmanage API - Auto-generated Documentation',
+    customCss: '.swagger-ui .topbar { display: none }',
+  }),
+);
+
+// JSON endpoints for both documentation versions
+app.get('/api-docs.json', (_, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(comprehensiveSwaggerSpec);
+});
+
+app.get('/api-docs/auto.json', (_, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
 
-app.get('/health', (req, res) => {
+app.get('/health', (_, res) => {
   const jakartaTime = new Date();
   jakartaTime.setHours(jakartaTime.getHours() + 7);
 
@@ -87,7 +112,9 @@ process.on('SIGINT', async () => {
 
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
-  console.log('API Documentation available at /api-docs');
+  console.log('📚 Comprehensive API Documentation: /api-docs');
+  console.log('🔧 Auto-generated Documentation: /api-docs/auto');
+  console.log('📄 JSON Specs: /api-docs.json & /api-docs/auto.json');
 });
 
 export default app;
