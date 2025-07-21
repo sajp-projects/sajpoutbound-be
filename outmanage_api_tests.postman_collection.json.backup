@@ -4283,59 +4283,6 @@
           "response": []
         },
         {
-          "name": "Upload Plate Photo",
-          "request": {
-            "method": "PATCH",
-            "header": [],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "platePhoto",
-                  "type": "file",
-                  "src": "",
-                  "description": "The image file of the vehicle plate number"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/shipments/:id/upload-plate-photo",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "shipments", ":id", "upload-plate-photo"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "shipment-uuid-here",
-                  "description": "UUID of the shipment to upload plate photo for"
-                }
-              ]
-            },
-            "description": "This request uploads a plate photo for a shipment. The photo will be saved and associated with the shipment.\n\n**Important:** All shipment items must be in COMPLETED status before this endpoint can be used."
-          },
-          "response": []
-        },
-        {
-          "name": "Verify Plate Number and Photo with AI",
-          "request": {
-            "method": "PATCH",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/shipments/:id/verify-plate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "shipments", ":id", "verify-plate"],
-              "variable": [
-                {
-                  "key": "id",
-                  "value": "shipment-uuid-here",
-                  "description": "UUID of the shipment to verify plate for"
-                }
-              ]
-            },
-            "description": "This request verifies a shipment's plate number using Google's Gemini AI. The AI will extract the plate number from the previously uploaded photo and compare it with the registered plate number. If they match, the shipment will be marked as verified.\n\n**Important:** All shipment items must be in COMPLETED status before this endpoint can be used."
-          },
-          "response": []
-        },
-        {
           "name": "Get Available Items for Weighing",
           "request": {
             "method": "GET",
@@ -4359,7 +4306,7 @@
       ]
     },
     {
-      "name": "Shipment Weighing Management",
+      "name": "Shipment Weighing API",
       "item": [
         {
           "name": "Weigh Shipment Item",
@@ -4383,92 +4330,7 @@
             "url": "{{baseUrl}}/api/shipments/weigh",
             "description": "This request weighs a specific shipment item, recording the actual weight. This endpoint will be used by third-party systems."
           },
-          "response": [
-            {
-              "name": "Success Response",
-              "originalRequest": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"shipmentItemId\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"weightedQuantity\": 48.5\n}"
-                },
-                "url": "{{baseUrl}}/api/shipments/weigh"
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"status\": \"success\",\n    \"data\": {\n        \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n        \"shipmentId\": \"550e8400-e29b-41d4-a716-446655440001\",\n        \"productId\": \"550e8400-e29b-41d4-a716-446655440002\",\n        \"deliveryOrderId\": \"550e8400-e29b-41d4-a716-446655440003\",\n        \"requestedQuantity\": 50,\n        \"weightedQuantity\": 48.5,\n        \"status\": \"COMPLETED\",\n        \"weighedAt\": \"2024-04-15T10:45:05.306Z\",\n        \"createdAt\": \"2024-04-15T09:30:05.306Z\",\n        \"updatedAt\": \"2024-04-15T10:45:05.306Z\",\n        \"product\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440002\",\n            \"name\": \"Test Product\",\n            \"satuan\": \"KG\"\n        },\n        \"shipment\": {\n            \"id\": \"550e8400-e29b-41d4-a716-446655440001\",\n            \"status\": \"PROSES\"\n        }\n    }\n}"
-            },
-            {
-              "name": "Item Not Found",
-              "originalRequest": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"shipmentItemId\": \"non-existent-uuid\",\n    \"weightedQuantity\": 48.5\n}"
-                },
-                "url": "{{baseUrl}}/api/shipments/weigh"
-              },
-              "status": "Not Found",
-              "code": 404,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"message\": \"Shipment item not found\",\n    \"errorCode\": \"SHIPMENT_ITEM_NOT_FOUND\"\n}"
-            },
-            {
-              "name": "Invalid Data",
-              "originalRequest": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"shipmentItemId\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"weightedQuantity\": -10\n}"
-                },
-                "url": "{{baseUrl}}/api/shipments/weigh"
-              },
-              "status": "Bad Request",
-              "code": 400,
-              "_postman_previewlanguage": "json",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"message\": \"validation error\",\n    \"errorType\": \"joiValidationError\",\n    \"details\": [\n        {\n            \"message\": \"Weighted quantity must be at least 0\",\n            \"path\": [\"weightedQuantity\"],\n            \"type\": \"number.min\"\n        }\n    ]\n}"
-            }
-          ]
+          "response": []
         }
       ]
     },
@@ -4502,7 +4364,7 @@
           "response": []
         },
         {
-          "name": "Get Logs for Specific Shipment",
+          "name": "Get Shipment Logs by Shipment ID",
           "request": {
             "method": "GET",
             "header": [],
@@ -4554,16 +4416,8 @@
                   "value": "2024-06-01",
                   "description": "Start date (YYYY-MM-DD)"
                 },
-                {
-                  "key": "endDate",
-                  "value": "2024-06-30",
-                  "description": "End date (YYYY-MM-DD)"
-                },
-                {
-                  "key": "type",
-                  "value": "ANTAR",
-                  "description": "Shipment type (ANTAR/JEMPUT)"
-                },
+                { "key": "endDate", "value": "2024-06-30", "description": "End date (YYYY-MM-DD)" },
+                { "key": "type", "value": "ANTAR", "description": "Shipment type (ANTAR/JEMPUT)" },
                 {
                   "key": "status",
                   "value": "PENDING",
@@ -4595,11 +4449,7 @@
                   "value": "2024-06-01",
                   "description": "Start date (YYYY-MM-DD)"
                 },
-                {
-                  "key": "endDate",
-                  "value": "2024-06-30",
-                  "description": "End date (YYYY-MM-DD)"
-                },
+                { "key": "endDate", "value": "2024-06-30", "description": "End date (YYYY-MM-DD)" },
                 {
                   "key": "groupBy",
                   "value": "item",
@@ -4641,16 +4491,8 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "reports", "monthly-output"],
               "query": [
-                {
-                  "key": "year",
-                  "value": "2024",
-                  "description": "Year (YYYY)"
-                },
-                {
-                  "key": "month",
-                  "value": "6",
-                  "description": "Month (1-12)"
-                },
+                { "key": "year", "value": "2024", "description": "Year (YYYY)" },
+                { "key": "month", "value": "6", "description": "Month (1-12)" },
                 {
                   "key": "groupBy",
                   "value": "item",
@@ -4697,11 +4539,7 @@
                   "value": "2024-06-01",
                   "description": "Start date (YYYY-MM-DD)"
                 },
-                {
-                  "key": "endDate",
-                  "value": "2024-06-30",
-                  "description": "End date (YYYY-MM-DD)"
-                },
+                { "key": "endDate", "value": "2024-06-30", "description": "End date (YYYY-MM-DD)" },
                 {
                   "key": "armadaId",
                   "value": "armada-uuid-here",

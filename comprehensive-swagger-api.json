@@ -2667,6 +2667,679 @@
         }
       }
     },
+    "/api/users/archived": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get archived users",
+        "description": "Retrieve paginated list of soft-deleted users with optional search filtering.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          },
+          {
+            "$ref": "#/components/parameters/SearchParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived users retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/unarchived": {
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Restore archived user",
+        "description": "Restore a soft-deleted user by clearing the deletedAt timestamp.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User restored successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/delivery-orders/archived": {
+      "get": {
+        "tags": ["Delivery Orders"],
+        "summary": "Get archived delivery orders",
+        "description": "Retrieve paginated list of soft-deleted delivery orders with optional filtering.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          },
+          {
+            "$ref": "#/components/parameters/SearchParam"
+          },
+          {
+            "name": "customerId",
+            "in": "query",
+            "description": "Filter by customer ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived delivery orders retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/DeliveryOrder"
+                          }
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/delivery-orders/{id}/restore": {
+      "patch": {
+        "tags": ["Delivery Orders"],
+        "summary": "Restore archived delivery order",
+        "description": "Restore a soft-deleted delivery order by clearing the deletedAt timestamp.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery order restored successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/DeliveryOrder"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/shipments/archived": {
+      "get": {
+        "tags": ["Shipments"],
+        "summary": "Get archived shipments",
+        "description": "Retrieve paginated list of soft-deleted shipments with optional filtering.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          },
+          {
+            "$ref": "#/components/parameters/SearchParam"
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filter by shipment type",
+            "schema": {
+              "type": "string",
+              "enum": ["ANTAR", "JEMPUT"]
+            }
+          },
+          {
+            "name": "armadaId",
+            "in": "query",
+            "description": "Filter by armada ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived shipments retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Shipment"
+                          }
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/public/{filePath}": {
+      "get": {
+        "tags": ["Files"],
+        "summary": "Serve uploaded files",
+        "description": "Serve static files such as plate photos, SPMB PDFs, and nota timbangan PDFs. This endpoint now requires authentication for security.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "filePath",
+            "in": "path",
+            "required": true,
+            "description": "The file path relative to the public directory (e.g., 'plate-photos/image.jpg', 'spmb/document.pdf')",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "File served successfully",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/warehouses/{id}/users": {
+      "post": {
+        "tags": ["Warehouses"],
+        "summary": "Assign user to warehouse",
+        "description": "Assign a user to a specific warehouse by updating their warehouseId.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId"],
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the user to assign to this warehouse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User assigned to warehouse successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/warehouses/{id}/users/{userId}": {
+      "delete": {
+        "tags": ["Warehouses"],
+        "summary": "Unassign user from warehouse",
+        "description": "Remove a user's assignment from a warehouse by setting their warehouseId to null.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Warehouse UUID identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "User UUID identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User unassigned from warehouse successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/shipments/{id}/upload-plate-photo": {
+      "patch": {
+        "tags": ["Shipments"],
+        "summary": "Upload plate photo for shipment",
+        "description": "Upload a vehicle plate photo for verification. The photo is stored and associated with the shipment.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["platePhoto"],
+                "properties": {
+                  "platePhoto": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Vehicle plate photo image file (JPEG/PNG)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plate photo uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "platePhoto": {
+                          "type": "string",
+                          "description": "File path of the uploaded plate photo"
+                        },
+                        "shipment": {
+                          "$ref": "#/components/schemas/Shipment"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/shipments/{id}/verify-plate": {
+      "patch": {
+        "tags": ["Shipments"],
+        "summary": "Verify vehicle plate number",
+        "description": "Use AI-powered verification to compare the uploaded plate photo with the expected plate number. Updates the shipment's isVerified status.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["expectedPlateNumber"],
+                "properties": {
+                  "expectedPlateNumber": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "description": "The expected vehicle plate number to verify against the photo"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plate verification completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "isVerified": {
+                          "type": "boolean",
+                          "description": "Whether the plate number matches the photo"
+                        },
+                        "detectedPlateNumber": {
+                          "type": "string",
+                          "description": "Plate number detected from the photo"
+                        },
+                        "expectedPlateNumber": {
+                          "type": "string",
+                          "description": "Expected plate number provided for verification"
+                        },
+                        "confidenceScore": {
+                          "type": "number",
+                          "description": "AI confidence score for the detection (0-1)"
+                        },
+                        "shipment": {
+                          "$ref": "#/components/schemas/Shipment"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error or missing plate photo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "description": "AI verification service error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": ["System"],

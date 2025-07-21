@@ -3,8 +3,14 @@ import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
-// Get JWT secret key from environment variables with fallback
-const JWT_SECRET = process.env.JWT_SECRET || 'default_jwt_secret_for_development';
+// Get JWT secret key from environment variables - REQUIRED for security
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error(
+    'JWT_SECRET environment variable is required and must be set to a secure random string',
+  );
+}
 // Access tokens are short-lived (30 seconds by default) to minimize security risks
 const ACCESS_TOKEN_EXPIRES_IN = process.env.ACCESS_TOKEN_EXPIRES_IN || '30s';
 // Refresh tokens are longer-lived (6 hours by default) and stored in the database
@@ -74,9 +80,9 @@ export default {
    * @param token - JWT token to verify
    * @returns Decoded token payload or null if invalid
    */
-  verifyToken(token: string): TokenPayload | null {
+  verifyToken(token: string, options?: jwt.VerifyOptions): TokenPayload | null {
     try {
-      return jwt.verify(token, JWT_SECRET) as TokenPayload;
+      return jwt.verify(token, JWT_SECRET, options) as TokenPayload;
     } catch (error) {
       return null;
     }

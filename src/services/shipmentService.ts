@@ -5,6 +5,7 @@ import fs from 'fs';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import prisma from '../config/prisma';
+import { CustomError } from '../middlewares/error';
 import {
   ShipmentBulkWeighInput,
   ShipmentChosenProductInput,
@@ -605,16 +606,33 @@ export default {
             item.requestedQuantity,
           );
 
-          await tx.deliveryOrderItem.update({
+          // Use atomic operations to prevent race conditions
+          const updatedItem = await tx.deliveryOrderItem.updateMany({
             where: {
               id: deliveryOrderItem.id,
+              pendingQuantity: {
+                gte: processingQuantity, 
+              }, // Ensure sufficient pending quantity
             },
             data: {
-              pendingQuantity: deliveryOrderItem.pendingQuantity - processingQuantity,
-              processingQuantity: deliveryOrderItem.processingQuantity + processingQuantity,
+              pendingQuantity: {
+                decrement: processingQuantity, 
+              },
+              processingQuantity: {
+                increment: processingQuantity, 
+              },
               updatedAt: jakartaTime,
             },
           });
+
+          // Check if the update was successful (affected exactly 1 row)
+          if (updatedItem.count === 0) {
+            throw new CustomError({
+              message: 'Insufficient pending quantity or concurrent modification detected',
+              errorCode: 'INSUFFICIENT_PENDING_QUANTITY',
+              status: 409,
+            });
+          }
 
           await tx.deliveryOrder.update({
             where: {

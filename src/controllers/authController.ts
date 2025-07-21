@@ -103,7 +103,9 @@ export default {
       }
 
       // Decode the token without verifying (it might be expired)
-      const decoded = jwt.decodeToken(token);
+      const decoded = jwt.verifyToken(token, {
+        ignoreExpiration: true,
+      });
 
       if (!decoded || !decoded.id) {
         throw new CustomError({
