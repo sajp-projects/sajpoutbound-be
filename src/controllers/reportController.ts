@@ -5,15 +5,12 @@ import {
 import { CustomError } from '../middlewares/error';
 import {
   dailyOutputReportFilterSchema,
-  monthlyOutputReportFilterSchema,
   operationalReportFilterSchema,
   shipmentAssignmentReportFilterSchema,
 } from '../schemas/report';
 import reportService from '../services/reportService';
 import {
-  DailyOutputReportFilter,
   DailyOutputReportQuery,
-  MonthlyOutputReportQuery,
   OperationalReportFilter,
   OperationalReportQuery,
   ShipmentAssignmentReportQuery,
@@ -109,7 +106,7 @@ export default {
   },
 
   /**
-   * Get daily output report (Laporan Pengeluaran Harian)
+   * Get output report (Laporan Pengeluaran) - unified for daily/monthly/yearly
    */
   async getDailyOutputReport(
     req: Request<unknown, unknown, unknown, DailyOutputReportQuery>,
@@ -139,7 +136,41 @@ export default {
       const {
         page: _p, limit: _l, ...rawFilters 
       } = req.query;
-      const filters = await dailyOutputReportFilterSchema.validateAsync(rawFilters as unknown);
+
+      // Parse numeric parameters and validate with schema
+      const filters = await dailyOutputReportFilterSchema.validateAsync({
+        ...rawFilters,
+        year: rawFilters.year
+          ? typeof rawFilters.year === 'string'
+            ? parseInt(rawFilters.year, 10)
+            : rawFilters.year
+          : undefined,
+        month: rawFilters.month
+          ? typeof rawFilters.month === 'string'
+            ? parseInt(rawFilters.month, 10)
+            : rawFilters.month
+          : undefined,
+      } as unknown);
+
+      // Validate period-specific parameters
+      if (filters.period === 'monthly') {
+        if (!filters.year || !filters.month) {
+          throw new CustomError({
+            message: 'Tahun dan bulan harus diisi untuk periode bulanan',
+            errorCode: 'PARAMETER_TIDAK_LENGKAP',
+            status: 400,
+          });
+        }
+      } else if (filters.period === 'yearly') {
+        if (!filters.year) {
+          throw new CustomError({
+            message: 'Tahun harus diisi untuk periode tahunan',
+            errorCode: 'PARAMETER_TIDAK_LENGKAP',
+            status: 400,
+          });
+        }
+      }
+
       const report = await reportService.getDailyOutputReport(filters, page, limit);
       res.status(200).json(
         success({
@@ -152,20 +183,32 @@ export default {
   },
 
   /**
-   * Get daily output report table data only (for pagination)
+   * Get output report table data only (for pagination) - unified for daily/monthly/yearly
    */
   async getDailyOutputReportTable(req: Request, res: Response, next: NextFunction) {
     try {
       const {
-        startDate, endDate, groupBy, status, page = 1, limit = 5, 
+        period,
+        startDate,
+        endDate,
+        year,
+        month,
+        groupBy,
+        status,
+        page = 1,
+        limit = 5,
       } = req.query;
 
-      const filters: DailyOutputReportFilter = {
-        startDate: startDate as string,
-        endDate: endDate as string,
-        groupBy: groupBy as 'item' | 'customer' | 'vehicle' | 'warehouse',
-        status: status as STATUS | 'ALL',
-      };
+      // Parse numeric parameters and validate with schema
+      const filters = await dailyOutputReportFilterSchema.validateAsync({
+        period,
+        startDate,
+        endDate,
+        year: year ? (typeof year === 'string' ? parseInt(year, 10) : year) : undefined,
+        month: month ? (typeof month === 'string' ? parseInt(month, 10) : month) : undefined,
+        groupBy,
+        status,
+      } as unknown);
 
       const result = await reportService.getDailyOutputReportTable(
         filters,
@@ -177,48 +220,6 @@ export default {
         success({
           data: result.data,
           pagination: result.pagination,
-        }),
-      );
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  /**
-   * Get monthly output report (Laporan Pengeluaran Bulanan)
-   */
-  async getMonthlyOutputReport(
-    req: Request<unknown, unknown, unknown, MonthlyOutputReportQuery>,
-    res: Response,
-    next: NextFunction,
-  ) {
-    try {
-      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
-
-      if (isNaN(page) || page < 1) {
-        throw new CustomError({
-          message: 'Halaman harus berupa bilangan bulat positif',
-          errorCode: 'PAGINASI_TIDAK_VALID',
-          status: 400,
-        });
-      }
-
-      if (isNaN(limit) || limit < 1 || limit > 100) {
-        throw new CustomError({
-          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
-          errorCode: 'PAGINASI_TIDAK_VALID',
-          status: 400,
-        });
-      }
-      const {
-        page: _p, limit: _l, ...rawFilters 
-      } = req.query;
-      const filters = await monthlyOutputReportFilterSchema.validateAsync(rawFilters as unknown);
-      const report = await reportService.getMonthlyOutputReport(filters, page, limit);
-      res.status(200).json(
-        success({
-          report,
         }),
       );
     } catch (error) {
@@ -266,23 +267,6 @@ export default {
       res.status(200).json(
         success({
           report,
-        }),
-      );
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  /**
-   * Get dashboard summary for all reports
-   */
-  async getDashboardSummary(req: Request, res: Response, next: NextFunction) {
-    try {
-      const summary = await reportService.getDashboardSummary();
-
-      res.status(200).json(
-        success({
-          summary,
         }),
       );
     } catch (error) {

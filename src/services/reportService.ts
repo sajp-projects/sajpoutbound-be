@@ -5,9 +5,6 @@ import {
   DailyOutputGroupBase,
   DailyOutputReportFilter,
   DailyOutputReportResult,
-  DashboardSummary,
-  MonthlyOutputReportFilter,
-  MonthlyOutputReportResult,
   OperationalReportFilter,
   OperationalReportGroupedData,
   OperationalReportResult,
@@ -578,7 +575,7 @@ export default {
   },
 
   /**
-   * Generate daily output report (Laporan Pengeluaran Harian)
+   * Generate output report (Laporan Pengeluaran) - unified for daily/monthly/yearly
    * Can be grouped by item, customer, vehicle, or warehouse
    */
   async getDailyOutputReport(
@@ -598,8 +595,11 @@ export default {
     }
   > {
     const {
+      period = 'daily',
       startDate,
       endDate,
+      year,
+      month,
       groupBy = 'item',
       warehouseId,
       customerId,
@@ -607,13 +607,66 @@ export default {
       productId,
       status,
     } = filters;
-    const defaultStartDate = moment().startOf('day');
-    const defaultEndDate = moment().endOf('day');
-    const start = startDate ? moment(startDate).startOf('day') : defaultStartDate;
-    const end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
+
+    // Determine date range based on period
+    let start: moment.Moment;
+    let end: moment.Moment;
+
+    if (period === 'daily') {
+      const defaultStartDate = moment().startOf('day');
+      const defaultEndDate = moment().endOf('day');
+      start = startDate ? moment(startDate).startOf('day') : defaultStartDate;
+      end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
+    } else if (period === 'monthly') {
+      if (!year || !month) {
+        const now = moment();
+        start = moment({
+          year: now.year(),
+          month: now.month(),
+        }).startOf('month');
+        end = moment({
+          year: now.year(),
+          month: now.month(),
+        }).endOf('month');
+      } else {
+        start = moment({
+          year,
+          month: month - 1,
+        }).startOf('month');
+        end = moment({
+          year,
+          month: month - 1,
+        }).endOf('month');
+      }
+    } else if (period === 'yearly') {
+      if (!year) {
+        const now = moment();
+        start = moment({
+          year: now.year(),
+        }).startOf('year');
+        end = moment({
+          year: now.year(),
+        }).endOf('year');
+      } else {
+        start = moment({
+          year,
+        }).startOf('year');
+        end = moment({
+          year,
+        }).endOf('year');
+      }
+    } else {
+      // Default to daily
+      const defaultStartDate = moment().startOf('day');
+      const defaultEndDate = moment().endOf('day');
+      start = startDate ? moment(startDate).startOf('day') : defaultStartDate;
+      end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
+    }
+
     const whereConditions: any = {
       deletedAt: null,
     };
+
     if (status === STATUS.SELESAI) {
       whereConditions.verifiedAt = {
         gte: start.toDate(),
@@ -631,9 +684,11 @@ export default {
         lte: end.toDate(),
       };
     }
+
     if (status && status !== 'ALL') {
       whereConditions.status = status;
     }
+
     if (warehouseId) {
       whereConditions.shipmentItems = {
         some: {
@@ -641,9 +696,11 @@ export default {
         },
       };
     }
+
     if (armadaId) {
       whereConditions.armadaId = armadaId;
     }
+
     const shipments = await prisma.shipment.findMany({
       where: whereConditions,
       include: {
@@ -687,14 +744,17 @@ export default {
         verifiedAt: 'desc',
       },
     });
+
     const groupedData: DailyOutputGroupBase[] = [];
     let _totalQuantity: number = 0;
     let _totalWeight: number = 0;
+
     shipments.forEach((shipment) => {
       shipment.shipmentItems.forEach((item) => {
         if (productId && item.product.id !== productId) return;
         if (warehouseId && item.warehouse.id !== warehouseId) return;
         if (customerId && item.deliveryOrder.customer.id !== customerId) return;
+
         let groupKey = '';
         let groupInfo: DailyOutputGroupBase = {
           id: null,
@@ -706,6 +766,7 @@ export default {
           shipmentCount: 0,
           shipments: [],
         };
+
         switch (groupBy) {
         case 'item':
           groupKey = item.product.id;
@@ -760,9 +821,11 @@ export default {
           };
           break;
         }
+
         if (!groupedData.some((g) => g.id === groupKey)) {
           groupedData.push(groupInfo);
         }
+
         const group = groupedData.find((g) => g.id === groupKey);
         if (group) {
           group.totalQuantity += item.requestedQuantity;
@@ -797,10 +860,12 @@ export default {
             group.shipmentCount++;
           }
         }
+
         _totalQuantity += item.requestedQuantity;
         _totalWeight += item.weightedQuantity || 0;
       });
     });
+
     // After grouping, set satuan for non-item groupings
     if (groupBy !== 'item') {
       groupedData.forEach((group) => {
@@ -817,9 +882,11 @@ export default {
         }
       });
     }
+
     const data = groupedData.sort(
       (a: DailyOutputGroupBase, b: DailyOutputGroupBase) => b.totalQuantity - a.totalQuantity,
     );
+
     // Calculate summary from all groups (not just paginated)
     // Group totalQuantity and totalWeight by satuan
     const quantityBySatuanMap = new Map<string, number>();
@@ -829,16 +896,19 @@ export default {
       quantityBySatuanMap.set(satuan, (quantityBySatuanMap.get(satuan) || 0) + g.totalQuantity);
       weightBySatuanMap.set(satuan, (weightBySatuanMap.get(satuan) || 0) + g.totalWeight);
     });
+
     const totalQuantityBySatuan = Array.from(quantityBySatuanMap.entries()).map(
       ([satuan, total]) => ({
         satuan,
         total,
       }),
     );
+
     const totalWeightBySatuan = Array.from(weightBySatuanMap.entries()).map(([satuan, total]) => ({
       satuan,
       total,
     }));
+
     const summary = {
       totalGroups: data.length,
       totalQuantityBySatuan,
@@ -849,10 +919,12 @@ export default {
         end: end.format('YYYY-MM-DD'),
       },
     };
+
     const allData = data;
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     const paginatedData = allData.slice(startIndex, endIndex);
+
     const pagination = {
       total: allData.length,
       page,
@@ -861,13 +933,17 @@ export default {
       hasNext: endIndex < allData.length,
       hasPrev: page > 1,
     };
+
     return {
       data: paginatedData,
       allGroups: allData,
       summary,
       filters: {
+        period,
         startDate,
         endDate,
+        year,
+        month,
         groupBy,
         warehouseId,
         customerId,
@@ -880,7 +956,7 @@ export default {
   },
 
   /**
-   * Get daily output report table data only (for pagination)
+   * Get output report table data only (for pagination) - unified for daily/monthly/yearly
    */
   async getDailyOutputReportTable(
     filters: DailyOutputReportFilter = {},
@@ -898,8 +974,11 @@ export default {
     };
   }> {
     const {
+      period = 'daily',
       startDate,
       endDate,
+      year,
+      month,
       groupBy = 'item',
       warehouseId,
       customerId,
@@ -907,13 +986,66 @@ export default {
       productId,
       status,
     } = filters;
-    const defaultStartDate = moment().startOf('day');
-    const defaultEndDate = moment().endOf('day');
-    const start = startDate ? moment(startDate).startOf('day') : defaultStartDate;
-    const end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
+
+    // Determine date range based on period
+    let start: moment.Moment;
+    let end: moment.Moment;
+
+    if (period === 'daily') {
+      const defaultStartDate = moment().startOf('day');
+      const defaultEndDate = moment().endOf('day');
+      start = startDate ? moment(startDate).startOf('day') : defaultStartDate;
+      end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
+    } else if (period === 'monthly') {
+      if (!year || !month) {
+        const now = moment();
+        start = moment({
+          year: now.year(),
+          month: now.month(),
+        }).startOf('month');
+        end = moment({
+          year: now.year(),
+          month: now.month(),
+        }).endOf('month');
+      } else {
+        start = moment({
+          year,
+          month: month - 1,
+        }).startOf('month');
+        end = moment({
+          year,
+          month: month - 1,
+        }).endOf('month');
+      }
+    } else if (period === 'yearly') {
+      if (!year) {
+        const now = moment();
+        start = moment({
+          year: now.year(),
+        }).startOf('year');
+        end = moment({
+          year: now.year(),
+        }).endOf('year');
+      } else {
+        start = moment({
+          year,
+        }).startOf('year');
+        end = moment({
+          year,
+        }).endOf('year');
+      }
+    } else {
+      // Default to daily
+      const defaultStartDate = moment().startOf('day');
+      const defaultEndDate = moment().endOf('day');
+      start = startDate ? moment(startDate).startOf('day') : defaultStartDate;
+      end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
+    }
+
     const whereConditions: any = {
       deletedAt: null,
     };
+
     if (status === STATUS.SELESAI) {
       whereConditions.verifiedAt = {
         gte: start.toDate(),
@@ -931,9 +1063,11 @@ export default {
         lte: end.toDate(),
       };
     }
+
     if (status && status !== 'ALL') {
       whereConditions.status = status;
     }
+
     if (warehouseId) {
       whereConditions.shipmentItems = {
         some: {
@@ -941,9 +1075,11 @@ export default {
         },
       };
     }
+
     if (armadaId) {
       whereConditions.armadaId = armadaId;
     }
+
     const shipments = await prisma.shipment.findMany({
       where: whereConditions,
       include: {
@@ -987,12 +1123,15 @@ export default {
         verifiedAt: 'desc',
       },
     });
+
     const groupedData: DailyOutputGroupBase[] = [];
+
     shipments.forEach((shipment) => {
       shipment.shipmentItems.forEach((item) => {
         if (productId && item.product.id !== productId) return;
         if (warehouseId && item.warehouse.id !== warehouseId) return;
         if (customerId && item.deliveryOrder.customer.id !== customerId) return;
+
         let groupKey = '';
         let groupInfo: DailyOutputGroupBase = {
           id: null,
@@ -1004,6 +1143,7 @@ export default {
           shipmentCount: 0,
           shipments: [],
         };
+
         switch (groupBy) {
         case 'item':
           groupKey = item.product.id;
@@ -1058,9 +1198,11 @@ export default {
           };
           break;
         }
+
         if (!groupedData.some((g) => g.id === groupKey)) {
           groupedData.push(groupInfo);
         }
+
         const group = groupedData.find((g) => g.id === groupKey);
         if (group) {
           group.totalQuantity += item.requestedQuantity;
@@ -1092,6 +1234,7 @@ export default {
         }
       });
     });
+
     // After grouping, set satuan for non-item groupings
     if (groupBy !== 'item') {
       groupedData.forEach((group) => {
@@ -1108,12 +1251,15 @@ export default {
         }
       });
     }
+
     const data = groupedData.sort(
       (a: DailyOutputGroupBase, b: DailyOutputGroupBase) => b.totalQuantity - a.totalQuantity,
     );
+
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     const paginatedData = data.slice(startIndex, endIndex);
+
     const pagination = {
       total: data.length,
       page,
@@ -1122,76 +1268,10 @@ export default {
       hasNext: endIndex < data.length,
       hasPrev: page > 1,
     };
-    return {
-      data: paginatedData,
-      pagination,
-    };
-  },
 
-  /**
-   * Generate monthly output report (Laporan Pengeluaran Bulanan)
-   * Similar to daily but aggregated by month
-   */
-  async getMonthlyOutputReport(
-    filters: MonthlyOutputReportFilter,
-    page: number = 1,
-    limit: number = 10,
-  ): Promise<
-    MonthlyOutputReportResult & {
-      pagination: {
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-        hasNext: boolean;
-        hasPrev: boolean;
-      };
-    }
-  > {
-    const {
-      year, month, groupBy = 'item', warehouseId, customerId, armadaId, productId, 
-    } = filters;
-    const startDate = moment({
-      year,
-      month: month - 1,
-    }).startOf('month');
-    const endDate = moment({
-      year,
-      month: month - 1,
-    }).endOf('month');
-    const dailyFilters: DailyOutputReportFilter = {
-      startDate: startDate.format('YYYY-MM-DD'),
-      endDate: endDate.format('YYYY-MM-DD'),
-      groupBy,
-      warehouseId,
-      customerId,
-      armadaId,
-      productId,
-    };
-    const dailyReport = await this.getDailyOutputReport(dailyFilters, page, limit);
-    // summary is already grouped by satuan in dailyReport
-    const allData = dailyReport.data; // replace with actual data array
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    const paginatedData = allData.slice(startIndex, endIndex);
-    const pagination = {
-      total: allData.length,
-      page,
-      limit,
-      totalPages: Math.ceil(allData.length / limit),
-      hasNext: endIndex < allData.length,
-      hasPrev: page > 1,
-    };
     return {
-      ...dailyReport,
       data: paginatedData,
       pagination,
-      monthInfo: {
-        year,
-        month,
-        monthName: startDate.format('MMMM'),
-        daysInMonth: startDate.daysInMonth(),
-      },
     };
   },
 
@@ -1460,44 +1540,6 @@ export default {
         avgShipmentsPerArmadaPerDay,
         pendingAssignments,
       },
-    };
-  },
-
-  /**
-   * Get dashboard summary for all reports
-   */
-  async getDashboardSummary(): Promise<DashboardSummary> {
-    const today = moment().startOf('day');
-    const endOfToday = moment().endOf('day');
-    const operationalToday = await this.getOperationalReport({
-      startDate: today.format('YYYY-MM-DD'),
-      endDate: endOfToday.format('YYYY-MM-DD'),
-    });
-    const outputToday = await this.getDailyOutputReport({
-      startDate: today.format('YYYY-MM-DD'),
-      endDate: endOfToday.format('YYYY-MM-DD'),
-    });
-    const currentMonth = moment();
-    const monthlyOutput = await this.getMonthlyOutputReport({
-      year: currentMonth.year(),
-      month: currentMonth.month() + 1,
-    });
-    const activeAssignments = await this.getShipmentAssignmentReport({
-      status: STATUS.PROSES,
-    });
-    return {
-      today: {
-        date: today.format('YYYY-MM-DD'),
-        operational: operationalToday.summary,
-        output: outputToday.summary,
-      },
-      thisMonth: {
-        year: currentMonth.year(),
-        month: currentMonth.month() + 1,
-        monthName: currentMonth.format('MMMM'),
-        output: monthlyOutput.summary,
-      },
-      activeAssignments: activeAssignments.summary,
     };
   },
 };

@@ -3,7 +3,6 @@ import Joi from 'joi';
 
 import {
   DailyOutputReportFilter,
-  MonthlyOutputReportFilter,
   OperationalReportFilter,
   ReportDateFilter,
   ShipmentAssignmentReportFilter,
@@ -44,11 +43,26 @@ export const operationalReportFilterSchema = Joi.object<OperationalReportFilter>
 });
 
 export const dailyOutputReportFilterSchema = Joi.object<DailyOutputReportFilter>({
+  period: Joi.string().valid('daily', 'monthly', 'yearly').optional().messages({
+    'any.only': 'Periode harus salah satu dari: daily, monthly, yearly',
+  }),
   startDate: Joi.string().isoDate().optional().messages({
     'string.isoDate': 'Tanggal mulai harus dalam format ISO yang valid',
   }),
   endDate: Joi.string().isoDate().optional().messages({
     'string.isoDate': 'Tanggal akhir harus dalam format ISO yang valid',
+  }),
+  year: Joi.number().integer().min(2000).max(2100).optional().messages({
+    'number.base': 'Tahun harus berupa angka',
+    'number.integer': 'Tahun harus berupa bilangan bulat',
+    'number.min': 'Tahun harus minimal 2000',
+    'number.max': 'Tahun harus maksimal 2100',
+  }),
+  month: Joi.number().integer().min(1).max(12).optional().messages({
+    'number.base': 'Bulan harus berupa angka',
+    'number.integer': 'Bulan harus berupa bilangan bulat',
+    'number.min': 'Bulan harus minimal 1',
+    'number.max': 'Bulan harus maksimal 12',
   }),
   groupBy: Joi.string().valid('item', 'customer', 'vehicle', 'warehouse').optional().messages({
     'any.only': 'Grup harus salah satu dari: item, customer, vehicle, warehouse',
@@ -66,43 +80,11 @@ export const dailyOutputReportFilterSchema = Joi.object<DailyOutputReportFilter>
     'string.uuid': 'ID produk harus berupa UUID yang valid',
   }),
   status: Joi.string()
-    .valid(...Object.values(STATUS))
+    .valid(...Object.values(STATUS), 'ALL')
     .optional()
     .messages({
-      'any.only': 'Status harus PENDING, PROSES, atau SELESAI',
+      'any.only': 'Status harus PENDING, PROSES, SELESAI, atau ALL',
     }),
-});
-
-export const monthlyOutputReportFilterSchema = Joi.object<MonthlyOutputReportFilter>({
-  year: Joi.number().integer().min(2020).max(2050).required().messages({
-    'number.base': 'Tahun harus berupa angka',
-    'number.integer': 'Tahun harus berupa bilangan bulat',
-    'number.min': 'Tahun minimal 2020',
-    'number.max': 'Tahun maksimal 2050',
-    'any.required': 'Tahun diperlukan',
-  }),
-  month: Joi.number().integer().min(1).max(12).required().messages({
-    'number.base': 'Bulan harus berupa angka',
-    'number.integer': 'Bulan harus berupa bilangan bulat',
-    'number.min': 'Bulan minimal 1',
-    'number.max': 'Bulan maksimal 12',
-    'any.required': 'Bulan diperlukan',
-  }),
-  groupBy: Joi.string().valid('item', 'customer', 'vehicle', 'warehouse').optional().messages({
-    'any.only': 'Grup harus salah satu dari: item, customer, vehicle, warehouse',
-  }),
-  warehouseId: Joi.string().uuid().optional().messages({
-    'string.uuid': 'ID gudang harus berupa UUID yang valid',
-  }),
-  customerId: Joi.string().uuid().optional().messages({
-    'string.uuid': 'ID pelanggan harus berupa UUID yang valid',
-  }),
-  armadaId: Joi.string().uuid().optional().messages({
-    'string.uuid': 'ID armada harus berupa UUID yang valid',
-  }),
-  productId: Joi.string().uuid().optional().messages({
-    'string.uuid': 'ID produk harus berupa UUID yang valid',
-  }),
 });
 
 export const shipmentAssignmentReportFilterSchema = Joi.object<ShipmentAssignmentReportFilter>({

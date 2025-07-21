@@ -14,7 +14,15 @@ export type OperationalReportFilter = ReportDateFilter & {
   warehouseId?: string;
 };
 
-export type DailyOutputReportFilter = ReportDateFilter & {
+export type DailyOutputReportFilter = {
+  period?: 'daily' | 'monthly' | 'yearly';
+  // Daily period parameters
+  startDate?: string;
+  endDate?: string;
+  // Monthly period parameters
+  year?: number;
+  month?: number;
+  // Common parameters
   groupBy?: 'item' | 'customer' | 'vehicle' | 'warehouse';
   warehouseId?: string;
   customerId?: string;
@@ -258,19 +266,4 @@ export interface ShipmentAssignmentReportResult {
   summary: ShipmentAssignmentReportSummary;
   filters: ShipmentAssignmentReportFilter;
   kpi?: ShipmentAssignmentKPI;
-}
-
-export interface DashboardSummary {
-  today: {
-    date: string;
-    operational: OperationalReportSummary;
-    output: DailyOutputReportSummary;
-  };
-  thisMonth: {
-    year: number;
-    month: number;
-    monthName: string;
-    output: DailyOutputReportSummary;
-  };
-  activeAssignments: ShipmentAssignmentReportSummary;
 }

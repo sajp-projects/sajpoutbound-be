@@ -29,25 +29,11 @@ router.get(
   reportController.getDailyOutputReportTable,
 );
 
-// Monthly Output Report routes
-router.get(
-  '/monthly-output',
-  checkPermission('report', PERMISSION_ACTION.READ),
-  reportController.getMonthlyOutputReport,
-);
-
 // Shipment Assignment Report routes
 router.get(
   '/shipment-assignment',
   checkPermission('report', PERMISSION_ACTION.READ),
   reportController.getShipmentAssignmentReport,
-);
-
-// Dashboard Summary routes
-router.get(
-  '/dashboard-summary',
-  checkPermission('report', PERMISSION_ACTION.READ),
-  reportController.getDashboardSummary,
 );
 
 export default router;
