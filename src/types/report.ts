@@ -267,3 +267,85 @@ export interface ShipmentAssignmentReportResult {
   filters: ShipmentAssignmentReportFilter;
   kpi?: ShipmentAssignmentKPI;
 }
+
+// Dashboard Summary Types
+export type DashboardSummaryFilter = ReportDateFilter;
+
+export interface RecentActivity {
+  id: string;
+  shipmentNumber: string;
+  status: STATUS;
+  createdAt: Date;
+}
+
+export interface PerformanceMetrics {
+  completionRate: number;
+  verificationRate: number;
+  totalShipmentsCreated: number;
+  totalShipmentsVerified: number;
+  totalShipmentsCompleted: number;
+  distributionAnalysis: {
+    antarTotal: number;
+    jemputTotal: number;
+    antarPercentage: number;
+    jemputPercentage: number;
+  };
+}
+
+export interface ArmadaInfo {
+  id: string;
+  model: string;
+  plateNumber: string;
+  id_sl?: string;
+}
+
+export interface DashboardSummaryResult {
+  // Main KPI metrics
+  kpi: {
+    totalDOsActive: number;
+    totalShipmentsCreatedToday: number;
+    totalShipmentsVerifiedToday: number;
+    totalArmadas: number;
+    uniqueProductsMoved: number;
+    vehicleUsageCount: number;
+    mostActiveVehicle: Array<{
+      id: string;
+      model: string;
+      plateNumber: string;
+      shipmentCount: number;
+    }>;
+    trendline7Days: Array<{ date: string; shipmentCount: number }>;
+  };
+
+  // DO Management data (same as OperationalReportSummary)
+  doSummary: OperationalReportSummary;
+
+  // Recent activities
+  recentActivities: RecentActivity[];
+
+  // Performance metrics
+  performance: PerformanceMetrics;
+
+  // Armada data
+  armada: {
+    total: number;
+    usageCount: number;
+    mostActive: {
+      id: string;
+      model: string;
+      plateNumber: string;
+      shipmentCount: number;
+    } | null;
+    list: ArmadaInfo[];
+  };
+
+  // Filters applied
+  filters: DashboardSummaryFilter;
+
+  // Metadata
+  generatedAt: string;
+  dateRange: {
+    start: string;
+    end: string;
+  };
+}

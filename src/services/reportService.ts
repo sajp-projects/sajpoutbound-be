@@ -2,12 +2,17 @@ import { STATUS } from '@prisma/client';
 import moment from 'moment';
 import prisma from '../config/prisma';
 import {
+  ArmadaInfo,
   DailyOutputGroupBase,
   DailyOutputReportFilter,
   DailyOutputReportResult,
+  DashboardSummaryFilter,
+  DashboardSummaryResult,
   OperationalReportFilter,
   OperationalReportGroupedData,
   OperationalReportResult,
+  PerformanceMetrics,
+  RecentActivity,
   ReportShipment,
   ShipmentAssignment,
   ShipmentAssignmentReportFilter,
@@ -1541,5 +1546,249 @@ export default {
         pendingAssignments,
       },
     };
+  },
+
+  /**
+   * Generate comprehensive dashboard summary data with optional date range filtering
+   */
+  async getDashboardSummary(filters: DashboardSummaryFilter = {}): Promise<DashboardSummaryResult> {
+    const { startDate, endDate } = filters;
+
+    // Determine date range - default to today if not specified
+    const startOfRange = startDate ? moment(startDate).startOf('day') : moment().startOf('day');
+    const endOfRange = endDate ? moment(endDate).endOf('day') : moment().endOf('day');
+
+    try {
+      // Get all shipments in date range with related data
+      const shipments = await prisma.shipment.findMany({
+        where: {
+          deletedAt: null,
+          createdAt: {
+            gte: startOfRange.toDate(),
+            lte: endOfRange.toDate(),
+          },
+        },
+        include: {
+          armada: {
+            select: {
+              id: true,
+              model: true,
+              plateNumber: true,
+              id_sl: true,
+            },
+          },
+          shipmentItems: {
+            include: {
+              deliveryOrder: {
+                include: {
+                  customer: {
+                    select: {
+                      id: true,
+                      name: true,
+                      address: true,
+                    },
+                  },
+                },
+              },
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  satuan: true,
+                },
+              },
+              warehouse: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      // Get basic counts
+      const [totalDOs, allArmadas] = await Promise.all([
+        // Total active delivery orders
+        prisma.deliveryOrder.count({
+          where: {
+            deletedAt: null,
+          },
+        }),
+        // All armadas
+        prisma.armada.findMany({
+          select: {
+            id: true,
+            model: true,
+            plateNumber: true,
+            id_sl: true,
+          },
+        }),
+      ]);
+
+      // Process shipment data for DO summary
+      const doSummary = {
+        ANTAR: {
+          PENDING: 0,
+          PROSES: 0,
+          SELESAI: 0,
+          total: 0,
+        },
+        JEMPUT: {
+          PENDING: 0,
+          PROSES: 0,
+          SELESAI: 0,
+          total: 0,
+        },
+        overall: {
+          PENDING: 0,
+          PROSES: 0,
+          SELESAI: 0,
+          total: 0,
+        },
+      };
+
+      // Count shipments by type and status
+      shipments.forEach((shipment) => {
+        doSummary[shipment.type][shipment.status]++;
+        doSummary[shipment.type].total++;
+        doSummary.overall[shipment.status]++;
+        doSummary.overall.total++;
+      });
+
+      // Calculate KPI metrics
+      const totalShipmentsCreatedToday = shipments.length;
+      const totalShipmentsVerifiedToday = shipments.filter(
+        (s) =>
+          s.verifiedAt && moment(s.verifiedAt).isBetween(startOfRange, endOfRange, 'day', '[]'),
+      ).length;
+
+      // Unique products moved
+      const productSet = new Set<string>();
+      shipments.forEach((s) => s.shipmentItems.forEach((i) => productSet.add(i.product.id)));
+      const uniqueProductsMoved = productSet.size;
+
+      // Vehicle usage analysis
+      const vehicleMap = new Map<
+        string,
+        { id: string; model: string; plateNumber: string; shipmentCount: number }
+      >();
+      shipments.forEach((s) => {
+        if (s.armada) {
+          const key = s.armada.id;
+          if (!vehicleMap.has(key)) {
+            vehicleMap.set(key, {
+              id: s.armada.id,
+              model: s.armada.model,
+              plateNumber: s.armada.plateNumber || '',
+              shipmentCount: 0,
+            });
+          }
+          vehicleMap.get(key)!.shipmentCount += 1;
+        }
+      });
+
+      const mostActiveVehicle = Array.from(vehicleMap.values())
+        .sort((a, b) => b.shipmentCount - a.shipmentCount)
+        .slice(0, 3);
+
+      const vehicleUsageCount = vehicleMap.size;
+
+      // 7-day trendline (for the past 7 days from end date)
+      const trendline7Days: Array<{ date: string; shipmentCount: number }> = [];
+      for (let i = 6; i >= 0; i--) {
+        const day = moment(endOfRange).subtract(i, 'days').startOf('day');
+        const count = shipments.filter((s) => moment(s.createdAt).isSame(day, 'day')).length;
+        trendline7Days.push({
+          date: day.format('YYYY-MM-DD'),
+          shipmentCount: count,
+        });
+      }
+
+      // Recent activities (last 10 shipments)
+      const recentActivities: RecentActivity[] = shipments.slice(0, 10).map((s) => ({
+        id: s.id,
+        shipmentNumber: s.shipmentNumber || '',
+        status: s.status,
+        createdAt: s.createdAt,
+      }));
+
+      // Performance metrics
+      const totalShipmentsCompleted = shipments.filter((s) => s.status === STATUS.SELESAI).length;
+      const completionRate =
+        totalShipmentsCreatedToday > 0
+          ? (totalShipmentsCompleted / totalShipmentsCreatedToday) * 100
+          : 0;
+      const verificationRate =
+        totalShipmentsCreatedToday > 0
+          ? (totalShipmentsVerifiedToday / totalShipmentsCreatedToday) * 100
+          : 0;
+
+      const performanceMetrics: PerformanceMetrics = {
+        completionRate: Math.round(completionRate * 100) / 100,
+        verificationRate: Math.round(verificationRate * 100) / 100,
+        totalShipmentsCreated: totalShipmentsCreatedToday,
+        totalShipmentsVerified: totalShipmentsVerifiedToday,
+        totalShipmentsCompleted,
+        distributionAnalysis: {
+          antarTotal: doSummary.ANTAR.total,
+          jemputTotal: doSummary.JEMPUT.total,
+          antarPercentage:
+            doSummary.overall.total > 0
+              ? Math.round((doSummary.ANTAR.total / doSummary.overall.total) * 100 * 100) / 100
+              : 0,
+          jemputPercentage:
+            doSummary.overall.total > 0
+              ? Math.round((doSummary.JEMPUT.total / doSummary.overall.total) * 100 * 100) / 100
+              : 0,
+        },
+      };
+
+      // Armada data
+      const armadaList: ArmadaInfo[] = allArmadas.map((a) => ({
+        id: a.id,
+        model: a.model,
+        plateNumber: a.plateNumber || '',
+        id_sl: a.id_sl || '',
+      }));
+
+      return {
+        kpi: {
+          totalDOsActive: totalDOs,
+          totalShipmentsCreatedToday,
+          totalShipmentsVerifiedToday,
+          totalArmadas: allArmadas.length,
+          uniqueProductsMoved,
+          vehicleUsageCount,
+          mostActiveVehicle,
+          trendline7Days,
+        },
+        doSummary,
+        recentActivities,
+        performance: performanceMetrics,
+        armada: {
+          total: allArmadas.length,
+          usageCount: vehicleUsageCount,
+          mostActive: mostActiveVehicle[0] || null,
+          list: armadaList,
+        },
+        filters: {
+          startDate,
+          endDate,
+        },
+        generatedAt: moment().toISOString(),
+        dateRange: {
+          start: startOfRange.format('YYYY-MM-DD'),
+          end: endOfRange.format('YYYY-MM-DD'),
+        },
+      };
+    } catch (error) {
+      console.error('Error generating dashboard summary:', error);
+      throw error;
+    }
   },
 };

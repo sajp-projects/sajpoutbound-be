@@ -19,6 +19,45 @@ import { success } from '../types/response';
 
 export default {
   /**
+   * Get dashboard summary data with optional date range filtering
+   */
+  async getDashboardSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { startDate, endDate } = req.query;
+
+      // Validate date parameters if provided
+      if (startDate && typeof startDate !== 'string') {
+        throw new CustomError({
+          message: 'startDate harus berupa string dengan format YYYY-MM-DD',
+          errorCode: 'PARAMETER_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      if (endDate && typeof endDate !== 'string') {
+        throw new CustomError({
+          message: 'endDate harus berupa string dengan format YYYY-MM-DD',
+          errorCode: 'PARAMETER_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      const summary = await reportService.getDashboardSummary({
+        startDate: startDate as string,
+        endDate: endDate as string,
+      });
+
+      res.status(200).json(
+        success({
+          summary,
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
    * Get operational report (Laporan Operasional)
    */
   async getOperationalReport(
