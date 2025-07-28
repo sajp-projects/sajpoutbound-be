@@ -107,3 +107,237 @@ export const shipmentAssignmentReportFilterSchema = Joi.object<ShipmentAssignmen
       'any.only': 'Status harus PENDING, PROSES, atau SELESAI',
     }),
 });
+
+// Unified schemas for controller functions
+export const dashboardSummaryQuerySchema = Joi.object({
+  startDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal mulai harus dalam format ISO yang valid',
+  }),
+  endDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal akhir harus dalam format ISO yang valid',
+  }),
+});
+
+export const operationalReportQuerySchema = Joi.object({
+  // Pagination
+  page: Joi.number().integer().min(1).optional().default(1).messages({
+    'number.base': 'Halaman harus berupa angka',
+    'number.integer': 'Halaman harus berupa bilangan bulat',
+    'number.min': 'Halaman harus minimal 1',
+  }),
+  limit: Joi.number().integer().min(1).max(100).optional().default(10).messages({
+    'number.base': 'Batas harus berupa angka',
+    'number.integer': 'Batas harus berupa bilangan bulat',
+    'number.min': 'Batas harus minimal 1',
+    'number.max': 'Batas harus maksimal 100',
+  }),
+  // Filters
+  startDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal mulai harus dalam format ISO yang valid',
+  }),
+  endDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal akhir harus dalam format ISO yang valid',
+  }),
+  type: Joi.string()
+    .valid(...Object.values(SHIPMENT_TYPE))
+    .optional()
+    .messages({
+      'any.only': 'Tipe pengiriman harus ANTAR atau JEMPUT',
+    }),
+  status: Joi.string()
+    .valid(...Object.values(STATUS), 'ALL')
+    .optional()
+    .messages({
+      'any.only': 'Status harus PENDING, PROSES, SELESAI, atau ALL',
+    }),
+  warehouseId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID gudang harus berupa UUID yang valid',
+  }),
+});
+
+export const operationalReportTableQuerySchema = Joi.object({
+  // Pagination
+  page: Joi.number().integer().min(1).optional().default(1).messages({
+    'number.base': 'Halaman harus berupa angka',
+    'number.integer': 'Halaman harus berupa bilangan bulat',
+    'number.min': 'Halaman harus minimal 1',
+  }),
+  limit: Joi.number().integer().min(1).max(100).optional().default(5).messages({
+    'number.base': 'Batas harus berupa angka',
+    'number.integer': 'Batas harus berupa bilangan bulat',
+    'number.min': 'Batas harus minimal 1',
+    'number.max': 'Batas harus maksimal 100',
+  }),
+  // Filters
+  startDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal mulai harus dalam format ISO yang valid',
+  }),
+  endDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal akhir harus dalam format ISO yang valid',
+  }),
+  type: Joi.string()
+    .valid(...Object.values(SHIPMENT_TYPE))
+    .optional()
+    .messages({
+      'any.only': 'Tipe pengiriman harus ANTAR atau JEMPUT',
+    }),
+  status: Joi.string()
+    .valid(...Object.values(STATUS))
+    .optional()
+    .messages({
+      'any.only': 'Status harus PENDING, PROSES, atau SELESAI',
+    }),
+  warehouseId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID gudang harus berupa UUID yang valid',
+  }),
+});
+
+export const dailyOutputReportQuerySchema = Joi.object({
+  // Pagination
+  page: Joi.number().integer().min(1).optional().default(1).messages({
+    'number.base': 'Halaman harus berupa angka',
+    'number.integer': 'Halaman harus berupa bilangan bulat',
+    'number.min': 'Halaman harus minimal 1',
+  }),
+  limit: Joi.number().integer().min(1).max(100).optional().default(10).messages({
+    'number.base': 'Batas harus berupa angka',
+    'number.integer': 'Batas harus berupa bilangan bulat',
+    'number.min': 'Batas harus minimal 1',
+    'number.max': 'Batas harus maksimal 100',
+  }),
+  // Filters
+  period: Joi.string().valid('daily', 'monthly', 'yearly').optional().messages({
+    'any.only': 'Periode harus salah satu dari: daily, monthly, yearly',
+  }),
+  startDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal mulai harus dalam format ISO yang valid',
+  }),
+  endDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal akhir harus dalam format ISO yang valid',
+  }),
+  year: Joi.number().integer().min(2000).max(2100).optional().messages({
+    'number.base': 'Tahun harus berupa angka',
+    'number.integer': 'Tahun harus berupa bilangan bulat',
+    'number.min': 'Tahun harus minimal 2000',
+    'number.max': 'Tahun harus maksimal 2100',
+  }),
+  month: Joi.number().integer().min(1).max(12).optional().messages({
+    'number.base': 'Bulan harus berupa angka',
+    'number.integer': 'Bulan harus berupa bilangan bulat',
+    'number.min': 'Bulan harus minimal 1',
+    'number.max': 'Bulan harus maksimal 12',
+  }),
+  groupBy: Joi.string().valid('item', 'customer', 'vehicle', 'warehouse').optional().messages({
+    'any.only': 'Grup harus salah satu dari: item, customer, vehicle, warehouse',
+  }),
+  warehouseId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID gudang harus berupa UUID yang valid',
+  }),
+  customerId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID pelanggan harus berupa UUID yang valid',
+  }),
+  armadaId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID armada harus berupa UUID yang valid',
+  }),
+  productId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID produk harus berupa UUID yang valid',
+  }),
+  status: Joi.string()
+    .valid(...Object.values(STATUS), 'ALL')
+    .optional()
+    .messages({
+      'any.only': 'Status harus PENDING, PROSES, SELESAI, atau ALL',
+    }),
+});
+
+export const dailyOutputReportTableQuerySchema = Joi.object({
+  // Pagination
+  page: Joi.number().integer().min(1).optional().default(1).messages({
+    'number.base': 'Halaman harus berupa angka',
+    'number.integer': 'Halaman harus berupa bilangan bulat',
+    'number.min': 'Halaman harus minimal 1',
+  }),
+  limit: Joi.number().integer().min(1).max(100).optional().default(5).messages({
+    'number.base': 'Batas harus berupa angka',
+    'number.integer': 'Batas harus berupa bilangan bulat',
+    'number.min': 'Batas harus minimal 1',
+    'number.max': 'Batas harus maksimal 100',
+  }),
+  // Filters
+  period: Joi.string().valid('daily', 'monthly', 'yearly').optional().messages({
+    'any.only': 'Periode harus salah satu dari: daily, monthly, yearly',
+  }),
+  startDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal mulai harus dalam format ISO yang valid',
+  }),
+  endDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal akhir harus dalam format ISO yang valid',
+  }),
+  year: Joi.number().integer().min(2000).max(2100).optional().messages({
+    'number.base': 'Tahun harus berupa angka',
+    'number.integer': 'Tahun harus berupa bilangan bulat',
+    'number.min': 'Tahun harus minimal 2000',
+    'number.max': 'Tahun harus maksimal 2100',
+  }),
+  month: Joi.number().integer().min(1).max(12).optional().messages({
+    'number.base': 'Bulan harus berupa angka',
+    'number.integer': 'Bulan harus berupa bilangan bulat',
+    'number.min': 'Bulan harus minimal 1',
+    'number.max': 'Bulan harus maksimal 12',
+  }),
+  groupBy: Joi.string().valid('item', 'customer', 'vehicle', 'warehouse').optional().messages({
+    'any.only': 'Grup harus salah satu dari: item, customer, vehicle, warehouse',
+  }),
+  warehouseId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID gudang harus berupa UUID yang valid',
+  }),
+  customerId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID pelanggan harus berupa UUID yang valid',
+  }),
+  armadaId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID armada harus berupa UUID yang valid',
+  }),
+  productId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID produk harus berupa UUID yang valid',
+  }),
+  status: Joi.string()
+    .valid(...Object.values(STATUS), 'ALL')
+    .optional()
+    .messages({
+      'any.only': 'Status harus PENDING, PROSES, SELESAI, atau ALL',
+    }),
+});
+
+export const shipmentAssignmentReportQuerySchema = Joi.object({
+  // Pagination
+  page: Joi.number().integer().min(1).optional().default(1).messages({
+    'number.base': 'Halaman harus berupa angka',
+    'number.integer': 'Halaman harus berupa bilangan bulat',
+    'number.min': 'Halaman harus minimal 1',
+  }),
+  limit: Joi.number().integer().min(1).max(100).optional().default(10).messages({
+    'number.base': 'Batas harus berupa angka',
+    'number.integer': 'Batas harus berupa bilangan bulat',
+    'number.min': 'Batas harus minimal 1',
+    'number.max': 'Batas harus maksimal 100',
+  }),
+  // Filters
+  startDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal mulai harus dalam format ISO yang valid',
+  }),
+  endDate: Joi.string().isoDate().optional().messages({
+    'string.isoDate': 'Tanggal akhir harus dalam format ISO yang valid',
+  }),
+  armadaId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID armada harus berupa UUID yang valid',
+  }),
+  warehouseId: Joi.string().uuid().optional().messages({
+    'string.uuid': 'ID gudang harus berupa UUID yang valid',
+  }),
+  status: Joi.string()
+    .valid(...Object.values(STATUS))
+    .optional()
+    .messages({
+      'any.only': 'Status harus PENDING, PROSES, atau SELESAI',
+    }),
+});

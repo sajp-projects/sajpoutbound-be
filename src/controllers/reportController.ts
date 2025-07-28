@@ -1,17 +1,18 @@
-import { STATUS } from '@prisma/client';
 import {
   NextFunction, Request, Response, 
 } from 'express';
 import { CustomError } from '../middlewares/error';
 import {
-  dailyOutputReportFilterSchema,
-  operationalReportFilterSchema,
-  shipmentAssignmentReportFilterSchema,
+  dailyOutputReportQuerySchema,
+  dailyOutputReportTableQuerySchema,
+  dashboardSummaryQuerySchema,
+  operationalReportQuerySchema,
+  operationalReportTableQuerySchema,
+  shipmentAssignmentReportQuerySchema,
 } from '../schemas/report';
 import reportService from '../services/reportService';
 import {
   DailyOutputReportQuery,
-  OperationalReportFilter,
   OperationalReportQuery,
   ShipmentAssignmentReportQuery,
 } from '../types/report';
@@ -23,28 +24,11 @@ export default {
    */
   async getDashboardSummary(req: Request, res: Response, next: NextFunction) {
     try {
-      const { startDate, endDate } = req.query;
-
-      // Validate date parameters if provided
-      if (startDate && typeof startDate !== 'string') {
-        throw new CustomError({
-          message: 'startDate harus berupa string dengan format YYYY-MM-DD',
-          errorCode: 'PARAMETER_TIDAK_VALID',
-          status: 400,
-        });
-      }
-
-      if (endDate && typeof endDate !== 'string') {
-        throw new CustomError({
-          message: 'endDate harus berupa string dengan format YYYY-MM-DD',
-          errorCode: 'PARAMETER_TIDAK_VALID',
-          status: 400,
-        });
-      }
+      const validatedQuery = await dashboardSummaryQuerySchema.validateAsync(req.query);
 
       const summary = await reportService.getDashboardSummary({
-        startDate: startDate as string,
-        endDate: endDate as string,
+        startDate: validatedQuery.startDate,
+        endDate: validatedQuery.endDate,
       });
 
       res.status(200).json(
@@ -66,41 +50,19 @@ export default {
     next: NextFunction,
   ) {
     try {
-      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const validatedQuery = await operationalReportQuerySchema.validateAsync(req.query);
 
-      if (isNaN(page) || page < 1) {
-        throw new CustomError({
-          message: 'Halaman harus berupa bilangan bulat positif',
-          errorCode: 'PAGINASI_TIDAK_VALID',
-          status: 400,
-        });
-      }
-
-      if (isNaN(limit) || limit < 1 || limit > 100) {
-        throw new CustomError({
-          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
-          errorCode: 'PAGINASI_TIDAK_VALID',
-          status: 400,
-        });
-      }
       const {
-        page: _p, limit: _l, status: rawStatus, ...rawFilters 
-      } = req.query;
-      let status = rawStatus as string | undefined;
-      if (status === 'ALL') status = undefined;
-      if (status && !['PENDING', 'PROSES', 'SELESAI'].includes(status)) {
-        throw new CustomError({
-          message: 'Status pengiriman tidak valid',
-          errorCode: 'STATUS_TIDAK_VALID',
-          status: 400,
-        });
+        page, limit, ...filters 
+      } = validatedQuery;
+
+      // Handle 'ALL' status
+      if (filters.status === 'ALL') {
+        delete filters.status;
       }
-      const filters = await operationalReportFilterSchema.validateAsync({
-        ...rawFilters,
-        status,
-      } as unknown);
+
       const report = await reportService.getOperationalReport(filters, page, limit);
+
       res.status(200).json(
         success({
           report,
@@ -116,22 +78,13 @@ export default {
    */
   async getOperationalReportTable(req: Request, res: Response, next: NextFunction) {
     try {
+      const validatedQuery = await operationalReportTableQuerySchema.validateAsync(req.query);
+
       const {
-        startDate, endDate, type, status, page = 1, limit = 5, 
-      } = req.query;
+        page, limit, ...filters 
+      } = validatedQuery;
 
-      const filters: OperationalReportFilter = {
-        startDate: startDate as string,
-        endDate: endDate as string,
-        type: type as 'ANTAR' | 'JEMPUT',
-        status: status as STATUS,
-      };
-
-      const result = await reportService.getOperationalReportTable(
-        filters,
-        Number(page),
-        Number(limit),
-      );
+      const result = await reportService.getOperationalReportTable(filters, page, limit);
 
       res.status(200).json(
         success({
@@ -153,43 +106,11 @@ export default {
     next: NextFunction,
   ) {
     try {
-      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
-
-      if (isNaN(page) || page < 1) {
-        throw new CustomError({
-          message: 'Halaman harus berupa bilangan bulat positif',
-          errorCode: 'PAGINASI_TIDAK_VALID',
-          status: 400,
-        });
-      }
-
-      if (isNaN(limit) || limit < 1 || limit > 100) {
-        throw new CustomError({
-          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
-          errorCode: 'PAGINASI_TIDAK_VALID',
-          status: 400,
-        });
-      }
+      const validatedQuery = await dailyOutputReportQuerySchema.validateAsync(req.query);
 
       const {
-        page: _p, limit: _l, ...rawFilters 
-      } = req.query;
-
-      // Parse numeric parameters and validate with schema
-      const filters = await dailyOutputReportFilterSchema.validateAsync({
-        ...rawFilters,
-        year: rawFilters.year
-          ? typeof rawFilters.year === 'string'
-            ? parseInt(rawFilters.year, 10)
-            : rawFilters.year
-          : undefined,
-        month: rawFilters.month
-          ? typeof rawFilters.month === 'string'
-            ? parseInt(rawFilters.month, 10)
-            : rawFilters.month
-          : undefined,
-      } as unknown);
+        page, limit, ...filters 
+      } = validatedQuery;
 
       // Validate period-specific parameters
       if (filters.period === 'monthly') {
@@ -226,34 +147,13 @@ export default {
    */
   async getDailyOutputReportTable(req: Request, res: Response, next: NextFunction) {
     try {
+      const validatedQuery = await dailyOutputReportTableQuerySchema.validateAsync(req.query);
+
       const {
-        period,
-        startDate,
-        endDate,
-        year,
-        month,
-        groupBy,
-        status,
-        page = 1,
-        limit = 5,
-      } = req.query;
+        page, limit, ...filters 
+      } = validatedQuery;
 
-      // Parse numeric parameters and validate with schema
-      const filters = await dailyOutputReportFilterSchema.validateAsync({
-        period,
-        startDate,
-        endDate,
-        year: year ? (typeof year === 'string' ? parseInt(year, 10) : year) : undefined,
-        month: month ? (typeof month === 'string' ? parseInt(month, 10) : month) : undefined,
-        groupBy,
-        status,
-      } as unknown);
-
-      const result = await reportService.getDailyOutputReportTable(
-        filters,
-        Number(page),
-        Number(limit),
-      );
+      const result = await reportService.getDailyOutputReportTable(filters, page, limit);
 
       res.status(200).json(
         success({
@@ -275,30 +175,12 @@ export default {
     next: NextFunction,
   ) {
     try {
-      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
-      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      const validatedQuery = await shipmentAssignmentReportQuerySchema.validateAsync(req.query);
 
-      if (isNaN(page) || page < 1) {
-        throw new CustomError({
-          message: 'Halaman harus berupa bilangan bulat positif',
-          errorCode: 'PAGINASI_TIDAK_VALID',
-          status: 400,
-        });
-      }
-
-      if (isNaN(limit) || limit < 1 || limit > 100) {
-        throw new CustomError({
-          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
-          errorCode: 'PAGINASI_TIDAK_VALID',
-          status: 400,
-        });
-      }
       const {
-        page: _p, limit: _l, ...rawFilters 
-      } = req.query;
-      const filters = await shipmentAssignmentReportFilterSchema.validateAsync(
-        rawFilters as unknown,
-      );
+        page, limit, ...filters 
+      } = validatedQuery;
+
       const report = await reportService.getShipmentAssignmentReport(filters, page, limit);
 
       console.log(report, 'report');
