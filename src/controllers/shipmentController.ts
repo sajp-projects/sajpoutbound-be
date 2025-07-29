@@ -1084,7 +1084,7 @@ export default {
    * 4. Updating all items to COMPLETED status
    */
   async bulkWeighShipmentItems(
-    req: Request<Record<string, never>, unknown, ShipmentBulkWeighInput>,
+    req: Request<unknown, unknown, ShipmentBulkWeighInput>,
     res: Response,
     next: NextFunction,
   ) {
@@ -1108,6 +1108,116 @@ export default {
       } else {
         const user = await userService.getUserByEmail('admin@example.com');
         performedById = user?.id;
+      }
+
+      // Check if shipment exists
+      const shipment = await shipmentService.getShipmentById(validated.shipmentId);
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      // Check if product exists
+      const product = await productService.getProductById(validated.productId);
+      if (!product) {
+        throw new CustomError({
+          message: 'Produk tidak ditemukan',
+          errorCode: 'PRODUK_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      // Check if there are any items with this product that are in CHOSEN status
+      const chosenItems = shipment.shipmentItems.filter(
+        (item) => item.productId === validated.productId && item.status === 'CHOSEN',
+      );
+
+      if (chosenItems.length === 0) {
+        throw new CustomError({
+          message: 'Tidak ada item dipilih untuk produk ini dalam pengiriman',
+          errorCode: 'TIDAK_ADA_ITEM_DIPILIH_UNTUK_PRODUK',
+          status: 404,
+        });
+      }
+
+      const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+      let code;
+      let attempts = 0;
+      const maxAttempts = 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        code = nanoid();
+        const existing = await shipmentService.getShipmentChosenProductByCode(code);
+        if (!existing) {
+          break;
+        }
+        attempts++;
+
+        if (attempts >= maxAttempts) {
+          throw new CustomError({
+            message: 'Terjadi kesalahan saat membuat nomor DO, harap coba lagi.',
+            errorCode: 'DUPLIKASI_NOMOR_DO',
+            status: 500,
+          });
+        }
+      }
+
+      // Now proceed with bulk weighing the items
+      const result = await shipmentService.bulkWeighShipmentItems(validated, performedById, code);
+
+      // If the service returns null, it means no items were found
+      if (!result) {
+        throw new CustomError({
+          message: 'Tidak ada item dipilih untuk produk ini dalam pengiriman',
+          errorCode: 'TIDAK_ADA_ITEM_DIPILIH_UNTUK_PRODUK',
+          status: 404,
+        });
+      }
+
+      // Format the response to highlight the combined data
+      res.status(200).json(
+        success({
+          product: result.product,
+          shipment: result.shipment,
+          weights: result.weights,
+          status: result.status,
+          locationType: result.locationType,
+          weighedAt: result.weighedAt,
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Bulk weigh multiple shipment items with the same product (Protected version with permissions)
+   *
+   * This endpoint handles weighing all items with the same product at once, by:
+   * 1. Finding all chosen items for this product in the shipment
+   * 2. Distributing the weight proportionally based on each item's requested quantity
+   * 3. Recording the weights for each item and its chosen product
+   * 4. Updating all items to COMPLETED status
+   */
+  async manualWeighItems(
+    req: Request<unknown, unknown, ShipmentBulkWeighInput>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const validated = await shipmentBulkWeighSchema.validateAsync(req.body);
+
+      const performedById = (req as any).user?.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'User tidak ditemukan dalam permintaan',
+          errorCode: 'USER_TIDAK_DITEMUKAN',
+          status: 401,
+        });
       }
 
       // Check if shipment exists

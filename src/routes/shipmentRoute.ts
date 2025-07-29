@@ -91,9 +91,16 @@ router.patch(
 // Verify Plate Number and Photo
 router.patch(
   '/:id/verify-plate',
-  checkPermission('shipment', PERMISSION_ACTION.UPDATE),
+  checkPermission('shipment', PERMISSION_ACTION.VERIFY_PLATE),
   checkShipmentNotArchived,
   shipmentController.verifyPlateNumberAndPhoto,
+);
+
+router.post(
+  '/:shipmentId/manual-weigh-items',
+  checkPermission('shipment', PERMISSION_ACTION.WEIGH),
+  checkShipmentNotArchived,
+  shipmentController.manualWeighItems,
 );
 
 export default router;

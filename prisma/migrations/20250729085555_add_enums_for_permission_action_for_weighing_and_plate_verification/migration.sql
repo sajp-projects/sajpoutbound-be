@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Permission` MODIFY `action` ENUM('CREATE', 'READ', 'UPDATE', 'DELETE', 'WEIGH', 'VERIFY_PLATE') NOT NULL;

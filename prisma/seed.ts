@@ -1,10 +1,10 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import { config } from 'dotenv';
+config();
 
 import {
   Permission, PERMISSION_ACTION, PrismaClient, 
 } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -520,12 +520,16 @@ async function main() {
 
     console.log(`Assigned ${adminPermissionAssignments.length} permissions to Admin role`);
 
-    // Assign limited permissions to Manager role
-    // Managers can CREATE, READ, UPDATE all resources, but cannot DELETE any resource
-    const managerPermissions = permissions.filter(
-      (permission) => permission.action !== PERMISSION_ACTION.DELETE,
-    );
+    const restrictedActions: Set<PERMISSION_ACTION> = new Set([
+      PERMISSION_ACTION.DELETE,
+      PERMISSION_ACTION.WEIGH,
+      PERMISSION_ACTION.VERIFY_PLATE,
+    ]);
 
+    //
+    const managerPermissions = permissions.filter(
+      (permission) => !restrictedActions.has(permission.action),
+    );
     const managerPermissionAssignments = await Promise.all(
       managerPermissions.map((permission) =>
         prisma.rolePermission.create({
