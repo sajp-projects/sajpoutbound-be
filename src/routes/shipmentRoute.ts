@@ -27,6 +27,20 @@ router.get(
   shipmentController.getArchivedShipments,
 );
 
+// Change customer after weighing
+router.patch(
+  '/:id/change-customer',
+  checkPermission('shipment', PERMISSION_ACTION.CHANGE_CUSTOMER),
+  shipmentController.changeCustomerAfterWeighing,
+);
+
+// Revise DO after weighing
+router.patch(
+  '/:id/revise-items',
+  checkPermission('shipment', PERMISSION_ACTION.REVISE_DO),
+  shipmentController.reviseDeliveryOrderAfterWeighing,
+);
+
 // Chosen products routes
 router.get(
   '/:shipmentId/choosen-product',

@@ -194,6 +194,66 @@ export default {
   },
 
   /**
+   * Log customer change after weighing from shipment perspective
+   */
+  async logCustomerChangeAfterWeighing(
+    shipmentId: string,
+    performedById: string,
+    oldCustomerName: string,
+    newCustomerName: string,
+    tx?: any,
+  ) {
+    const db = tx || prisma;
+
+    return db.shipmentLog.create({
+      data: {
+        shipmentId,
+        performedById,
+        action: ACTION.UPDATE,
+        entityType: ENTITY_TYPE.SHIPMENT,
+        oldData: {
+          customerName: oldCustomerName,
+        },
+        newData: {
+          customerName: newCustomerName,
+        },
+        description: `Customer pengiriman diubah dari ${oldCustomerName} ke ${newCustomerName}`,
+      },
+    });
+  },
+
+  /**
+   * Log DO revision after weighing from shipment perspective
+   */
+  async logDORevisionAfterWeighing(
+    shipmentId: string,
+    performedById: string,
+    doId: string,
+    affectedItems: any[],
+    tx?: any,
+  ) {
+    const db = tx || prisma;
+
+    return db.shipmentLog.create({
+      data: {
+        shipmentId,
+        performedById,
+        action: ACTION.UPDATE,
+        entityType: ENTITY_TYPE.SHIPMENT,
+        oldData: {
+          doId,
+          revisedItems: affectedItems.map(item => `${item.productName}: ${item.oldProcessedQuantity} processed, ${item.oldPendingQuantity} pending, ${item.oldWeighing}kg`),
+        },
+        newData: {
+          doId,
+          revisedItems: affectedItems.map(item => `${item.productName}: ${item.newProcessedQuantity} processed, ${item.newPendingQuantity} pending, ${item.newWeighing}kg`),
+        },
+        description: `DO direvisi - Item yang terdampak: ${affectedItems.map(item => item.productName).join(', ')}`,
+      },
+    });
+  },
+
+  /**
    * Get all shipment logs across all shipments
    */
   async getAllShipmentLogs(page: number = 1, limit: number = 10, search?: string) {

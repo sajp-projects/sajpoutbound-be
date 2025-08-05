@@ -228,17 +228,21 @@ export default {
     const jakartaTime = new Date();
     jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-    // Create a detailed description of changes
+    // Create a detailed description of changes with product names
     const changedItems = newItems.map((newItem) => {
       const oldItem = oldItems.find((old) => old.id === newItem.id);
+      const oldQuantity = oldItem?.quantity || 0;
+      const newQuantity = newItem.quantity;
+      
       return {
         productId: newItem.productId,
-        oldQuantity: oldItem?.quantity || 0,
-        newQuantity: newItem.quantity,
+        productName: newItem.productName,
+        oldQuantity,
+        newQuantity,
       };
     }).filter((item) => item.oldQuantity !== item.newQuantity);
 
-    const description = `Pesanan pengiriman direvisi setelah penimbangan. ${changedItems.length} produk mengalami perubahan kuantitas`;
+    const description = `DO direvisi - Item yang diubah: ${changedItems.map(item => `${item.productName} (${item.oldQuantity} → ${item.newQuantity})`).join(', ')}`;
 
     return client.deliveryOrderLog.create({
       data: {
@@ -247,13 +251,10 @@ export default {
         action: ACTION.UPDATE,
         entityType: ENTITY_TYPE.DELIVERY_ORDER,
         oldData: {
-          items: oldItems,
-          revision: 'before_weighing',
+          revisedItems: changedItems.map(item => `${item.productName}: ${item.oldQuantity}`),
         },
         newData: {
-          items: newItems,
-          revision: 'after_weighing',
-          changedItems,
+          revisedItems: changedItems.map(item => `${item.productName}: ${item.newQuantity}`),
         },
         description,
         createdAt: jakartaTime,

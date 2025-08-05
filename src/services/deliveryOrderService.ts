@@ -8,6 +8,7 @@ import prisma from '../config/prisma';
 import { DeliveryOrderCreateInput, DeliveryOrderUpdateInput } from '../schemas/deliveryOrder';
 import deliveryOrderLogService from './deliveryOrderLogService';
 import notaTimbanganPdfService from './notaTimbanganPdfService';
+import shipmentLogService from './shipmentLogService';
 import spmbPdfService from './spmbPdfService';
 
 /**
@@ -1006,7 +1007,10 @@ export default {
                 console.log(`Deleted old nota timbangan file during customer change: ${filePath}`);
               }
             } catch (error) {
-              console.error(`Failed to delete nota timbangan file during customer change ${filePath}:`, error);
+              console.error(
+                `Failed to delete nota timbangan file during customer change ${filePath}:`,
+                error,
+              );
               // Continue with regeneration even if file deletion fails
             }
           }
@@ -1043,6 +1047,38 @@ export default {
         updatedDeliveryOrder.customer.name,
         tx,
       );
+
+      // Also log to related shipments
+      const relatedShipments = await tx.shipment.findMany({
+        where: {
+          shipmentItems: {
+            some: {
+              deliveryOrderId,
+            },
+          },
+        },
+        include: {
+          shipmentItems: {
+            where: {
+              deliveryOrderId,
+            },
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      // Log to each related shipment
+      for (const shipment of relatedShipments) {
+        await shipmentLogService.logCustomerChangeAfterWeighing(
+          shipment.id,
+          performedById,
+          oldCustomer?.name || 'Unknown',
+          updatedDeliveryOrder.customer.name,
+          tx,
+        );
+      }
 
       return updatedDeliveryOrder;
     });
@@ -1122,6 +1158,7 @@ export default {
         id: item.id,
         quantity: item.quantity,
         productId: item.productId,
+        productName: item.product.name,
       }));
 
       // Track weighings that need to be updated for nota timbangan regeneration
@@ -1152,7 +1189,8 @@ export default {
             const totalWeight = chosenProduct.weighings[0].grossWeight || 0;
             // Use shipment requested quantity, not DO quantity for weight per unit calculation
             const originalShipmentQuantity = relatedShipmentItem.requestedQuantity;
-            weightPerUnit = originalShipmentQuantity > 0 ? totalWeight / originalShipmentQuantity : 0;
+            weightPerUnit =
+              originalShipmentQuantity > 0 ? totalWeight / originalShipmentQuantity : 0;
           }
         }
 
@@ -1468,14 +1506,120 @@ export default {
         },
       });
 
+      // Prepare revised items with product names for logging
+      const revisedItemsWithNames = revisedItems.map((revisedItem) => {
+        const oldItem = oldData.find((old) => old.id === revisedItem.id);
+        return {
+          ...revisedItem,
+          productId: oldItem?.productId,
+          productName: oldItem?.productName,
+        };
+      });
+
       // Log the revision with enhanced logging
       await deliveryOrderLogService.logDORevisionAfterWeighing(
         deliveryOrderId,
         performedById,
         oldData,
-        revisedItems,
+        revisedItemsWithNames,
         tx,
       );
+
+      // Also log to related shipments - fetch UPDATED shipment data after calculations
+      const relatedShipmentsForLog = await tx.shipment.findMany({
+        where: {
+          shipmentItems: {
+            some: {
+              deliveryOrderId,
+            },
+          },
+        },
+        include: {
+          shipmentItems: {
+            where: {
+              deliveryOrderId,
+            },
+            include: {
+              product: true,
+            },
+          },
+          chosenProducts: {
+            include: {
+              weighings: true,
+              product: true,
+            },
+          },
+        },
+      });
+
+      // Log to each related shipment
+      for (const shipment of relatedShipmentsForLog) {
+        // Only include items that were actually revised and are used in this shipment
+        const affectedItems = shipment.shipmentItems
+          .filter((item) => {
+            // Check if this item was revised by comparing with revisedItems
+            const wasRevised = revisedItems.some((revisedItem) => {
+              const doItem = deliveryOrder.items.find((doItem) => doItem.id === revisedItem.id);
+              return doItem && doItem.productId === item.productId;
+            });
+            return wasRevised;
+          })
+          .map((item) => {
+            // Find the original quantities from the old delivery order data
+            const oldItem = deliveryOrder.items.find(
+              (doItem) => doItem.productId === item.productId,
+            );
+            const newItem = updatedDeliveryOrder?.items.find(
+              (doItem) => doItem.productId === item.productId,
+            );
+            const chosenProduct = shipment.chosenProducts.find(
+              (cp) => cp.productId === item.productId,
+            );
+
+            const oldDoQuantity = oldItem?.quantity || 0;
+            const newDoQuantity = newItem?.quantity || 0;
+            const ratio = oldDoQuantity > 0 ? newDoQuantity / oldDoQuantity : 1;
+
+            // Find the original shipment item data from the shipmentItems we fetched earlier
+            const originalShipmentItem = shipmentItems.find((si) => si.id === item.id);
+            const oldRequestedQuantity =
+              originalShipmentItem?.requestedQuantity || item.requestedQuantity;
+
+            // Calculate the new quantities (this mirrors the calculation logic above)
+            const newRequestedQuantity = Math.round(oldRequestedQuantity * ratio);
+
+            // Get weighing data - calculate the new weight based on the ratio and weight per unit
+            const oldWeighing = chosenProduct?.weighings?.[0]?.grossWeight || 0;
+
+            // Calculate the new weight based on the new requested quantity and weight per unit
+            let newWeighing = oldWeighing;
+            if (oldRequestedQuantity > 0) {
+              const weightPerUnitFromOld = oldWeighing / oldRequestedQuantity;
+              newWeighing = newRequestedQuantity * weightPerUnitFromOld;
+            }
+
+            return {
+              productName: item.product.name,
+              oldProcessedQuantity: oldRequestedQuantity,
+              oldPendingQuantity: oldDoQuantity - oldRequestedQuantity,
+              oldWeighing: oldWeighing,
+              newProcessedQuantity: newRequestedQuantity,
+              newPendingQuantity: newDoQuantity - newRequestedQuantity,
+              newWeighing: newWeighing,
+            };
+          });
+
+        // Only log if there are actually affected items
+        if (affectedItems.length > 0) {
+          await shipmentLogService.logDORevisionAfterWeighing(
+            shipment.id,
+            performedById,
+            deliveryOrderId,
+            affectedItems,
+            tx,
+          );
+        }
+      }
 
       return updatedDeliveryOrder;
     });

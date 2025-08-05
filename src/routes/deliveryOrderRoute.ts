@@ -72,18 +72,4 @@ router.patch(
   deliveryOrderController.restoreDeliveryOrder,
 );
 
-// Change customer after weighing
-router.patch(
-  '/:id/change-customer',
-  checkPermission('shipment', PERMISSION_ACTION.CHANGE_CUSTOMER),
-  deliveryOrderController.changeCustomerAfterWeighing,
-);
-
-// Revise DO after weighing
-router.patch(
-  '/:id/revise-items',
-  checkPermission('shipment', PERMISSION_ACTION.REVISE_DO),
-  deliveryOrderController.reviseDeliveryOrderAfterWeighing,
-);
-
 export default router;
