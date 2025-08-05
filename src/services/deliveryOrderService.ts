@@ -1,9 +1,14 @@
 import {
   ACTION, ENTITY_TYPE, STATUS, 
 } from '@prisma/client';
+import fs from 'fs';
+import { customAlphabet } from 'nanoid';
+import path from 'path';
 import prisma from '../config/prisma';
 import { DeliveryOrderCreateInput, DeliveryOrderUpdateInput } from '../schemas/deliveryOrder';
 import deliveryOrderLogService from './deliveryOrderLogService';
+import notaTimbanganPdfService from './notaTimbanganPdfService';
+import spmbPdfService from './spmbPdfService';
 
 /**
  * Service for handling delivery order operations
@@ -759,6 +764,720 @@ export default {
       orderBy: {
         createdAt: 'desc',
       },
+    });
+  },
+
+  /**
+   * Change customer of a delivery order
+   * Pure business logic - no validation/error throwing
+   *
+   * @param deliveryOrderId The delivery order ID
+   * @param customerId The new customer ID
+   * @returns Updated delivery order or null if not found
+   */
+  async changeCustomerAfterWeighing(
+    deliveryOrderId: string,
+    customerId: string,
+    performedById: string,
+  ) {
+    return await prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Get the current delivery order
+      const deliveryOrder = await tx.deliveryOrder.findFirst({
+        where: {
+          id: deliveryOrderId,
+          deletedAt: null,
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!deliveryOrder) {
+        return null; // Let controller handle error
+      }
+
+      // Get old customer name for better logging
+      const oldCustomer = await tx.customer.findUnique({
+        where: {
+          id: deliveryOrder.customerId,
+        },
+        select: {
+          name: true,
+        },
+      });
+
+      // Update the delivery order
+      const updatedDeliveryOrder = await tx.deliveryOrder.update({
+        where: {
+          id: deliveryOrderId,
+        },
+        data: {
+          customerId,
+          updatedAt: jakartaTime,
+        },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+            },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  satuan: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Find and regenerate SPMBs for this delivery order
+      const existingSpmbs = await tx.sPMB.findMany({
+        where: {
+          deliveryOrderId,
+        },
+        select: {
+          id: true,
+          documentPath: true,
+          shipmentId: true,
+        },
+      });
+
+      // Delete existing SPMB PDF files from file system
+      const isProd = process.env.NODE_ENV === 'production';
+      const PUBLIC_DIR = isProd
+        ? '/var/www/benzeta.shop/public'
+        : path.join(process.cwd(), 'src', 'public');
+
+      for (const spmb of existingSpmbs) {
+        if (spmb.documentPath) {
+          const filePath = path.join(PUBLIC_DIR, spmb.documentPath);
+          try {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log(`Deleted old SPMB file during customer change: ${filePath}`);
+            }
+          } catch (error) {
+            console.error(`Failed to delete SPMB file during customer change ${filePath}:`, error);
+            // Continue with regeneration even if file deletion fails
+          }
+        }
+      }
+
+      // Regenerate SPMBs with new customer information
+      for (const existingSpmb of existingSpmbs) {
+        // Generate a unique SPMB code
+        const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+        const spmbCode = `SPMB-${nanoid()}`;
+
+        // Update the SPMB with new code
+        const spmb = await tx.sPMB.update({
+          where: {
+            id: existingSpmb.id,
+          },
+          data: {
+            code: spmbCode,
+            documentPath: null, // Will be updated after PDF generation
+            updatedAt: jakartaTime,
+          },
+          include: {
+            deliveryOrder: {
+              include: {
+                customer: true,
+                items: {
+                  include: {
+                    product: true,
+                  },
+                },
+              },
+            },
+            shipment: {
+              include: {
+                armada: true,
+                shipmentItems: {
+                  include: {
+                    product: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        // Get the complete shipment data for PDF generation
+        const shipmentForPdf = await tx.shipment.findUnique({
+          where: {
+            id: existingSpmb.shipmentId,
+          },
+          include: {
+            armada: true,
+            shipmentItems: {
+              include: {
+                product: true,
+                deliveryOrder: {
+                  include: {
+                    customer: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (shipmentForPdf) {
+          const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
+          await tx.sPMB.update({
+            where: {
+              id: spmb.id,
+            },
+            data: {
+              documentPath: pdfPath,
+            },
+          });
+        }
+      }
+
+      // Also regenerate nota timbangan documents since they contain customer information
+      const existingWeighings = await tx.shipmentChosenProductWeighing.findMany({
+        where: {
+          shipmentChosenProduct: {
+            shipment: {
+              shipmentItems: {
+                some: {
+                  deliveryOrderId,
+                },
+              },
+            },
+          },
+        },
+        include: {
+          notaTimbangan: {
+            select: {
+              id: true,
+              documentPath: true,
+              ticketNumber: true,
+            },
+          },
+          shipmentChosenProduct: {
+            include: {
+              product: true,
+              shipment: {
+                include: {
+                  armada: true,
+                  shipmentItems: {
+                    include: {
+                      deliveryOrder: {
+                        include: {
+                          customer: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Regenerate nota timbangan for weighings related to this delivery order
+      for (const weighing of existingWeighings) {
+        if (weighing.notaTimbangan) {
+          // Delete old nota timbangan file
+          if (weighing.notaTimbangan.documentPath) {
+            const filePath = path.join(PUBLIC_DIR, weighing.notaTimbangan.documentPath);
+            try {
+              if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log(`Deleted old nota timbangan file during customer change: ${filePath}`);
+              }
+            } catch (error) {
+              console.error(`Failed to delete nota timbangan file during customer change ${filePath}:`, error);
+              // Continue with regeneration even if file deletion fails
+            }
+          }
+
+          // Generate new nota timbangan PDF with updated customer
+          const nanoid = customAlphabet('1234567890', 6);
+          const ticketNumber = nanoid();
+          const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
+            weighing,
+            ticketNumber,
+          );
+
+          // Update nota timbangan record
+          await tx.notaTimbangan.update({
+            where: {
+              id: weighing.notaTimbangan.id,
+            },
+            data: {
+              ticketNumber,
+              documentPath: pdfPath,
+              updatedAt: jakartaTime,
+            },
+          });
+        }
+      }
+
+      // Log the customer change with enhanced logging
+      await deliveryOrderLogService.logCustomerChangeAfterWeighing(
+        deliveryOrderId,
+        performedById,
+        deliveryOrder.customerId,
+        customerId,
+        oldCustomer?.name,
+        updatedDeliveryOrder.customer.name,
+        tx,
+      );
+
+      return updatedDeliveryOrder;
+    });
+  },
+
+  /**
+   * Revise delivery order items with weight recalculation
+   * Pure business logic - no validation/error throwing
+   *
+   * @param deliveryOrderId The delivery order ID
+   * @param revisedItems Array of revised items with new quantities
+   * @returns Updated delivery order or null if not found
+   */
+  async reviseDeliveryOrderAfterWeighing(
+    deliveryOrderId: string,
+    revisedItems: any[],
+    performedById: string,
+  ) {
+    return await prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Get the current delivery order with weighing data
+      const deliveryOrder = await tx.deliveryOrder.findFirst({
+        where: {
+          id: deliveryOrderId,
+          deletedAt: null,
+        },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!deliveryOrder) {
+        return null; // Let controller handle error
+      }
+
+      // Get weighing data for weight recalculation
+      const shipmentItems = await tx.shipmentItem.findMany({
+        where: {
+          deliveryOrderId: deliveryOrder.id,
+        },
+        include: {
+          shipment: {
+            include: {
+              chosenProducts: {
+                where: {
+                  productId: {
+                    in: deliveryOrder.items.map((item) => item.productId),
+                  },
+                },
+                include: {
+                  weighings: {
+                    include: {
+                      notaTimbangan: {
+                        select: {
+                          id: true,
+                          documentPath: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Store old data for logging
+      const oldData = deliveryOrder.items.map((item) => ({
+        id: item.id,
+        quantity: item.quantity,
+        productId: item.productId,
+      }));
+
+      // Track weighings that need to be updated for nota timbangan regeneration
+      const weighingsToUpdate: any[] = [];
+
+      // Process each revised item
+      for (const revisedItem of revisedItems) {
+        const existingItem = deliveryOrder.items.find((item) => item.id === revisedItem.id);
+
+        if (!existingItem) {
+          return {
+            error: `Item dengan ID ${revisedItem.id} tidak ditemukan`,
+          };
+        }
+
+        // Calculate weight per unit from original weighing if available
+        let weightPerUnit = 0;
+        const relatedShipmentItem = shipmentItems.find(
+          (si) => si.productId === existingItem.productId,
+        );
+
+        if (relatedShipmentItem?.shipment?.chosenProducts) {
+          const chosenProduct = relatedShipmentItem.shipment.chosenProducts.find(
+            (cp) => cp.productId === existingItem.productId,
+          );
+
+          if (chosenProduct && chosenProduct.weighings.length > 0) {
+            const totalWeight = chosenProduct.weighings[0].grossWeight || 0;
+            // Use shipment requested quantity, not DO quantity for weight per unit calculation
+            const originalShipmentQuantity = relatedShipmentItem.requestedQuantity;
+            weightPerUnit = originalShipmentQuantity > 0 ? totalWeight / originalShipmentQuantity : 0;
+          }
+        }
+
+        // Calculate the ratio for proportional recalculation
+        const originalQuantity = existingItem.quantity;
+        const newQuantity = revisedItem.quantity;
+        const ratio = originalQuantity > 0 ? newQuantity / originalQuantity : 1;
+
+        // Recalculate all status quantities proportionally
+        const newCompletedQuantity = Math.round(existingItem.completedQuantity * ratio);
+        const newProcessingQuantity = Math.round(existingItem.processingQuantity * ratio);
+        const newPendingQuantity = Math.max(
+          0,
+          newQuantity - newCompletedQuantity - newProcessingQuantity,
+        );
+
+        await tx.deliveryOrderItem.update({
+          where: {
+            id: revisedItem.id,
+          },
+          data: {
+            quantity: newQuantity,
+            completedQuantity: newCompletedQuantity,
+            processingQuantity: newProcessingQuantity,
+            pendingQuantity: newPendingQuantity,
+            updatedAt: jakartaTime,
+          },
+        });
+
+        // Update related shipment items with recalculated quantities if they exist
+        if (relatedShipmentItem) {
+          // Recalculate the shipment item quantities proportionally
+          const newRequestedQuantity = Math.round(relatedShipmentItem.requestedQuantity * ratio);
+          let newWeightedQuantity = relatedShipmentItem.weightedQuantity;
+
+          // If item was previously weighed, recalculate based on weight per unit
+          if (weightPerUnit > 0) {
+            newWeightedQuantity = newRequestedQuantity * weightPerUnit;
+          } else {
+            // If no weighing data, scale the weighted quantity proportionally
+            newWeightedQuantity = relatedShipmentItem.weightedQuantity
+              ? Math.round(relatedShipmentItem.weightedQuantity * ratio)
+              : null;
+          }
+
+          await tx.shipmentItem.update({
+            where: {
+              id: relatedShipmentItem.id,
+            },
+            data: {
+              requestedQuantity: newRequestedQuantity,
+              weightedQuantity: newWeightedQuantity,
+              updatedAt: jakartaTime,
+            },
+          });
+
+          // Update weighing records if they exist
+          if (relatedShipmentItem.shipment?.chosenProducts) {
+            const chosenProduct = relatedShipmentItem.shipment.chosenProducts.find(
+              (cp) => cp.productId === existingItem.productId,
+            );
+
+            if (chosenProduct && chosenProduct.weighings.length > 0 && weightPerUnit > 0) {
+              // Update the weighing record with recalculated weight based on new requested quantity
+              const newGrossWeight = newRequestedQuantity * weightPerUnit;
+
+              // Also scale net weight proportionally if it exists
+              const currentWeighing = chosenProduct.weighings[0];
+              const newNetWeight = currentWeighing.netWeight
+                ? Math.round(currentWeighing.netWeight * ratio)
+                : null;
+
+              await tx.shipmentChosenProductWeighing.updateMany({
+                where: {
+                  shipmentChosenProductId: chosenProduct.id,
+                },
+                data: {
+                  grossWeight: newGrossWeight,
+                  netWeight: newNetWeight,
+                  updatedAt: jakartaTime,
+                },
+              });
+
+              // Track this weighing for nota timbangan regeneration
+              weighingsToUpdate.push({
+                weighingId: currentWeighing.id,
+                shipmentChosenProductId: chosenProduct.id,
+                grossWeight: newGrossWeight,
+                netWeight: newNetWeight,
+                tareWeight: currentWeighing.tareWeight || 0,
+                timeIn: currentWeighing.timeIn,
+                timeOut: currentWeighing.timeOut,
+                notaTimbangan: currentWeighing.notaTimbangan,
+              });
+            }
+          }
+        }
+      }
+
+      // Delete old nota timbangan files and regenerate them
+      const isProd = process.env.NODE_ENV === 'production';
+      const PUBLIC_DIR = isProd
+        ? '/var/www/benzeta.shop/public'
+        : path.join(process.cwd(), 'src', 'public');
+
+      for (const weighingUpdate of weighingsToUpdate) {
+        // Delete old nota timbangan file if it exists
+        if (weighingUpdate.notaTimbangan?.documentPath) {
+          const filePath = path.join(PUBLIC_DIR, weighingUpdate.notaTimbangan.documentPath);
+          try {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log(`Deleted old nota timbangan file during DO revision: ${filePath}`);
+            }
+          } catch (error) {
+            console.error(
+              `Failed to delete nota timbangan file during DO revision ${filePath}:`,
+              error,
+            );
+            // Continue with regeneration even if file deletion fails
+          }
+        }
+
+        // Get updated weighing data for PDF generation
+        const updatedWeighing = await tx.shipmentChosenProductWeighing.findUnique({
+          where: {
+            id: weighingUpdate.weighingId,
+          },
+          include: {
+            shipmentChosenProduct: {
+              include: {
+                product: true,
+                shipment: {
+                  include: {
+                    armada: true,
+                    shipmentItems: {
+                      include: {
+                        deliveryOrder: {
+                          include: {
+                            customer: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (updatedWeighing) {
+          // Generate new nota timbangan PDF
+          const nanoid = customAlphabet('1234567890', 6);
+          const ticketNumber = nanoid();
+          const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
+            updatedWeighing,
+            ticketNumber,
+          );
+
+          // Update nota timbangan record
+          if (weighingUpdate.notaTimbangan?.id) {
+            await tx.notaTimbangan.update({
+              where: {
+                id: weighingUpdate.notaTimbangan.id,
+              },
+              data: {
+                ticketNumber,
+                documentPath: pdfPath,
+                updatedAt: jakartaTime,
+              },
+            });
+          } else {
+            // Create new nota timbangan if it doesn't exist
+            await tx.notaTimbangan.create({
+              data: {
+                ticketNumber,
+                documentPath: pdfPath,
+                shipmentChosenProductWeighingId: weighingUpdate.weighingId,
+                createdAt: jakartaTime,
+                updatedAt: jakartaTime,
+              },
+            });
+          }
+        }
+      }
+
+      // Regenerate SPMBs for this delivery order
+      const existingSpmbs = await tx.sPMB.findMany({
+        where: {
+          deliveryOrderId,
+        },
+        select: {
+          id: true,
+          documentPath: true,
+          shipmentId: true,
+        },
+      });
+
+      // Delete existing SPMB PDF files from file system
+      for (const spmb of existingSpmbs) {
+        if (spmb.documentPath) {
+          const filePath = path.join(PUBLIC_DIR, spmb.documentPath);
+          try {
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log(`Deleted old SPMB file during DO revision: ${filePath}`);
+            }
+          } catch (error) {
+            console.error(`Failed to delete SPMB file during DO revision ${filePath}:`, error);
+            // Continue with regeneration even if file deletion fails
+          }
+        }
+      }
+
+      // Regenerate SPMBs with updated quantities
+      for (const existingSpmb of existingSpmbs) {
+        // Generate a unique SPMB code
+        const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+        const spmbCode = `SPMB-${nanoid()}`;
+
+        // Update the SPMB with new code
+        const spmb = await tx.sPMB.update({
+          where: {
+            id: existingSpmb.id,
+          },
+          data: {
+            code: spmbCode,
+            documentPath: null, // Will be updated after PDF generation
+            updatedAt: jakartaTime,
+          },
+          include: {
+            deliveryOrder: {
+              include: {
+                customer: true,
+                items: {
+                  include: {
+                    product: true,
+                  },
+                },
+              },
+            },
+            shipment: {
+              include: {
+                armada: true,
+                shipmentItems: {
+                  include: {
+                    product: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        // Get the complete shipment data for PDF generation
+        const shipmentForPdf = await tx.shipment.findUnique({
+          where: {
+            id: existingSpmb.shipmentId,
+          },
+          include: {
+            armada: true,
+            shipmentItems: {
+              include: {
+                product: true,
+                deliveryOrder: {
+                  include: {
+                    customer: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (shipmentForPdf) {
+          const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
+          await tx.sPMB.update({
+            where: {
+              id: spmb.id,
+            },
+            data: {
+              documentPath: pdfPath,
+            },
+          });
+        }
+      }
+
+      // Get updated delivery order
+      const updatedDeliveryOrder = await tx.deliveryOrder.findFirst({
+        where: {
+          id: deliveryOrderId,
+        },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              address: true,
+            },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  satuan: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Log the revision with enhanced logging
+      await deliveryOrderLogService.logDORevisionAfterWeighing(
+        deliveryOrderId,
+        performedById,
+        oldData,
+        revisedItems,
+        tx,
+      );
+
+      return updatedDeliveryOrder;
     });
   },
 };

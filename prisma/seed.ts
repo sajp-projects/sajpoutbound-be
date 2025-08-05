@@ -82,12 +82,36 @@ async function main() {
 
     // Create all possible permissions
     const permissions: Permission[] = [];
+    const specialActions: Set<PERMISSION_ACTION> = new Set([
+      PERMISSION_ACTION.WEIGH,
+      PERMISSION_ACTION.VERIFY_PLATE,
+      PERMISSION_ACTION.CHANGE_CUSTOMER,
+      PERMISSION_ACTION.REVISE_DO,
+    ]);
+
+    const specialActionDescriptions = new Map<PERMISSION_ACTION, string>([
+      [PERMISSION_ACTION.WEIGH, 'Mengizinkan untuk melakukan penimbangan'],
+      [PERMISSION_ACTION.VERIFY_PLATE, 'Mengizinkan untuk verifikasi plat nomor kendaraan'],
+      [
+        PERMISSION_ACTION.CHANGE_CUSTOMER,
+        'Mengizinkan untuk mengubah pelanggan setelah pengiriman di proses',
+      ],
+      [PERMISSION_ACTION.REVISE_DO, 'Mengizinkan untuk merevisi DO setelah pengiriman di proses'],
+    ]);
+
     for (const resource of resources) {
       for (const action of actions) {
+        if (specialActions.has(action) && resource !== 'shipment') {
+          continue;
+        }
+
+        const description =
+          specialActionDescriptions.get(action) ?? `Bisa ${action.toLowerCase()} ${resource}`;
+
         const permission = await prisma.permission.create({
           data: {
             name: `${resource}:${action}`,
-            description: `Bisa ${action.toLowerCase()} ${resource}`,
+            description,
             resource,
             action,
           },
@@ -524,6 +548,8 @@ async function main() {
       PERMISSION_ACTION.DELETE,
       PERMISSION_ACTION.WEIGH,
       PERMISSION_ACTION.VERIFY_PLATE,
+      PERMISSION_ACTION.CHANGE_CUSTOMER,
+      PERMISSION_ACTION.REVISE_DO,
     ]);
 
     //

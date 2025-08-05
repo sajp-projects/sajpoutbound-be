@@ -594,4 +594,138 @@ export default {
       next(error);
     }
   },
+
+  /**
+   * Change customer of a delivery order after weighing
+   */
+  async changeCustomerAfterWeighing(
+    req: Request<{ id: string }, any, { customerId: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { id } = req.params;
+      const { customerId } = req.body;
+
+      await deliveryOrderIdSchema.validateAsync({
+        id,
+      });
+
+      if (!customerId) {
+        throw new CustomError({
+          message: 'Customer ID harus diisi',
+          errorCode: 'CUSTOMER_ID_REQUIRED',
+          status: 400,
+        });
+      }
+
+      // Verify customer exists
+      const customer = await customerService.getCustomerById(customerId);
+      if (!customer) {
+        throw new CustomError({
+          message: 'Customer tidak ditemukan',
+          errorCode: 'CUSTOMER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Get current user ID from token (assuming it's in req.user)
+      const performedById = (req as any).user?.id || 'SYSTEM';
+
+      const updatedDeliveryOrder = await deliveryOrderService.changeCustomerAfterWeighing(
+        id,
+        customerId,
+        performedById,
+      );
+
+      if (!updatedDeliveryOrder) {
+        throw new CustomError({
+          message: 'Delivery order tidak ditemukan',
+          errorCode: 'DELIVERY_ORDER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      res.status(200).json(
+        success({
+          deliveryOrder: updatedDeliveryOrder,
+          message: 'Customer berhasil diubah',
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Revise delivery order items after weighing
+   */
+  async reviseDeliveryOrderAfterWeighing(
+    req: Request<{ id: string }, any, { items: any[] }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { id } = req.params;
+      const { items } = req.body;
+
+      await deliveryOrderIdSchema.validateAsync({
+        id,
+      });
+
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        throw new CustomError({
+          message: 'Items harus diisi dan berupa array',
+          errorCode: 'ITEMS_REQUIRED',
+          status: 400,
+        });
+      }
+
+      // Validate each item has required fields
+      for (const item of items) {
+        if (!item.id || typeof item.quantity !== 'number' || item.quantity < 0) {
+          throw new CustomError({
+            message: 'Setiap item harus memiliki id dan quantity yang valid (>= 0)',
+            errorCode: 'INVALID_ITEM_DATA',
+            status: 400,
+          });
+        }
+      }
+
+      // Get current user ID from token (assuming it's in req.user)
+      const performedById = (req as any).user?.id;
+
+      const result = await deliveryOrderService.reviseDeliveryOrderAfterWeighing(
+        id,
+        items,
+        performedById,
+      );
+
+      if (!result) {
+        throw new CustomError({
+          message: 'Delivery order tidak ditemukan',
+          errorCode: 'DELIVERY_ORDER_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      // Check if service returned an error
+      if ('error' in result) {
+        throw new CustomError({
+          message: result.error,
+          errorCode: 'REVISION_ERROR',
+          status: 400,
+        });
+      }
+
+      res.status(200).json(
+        success({
+          deliveryOrder: result,
+          message: 'DO berhasil direvisi',
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
 };

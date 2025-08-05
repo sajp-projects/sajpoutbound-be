@@ -172,4 +172,93 @@ export default {
       total,
     };
   },
+
+  /**
+   * Create a log entry for customer change after weighing
+   */
+  async logCustomerChangeAfterWeighing(
+    deliveryOrderId: string,
+    performedById: string,
+    oldCustomerId: string,
+    newCustomerId: string,
+    oldCustomerName?: string,
+    newCustomerName?: string,
+    tx?: any,
+  ) {
+    const client = tx || prisma;
+
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+    return client.deliveryOrderLog.create({
+      data: {
+        deliveryOrderId,
+        performedById,
+        action: ACTION.UPDATE,
+        entityType: ENTITY_TYPE.DELIVERY_ORDER,
+        oldData: {
+          customerId: oldCustomerId,
+          customerName: oldCustomerName,
+        },
+        newData: {
+          customerId: newCustomerId,
+          customerName: newCustomerName,
+        },
+        description: `Pelanggan diubah dari "${oldCustomerName || 'Unknown'}" ke "${newCustomerName || 'Unknown'}" setelah penimbangan`,
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
+      },
+    });
+  },
+
+  /**
+   * Create a log entry for DO revision after weighing
+   */
+  async logDORevisionAfterWeighing(
+    deliveryOrderId: string,
+    performedById: string,
+    oldItems: any[],
+    newItems: any[],
+    tx?: any,
+  ) {
+    const client = tx || prisma;
+
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+    // Create a detailed description of changes
+    const changedItems = newItems.map((newItem) => {
+      const oldItem = oldItems.find((old) => old.id === newItem.id);
+      return {
+        productId: newItem.productId,
+        oldQuantity: oldItem?.quantity || 0,
+        newQuantity: newItem.quantity,
+      };
+    }).filter((item) => item.oldQuantity !== item.newQuantity);
+
+    const description = `Pesanan pengiriman direvisi setelah penimbangan. ${changedItems.length} produk mengalami perubahan kuantitas`;
+
+    return client.deliveryOrderLog.create({
+      data: {
+        deliveryOrderId,
+        performedById,
+        action: ACTION.UPDATE,
+        entityType: ENTITY_TYPE.DELIVERY_ORDER,
+        oldData: {
+          items: oldItems,
+          revision: 'before_weighing',
+        },
+        newData: {
+          items: newItems,
+          revision: 'after_weighing',
+          changedItems,
+        },
+        description,
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
+      },
+    });
+  },
 };
