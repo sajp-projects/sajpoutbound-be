@@ -129,12 +129,13 @@ export default {
   async getDeliveryOrderById(req: Request<{ id: string }>, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
+      const shipmentId = req.query.shipmentId as string | undefined;
 
       await deliveryOrderIdSchema.validateAsync({
         id,
       });
 
-      const deliveryOrder = await deliveryOrderService.getDeliveryOrderById(id);
+      const deliveryOrder = await deliveryOrderService.getDeliveryOrderById(id, shipmentId);
 
       if (!deliveryOrder) {
         throw new CustomError({

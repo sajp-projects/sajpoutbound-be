@@ -218,8 +218,8 @@ export default {
   async logDORevisionAfterWeighing(
     deliveryOrderId: string,
     performedById: string,
-    oldItems: any[],
-    newItems: any[],
+    oldData: Record<string, any>,
+    newData: Record<string, any>,
     tx?: any,
   ) {
     const client = tx || prisma;
@@ -228,21 +228,21 @@ export default {
     const jakartaTime = new Date();
     jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-    // Create a detailed description of changes with product names
-    const changedItems = newItems.map((newItem) => {
-      const oldItem = oldItems.find((old) => old.id === newItem.id);
-      const oldQuantity = oldItem?.quantity || 0;
+    // Create a detailed description of changes
+    const changedItems = newData.items.map((newItem: any) => {
+      const oldItem = oldData.items.find((old: any) => old.id === newItem.id);
+      const oldQuantity = oldItem ? oldItem.quantity : 0;
       const newQuantity = newItem.quantity;
-      
       return {
-        productId: newItem.productId,
         productName: newItem.productName,
         oldQuantity,
         newQuantity,
       };
-    }).filter((item) => item.oldQuantity !== item.newQuantity);
+    }).filter((item: any) => item.oldQuantity !== item.newQuantity);
 
-    const description = `DO direvisi - Item yang diubah: ${changedItems.map(item => `${item.productName} (${item.oldQuantity} → ${item.newQuantity})`).join(', ')}`;
+    const description = `DO direvisi setelah penimbangan. Item yang diubah: ${changedItems
+      .map((item: any) => `${item.productName} (${item.oldQuantity} → ${item.newQuantity})`)
+      .join(', ')}`;
 
     return client.deliveryOrderLog.create({
       data: {
@@ -250,12 +250,8 @@ export default {
         performedById,
         action: ACTION.UPDATE,
         entityType: ENTITY_TYPE.DELIVERY_ORDER,
-        oldData: {
-          revisedItems: changedItems.map(item => `${item.productName}: ${item.oldQuantity}`),
-        },
-        newData: {
-          revisedItems: changedItems.map(item => `${item.productName}: ${item.newQuantity}`),
-        },
+        oldData,
+        newData,
         description,
         createdAt: jakartaTime,
         updatedAt: jakartaTime,

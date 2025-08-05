@@ -336,6 +336,111 @@ async function main() {
           address: 'Jl. Sudirman No. 56, Makassar',
         },
       }),
+      prisma.customer.create({
+        data: {
+          name: 'PT Bangunan Nusantara',
+          id_sl: 'CUS-006',
+          address: 'Jl. Thamrin No. 89, Jakarta Pusat',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'CV Mitra Konstruksi',
+          id_sl: 'CUS-007',
+          address: 'Jl. Asia Afrika No. 156, Bandung',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'PT Proyek Bersama',
+          id_sl: 'CUS-008',
+          address: 'Jl. Basuki Rahmat No. 234, Surabaya',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'Toko Material Jaya',
+          id_sl: 'CUS-009',
+          address: 'Jl. Pandanaran No. 67, Semarang',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'PT Konstruksi Makassar',
+          id_sl: 'CUS-010',
+          address: 'Jl. Pengayoman No. 123, Makassar',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'CV Bangunan Sukses',
+          id_sl: 'CUS-011',
+          address: 'Jl. Sudirman No. 456, Medan',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'PT Material Utama',
+          id_sl: 'CUS-012',
+          address: 'Jl. Gajah Mada No. 789, Palembang',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'Toko Bangunan Makmur',
+          id_sl: 'CUS-013',
+          address: 'Jl. Veteran No. 321, Yogyakarta',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'PT Konstruksi Bali',
+          id_sl: 'CUS-014',
+          address: 'Jl. Sunset Road No. 654, Denpasar',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'CV Bangunan Mandiri',
+          id_sl: 'CUS-015',
+          address: 'Jl. Ahmad Dahlan No. 987, Malang',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'PT Material Sejahtera',
+          id_sl: 'CUS-016',
+          address: 'Jl. Pangeran Antasari No. 543, Banjarmasin',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'Toko Bangunan Prima',
+          id_sl: 'CUS-017',
+          address: 'Jl. Urip Sumoharjo No. 876, Samarinda',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'PT Konstruksi Kalimantan',
+          id_sl: 'CUS-018',
+          address: 'Jl. Gajah Mada No. 234, Pontianak',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'CV Bangunan Maju',
+          id_sl: 'CUS-019',
+          address: 'Jl. Sudirman No. 567, Manado',
+        },
+      }),
+      prisma.customer.create({
+        data: {
+          name: 'PT Material Nusantara',
+          id_sl: 'CUS-020',
+          address: 'Jl. Ahmad Yani No. 890, Balikpapan',
+        },
+      }),
     ]);
 
     console.log(`Created ${customers.length} customers`);
@@ -496,6 +601,366 @@ async function main() {
           },
         },
       }),
+      // Delivery Order 7 - PT Bangunan Nusantara
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-007',
+          customerId: customers[5].id,
+          address: 'Jl. Thamrin No. 89, Jakarta Pusat',
+          internalNote: 'Pengiriman untuk proyek perkantoran',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[0].id, // Semen Portland 50kg
+                quantity: 150,
+                pendingQuantity: 150,
+              },
+              {
+                productId: products[3].id, // Pasir Beton
+                quantity: 120,
+                pendingQuantity: 120,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 8 - CV Mitra Konstruksi
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-008',
+          customerId: customers[6].id,
+          address: 'Jl. Asia Afrika No. 156, Bandung',
+          internalNote: 'Pengiriman untuk proyek sekolah',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[2].id, // Bata Merah Press
+                quantity: 3000,
+                pendingQuantity: 3000,
+              },
+              {
+                productId: products[5].id, // Besi Beton 8mm
+                quantity: 80,
+                pendingQuantity: 80,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 9 - PT Proyek Bersama
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-009',
+          customerId: customers[7].id,
+          address: 'Jl. Basuki Rahmat No. 234, Surabaya',
+          internalNote: 'Pengiriman untuk proyek jembatan',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[4].id, // Kerikil 2-3 cm
+                quantity: 200,
+                pendingQuantity: 200,
+              },
+              {
+                productId: products[6].id, // Besi Beton 10mm
+                quantity: 150,
+                pendingQuantity: 150,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 10 - Toko Material Jaya
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-010',
+          customerId: customers[8].id,
+          address: 'Jl. Pandanaran No. 67, Semarang',
+          internalNote: 'Pengiriman untuk toko material',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[1].id, // Semen Putih 40kg
+                quantity: 60,
+                pendingQuantity: 60,
+              },
+              {
+                productId: products[7].id, // Cat Tembok Premium
+                quantity: 30,
+                pendingQuantity: 30,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 11 - PT Konstruksi Makassar
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-011',
+          customerId: customers[9].id,
+          address: 'Jl. Pengayoman No. 123, Makassar',
+          internalNote: 'Pengiriman untuk proyek rumah sakit',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[0].id, // Semen Portland 50kg
+                quantity: 200,
+                pendingQuantity: 200,
+              },
+              {
+                productId: products[12].id, // Genteng Beton
+                quantity: 800,
+                pendingQuantity: 800,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 12 - CV Bangunan Sukses
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-012',
+          customerId: customers[10].id,
+          address: 'Jl. Sudirman No. 456, Medan',
+          internalNote: 'Pengiriman untuk proyek pusat perbelanjaan',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[2].id, // Bata Merah Press
+                quantity: 4000,
+                pendingQuantity: 4000,
+              },
+              {
+                productId: products[9].id, // Pipa PVC 4 inch
+                quantity: 50,
+                pendingQuantity: 50,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 13 - PT Material Utama
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-013',
+          customerId: customers[11].id,
+          address: 'Jl. Gajah Mada No. 789, Palembang',
+          internalNote: 'Pengiriman untuk proyek stadion',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[3].id, // Pasir Beton
+                quantity: 150,
+                pendingQuantity: 150,
+              },
+              {
+                productId: products[4].id, // Kerikil 2-3 cm
+                quantity: 120,
+                pendingQuantity: 120,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 14 - Toko Bangunan Makmur
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-014',
+          customerId: customers[12].id,
+          address: 'Jl. Veteran No. 321, Yogyakarta',
+          internalNote: 'Pengiriman untuk proyek universitas',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[1].id, // Semen Putih 40kg
+                quantity: 100,
+                pendingQuantity: 100,
+              },
+              {
+                productId: products[8].id, // Paku Beton 3 inch
+                quantity: 80,
+                pendingQuantity: 80,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 15 - PT Konstruksi Bali
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-015',
+          customerId: customers[13].id,
+          address: 'Jl. Sunset Road No. 654, Denpasar',
+          internalNote: 'Pengiriman untuk proyek resort',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[11].id, // Seng Gelombang
+                quantity: 300,
+                pendingQuantity: 300,
+              },
+              {
+                productId: products[12].id, // Genteng Beton
+                quantity: 600,
+                pendingQuantity: 600,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 16 - CV Bangunan Mandiri
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-016',
+          customerId: customers[14].id,
+          address: 'Jl. Ahmad Dahlan No. 987, Malang',
+          internalNote: 'Pengiriman untuk proyek apartemen',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[0].id, // Semen Portland 50kg
+                quantity: 120,
+                pendingQuantity: 120,
+              },
+              {
+                productId: products[5].id, // Besi Beton 8mm
+                quantity: 70,
+                pendingQuantity: 70,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 17 - PT Material Sejahtera
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-017',
+          customerId: customers[15].id,
+          address: 'Jl. Pangeran Antasari No. 543, Banjarmasin',
+          internalNote: 'Pengiriman untuk proyek masjid',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[2].id, // Bata Merah Press
+                quantity: 2500,
+                pendingQuantity: 2500,
+              },
+              {
+                productId: products[10].id, // Pipa PVC 2 inch
+                quantity: 60,
+                pendingQuantity: 60,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 18 - Toko Bangunan Prima
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-018',
+          customerId: customers[16].id,
+          address: 'Jl. Urip Sumoharjo No. 876, Samarinda',
+          internalNote: 'Pengiriman untuk proyek perkantoran',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[7].id, // Cat Tembok Premium
+                quantity: 40,
+                pendingQuantity: 40,
+              },
+              {
+                productId: products[9].id, // Pipa PVC 4 inch
+                quantity: 25,
+                pendingQuantity: 25,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 19 - PT Konstruksi Kalimantan
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-019',
+          customerId: customers[17].id,
+          address: 'Jl. Gajah Mada No. 234, Pontianak',
+          internalNote: 'Pengiriman untuk proyek jalan raya',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[3].id, // Pasir Beton
+                quantity: 180,
+                pendingQuantity: 180,
+              },
+              {
+                productId: products[4].id, // Kerikil 2-3 cm
+                quantity: 150,
+                pendingQuantity: 150,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 20 - CV Bangunan Maju
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-020',
+          customerId: customers[18].id,
+          address: 'Jl. Sudirman No. 567, Manado',
+          internalNote: 'Pengiriman untuk proyek pelabuhan',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[6].id, // Besi Beton 10mm
+                quantity: 120,
+                pendingQuantity: 120,
+              },
+              {
+                productId: products[8].id, // Paku Beton 3 inch
+                quantity: 100,
+                pendingQuantity: 100,
+              },
+            ],
+          },
+        },
+      }),
+      // Delivery Order 21 - PT Material Nusantara
+      prisma.deliveryOrder.create({
+        data: {
+          doNumber: 'DO-2024-021',
+          customerId: customers[19].id,
+          address: 'Jl. Ahmad Yani No. 890, Balikpapan',
+          internalNote: 'Pengiriman untuk proyek terminal',
+          status: 'PENDING',
+          items: {
+            create: [
+              {
+                productId: products[0].id, // Semen Portland 50kg
+                quantity: 180,
+                pendingQuantity: 180,
+              },
+              {
+                productId: products[11].id, // Seng Gelombang
+                quantity: 250,
+                pendingQuantity: 250,
+              },
+            ],
+          },
+        },
+      }),
     ]);
 
     console.log(`Created ${deliveryOrders.length} delivery orders`);
@@ -524,6 +989,230 @@ async function main() {
           id_sl: 'TRK-002',
           plateNumber: 'B 9012 GH',
           description: 'Truk sedang untuk distribusi dalam kota',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Mitsubishi Colt',
+          id_sl: 'TRK-003',
+          plateNumber: 'B 3456 IJ',
+          description: 'Truk ringan untuk pengiriman material',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Suzuki Carry',
+          id_sl: 'PU-002',
+          plateNumber: 'B 7890 KL',
+          description: 'Pickup kecil untuk pengiriman ringan',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Isuzu Elf',
+          id_sl: 'TRK-004',
+          plateNumber: 'B 2345 MN',
+          description: 'Truk medium untuk distribusi',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Toyota Dyna',
+          id_sl: 'PU-003',
+          plateNumber: 'B 6789 OP',
+          description: 'Pickup besar untuk pengiriman menengah',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Hino Dutro',
+          id_sl: 'TRK-005',
+          plateNumber: 'B 0123 QR',
+          description: 'Truk modern untuk pengiriman material',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Daihatsu Gran Max',
+          id_sl: 'PU-004',
+          plateNumber: 'B 4567 ST',
+          description: 'Pickup serbaguna untuk berbagai jenis pengiriman',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Mercedes-Benz',
+          id_sl: 'TRK-006',
+          plateNumber: 'B 8901 UV',
+          description: 'Truk premium untuk pengiriman khusus',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Mitsubishi L300',
+          id_sl: 'PU-005',
+          plateNumber: 'B 2345 WX',
+          description: 'Pickup klasik untuk pengiriman lokal',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Nissan Diesel',
+          id_sl: 'TRK-007',
+          plateNumber: 'B 6789 YZ',
+          description: 'Truk handal untuk pengiriman jarak jauh',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Suzuki APV',
+          id_sl: 'PU-006',
+          plateNumber: 'B 0123 AB',
+          description: 'Pickup modern untuk pengiriman cepat',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Toyota Dyna',
+          id_sl: 'TRK-008',
+          plateNumber: 'B 4567 CD',
+          description: 'Truk terpercaya untuk berbagai jenis material',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Honda Mobilio',
+          id_sl: 'PU-007',
+          plateNumber: 'B 8901 EF',
+          description: 'Pickup nyaman untuk pengiriman penumpang dan barang',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Isuzu Forward',
+          id_sl: 'TRK-009',
+          plateNumber: 'B 2345 GH',
+          description: 'Truk besar untuk pengiriman material konstruksi',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Toyota Avanza',
+          id_sl: 'PU-008',
+          plateNumber: 'B 6789 IJ',
+          description: 'Pickup keluarga untuk pengiriman ringan',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Mitsubishi Fighter',
+          id_sl: 'TRK-010',
+          plateNumber: 'B 0123 KL',
+          description: 'Truk tangguh untuk medan berat',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Daihatsu Xenia',
+          id_sl: 'PU-009',
+          plateNumber: 'B 4567 MN',
+          description: 'Pickup ekonomis untuk pengiriman harian',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Hino Ranger',
+          id_sl: 'TRK-011',
+          plateNumber: 'B 8901 OP',
+          description: 'Truk profesional untuk distribusi',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Suzuki Ertiga',
+          id_sl: 'PU-010',
+          plateNumber: 'B 2345 QR',
+          description: 'Pickup modern untuk pengiriman fleksibel',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Mercedes-Benz Actros',
+          id_sl: 'TRK-012',
+          plateNumber: 'B 6789 ST',
+          description: 'Truk premium untuk pengiriman khusus',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Toyota Innova',
+          id_sl: 'PU-011',
+          plateNumber: 'B 0123 UV',
+          description: 'Pickup nyaman untuk pengiriman VIP',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Nissan Atlas',
+          id_sl: 'TRK-013',
+          plateNumber: 'B 4567 WX',
+          description: 'Truk handal untuk berbagai jenis pengiriman',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Honda Brio',
+          id_sl: 'PU-012',
+          plateNumber: 'B 8901 YZ',
+          description: 'Pickup kecil untuk pengiriman ringan',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Isuzu Giga',
+          id_sl: 'TRK-014',
+          plateNumber: 'B 2345 AB',
+          description: 'Truk besar untuk pengiriman material berat',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Suzuki Ignis',
+          id_sl: 'PU-013',
+          plateNumber: 'B 6789 CD',
+          description: 'Pickup kompak untuk pengiriman cepat',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Toyota Hino',
+          id_sl: 'TRK-015',
+          plateNumber: 'B 0123 EF',
+          description: 'Truk terpercaya untuk distribusi jarak jauh',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Daihatsu Ayla',
+          id_sl: 'PU-014',
+          plateNumber: 'B 4567 GH',
+          description: 'Pickup ekonomis untuk pengiriman lokal',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Truk Mitsubishi Colt Diesel',
+          id_sl: 'TRK-016',
+          plateNumber: 'B 8901 IJ',
+          description: 'Truk klasik untuk pengiriman material',
+        },
+      }),
+      prisma.armada.create({
+        data: {
+          model: 'Pickup Suzuki Carry Pickup',
+          id_sl: 'PU-015',
+          plateNumber: 'B 2345 KL',
+          description: 'Pickup serbaguna untuk berbagai jenis pengiriman',
         },
       }),
     ]);

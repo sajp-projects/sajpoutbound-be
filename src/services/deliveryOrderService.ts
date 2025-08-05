@@ -122,8 +122,8 @@ export default {
   /**
    * Get a delivery order by ID
    */
-  async getDeliveryOrderById(id: string) {
-    return prisma.deliveryOrder.findUnique({
+  async getDeliveryOrderById(id: string, shipmentId?: string) {
+    const deliveryOrder = await prisma.deliveryOrder.findUnique({
       where: {
         id,
       },
@@ -148,6 +148,32 @@ export default {
         },
       },
     });
+
+    if (!deliveryOrder) return null;
+
+    // If shipmentId is provided, filter items to only include those that are part of the shipment
+    if (shipmentId) {
+      // Get shipment items for this DO
+      const shipmentItems = await prisma.shipmentItem.findMany({
+        where: {
+          shipmentId,
+          deliveryOrderId: id,
+        },
+        select: {
+          productId: true,
+        },
+      });
+
+      // Create a set of product IDs that are part of the shipment
+      const shipmentProductIds = new Set(shipmentItems.map((item) => item.productId));
+
+      // Filter DO items to only include those that are part of the shipment
+      deliveryOrder.items = deliveryOrder.items.filter((item) =>
+        shipmentProductIds.has(item.productId),
+      );
+    }
+
+    return deliveryOrder;
   },
 
   /**
@@ -1506,22 +1532,26 @@ export default {
         },
       });
 
-      // Prepare revised items with product names for logging
-      const revisedItemsWithNames = revisedItems.map((revisedItem) => {
-        const oldItem = oldData.find((old) => old.id === revisedItem.id);
-        return {
-          ...revisedItem,
-          productId: oldItem?.productId,
-          productName: oldItem?.productName,
-        };
-      });
+      // Prepare old and new data for logging
+      const oldDataForLog = {
+        items: oldData,
+      };
+
+      const newDataForLog = {
+        items: updatedDeliveryOrder?.items.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          productName: item.product.name,
+          quantity: item.quantity,
+        })),
+      };
 
       // Log the revision with enhanced logging
       await deliveryOrderLogService.logDORevisionAfterWeighing(
         deliveryOrderId,
         performedById,
-        oldData,
-        revisedItemsWithNames,
+        oldDataForLog,
+        newDataForLog,
         tx,
       );
 
