@@ -257,7 +257,13 @@ export interface ShipmentAssignmentKPI {
     plateNumber: string;
     count: number;
   } | null;
-  avgShipmentsPerArmadaPerDay: number;
+  topVerifiedArmadas: {
+    id: string;
+    model: string;
+    plateNumber: string;
+    count: number;
+    platePhotos: string[];
+  }[];
   pendingAssignments: number;
 }
 

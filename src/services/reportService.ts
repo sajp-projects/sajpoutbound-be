@@ -1403,19 +1403,58 @@ export default {
     });
     const mostActiveArmada =
       Array.from(armadaCountMap.values()).sort((a, b) => b.count - a.count)[0] || null;
-    // Average Shipments per Armada per Day (for the period)
-    let periodDays = 1;
-    if (startDate && endDate) {
-      periodDays = moment(endDate).endOf('day').diff(moment(startDate).startOf('day'), 'days') + 1;
-    } else if (startDate) {
-      periodDays = moment().endOf('day').diff(moment(startDate).startOf('day'), 'days') + 1;
-    } else if (endDate) {
-      periodDays = moment(endDate).endOf('day').diff(moment().startOf('day'), 'days') + 1;
-    }
-    const avgShipmentsPerArmadaPerDay =
-      armadaCountMap.size > 0 && periodDays > 0
-        ? shipments.length / armadaCountMap.size / periodDays
-        : 0;
+    // Get most used verified armadas for today with plate photos from finished shipments
+    const todayFinishedShipments = shipments.filter(
+      (s) =>
+        moment(s.createdAt).isSame(today, 'day') &&
+        s.status === 'SELESAI' &&
+        s.isVerified === true &&
+        s.platePhoto,
+    );
+
+    const todayArmadaCountMap = new Map<
+      string,
+      {
+        id: string;
+        model: string;
+        plateNumber: string;
+        count: number;
+        platePhotos: string[];
+      }
+    >();
+
+    todayFinishedShipments.forEach((s) => {
+      if (s.armada && s.platePhoto) {
+        const key = s.armada.id;
+        if (!todayArmadaCountMap.has(key)) {
+          todayArmadaCountMap.set(key, {
+            id: s.armada.id,
+            model: s.armada.model,
+            plateNumber: s.armada.plateNumber || '',
+            count: 0,
+            platePhotos: [],
+          });
+        }
+        const armadaData = todayArmadaCountMap.get(key)!;
+        armadaData.count += 1;
+        // Add unique plate photos
+        if (!armadaData.platePhotos.includes(s.platePhoto)) {
+          armadaData.platePhotos.push(s.platePhoto);
+        }
+      }
+    });
+
+    // Get top verified armadas for today with their plate photos
+    const topVerifiedArmadas = Array.from(todayArmadaCountMap.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10) // Limit to top 10
+      .map((armadaInfo) => ({
+        id: armadaInfo.id,
+        model: armadaInfo.model,
+        plateNumber: armadaInfo.plateNumber,
+        count: armadaInfo.count,
+        platePhotos: armadaInfo.platePhotos,
+      }));
     // Pending Assignments (status != SELESAI)
     const pendingAssignments = shipments.filter((s) => s.status !== 'SELESAI').length;
     // Grouped by armada for table/chart
@@ -1542,7 +1581,7 @@ export default {
         totalAssignedWeek,
         totalAssignedMonth,
         mostActiveArmada,
-        avgShipmentsPerArmadaPerDay,
+        topVerifiedArmadas,
         pendingAssignments,
       },
     };
