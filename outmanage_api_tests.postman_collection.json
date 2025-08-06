@@ -4070,7 +4070,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/shipments?page=1&limit=10&search=",
+              "raw": "{{baseUrl}}/api/shipments?page=1&limit=10&search=&status=&type=&unverified=false",
               "host": ["{{baseUrl}}"],
               "path": ["api", "shipments"],
               "query": [
@@ -4088,10 +4088,27 @@
                   "key": "search",
                   "value": "",
                   "description": "Search term for filtering results"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Filter by shipment status (PENDING, PROSES, SELESAI)",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "",
+                  "description": "Filter by shipment type (ANTAR, JEMPUT)",
+                  "disabled": true
+                },
+                {
+                  "key": "unverified",
+                  "value": "false",
+                  "description": "Filter to show only unverified shipments (true/false)"
                 }
               ]
             },
-            "description": "This request retrieves all active shipments with pagination and optional search filter."
+            "description": "This request retrieves all active shipments with pagination and optional filters. The unverified parameter filters to show only shipments that haven't been verified yet."
           },
           "response": []
         },
@@ -4332,6 +4349,111 @@
               ]
             },
             "description": "This request verifies a shipment's plate number using Google's Gemini AI. The AI will extract the plate number from the previously uploaded photo and compare it with the registered plate number. If they match, the shipment will be marked as verified.\n\n**Important:** All shipment items must be in COMPLETED status before this endpoint can be used."
+          },
+          "response": []
+        },
+        {
+          "name": "Change Customer After Weighing",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"customerId\": \"new-customer-uuid-here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id/change-customer",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id", "change-customer"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to change customer for"
+                }
+              ]
+            },
+            "description": "This request changes the customer for a shipment after weighing has been completed. This allows for customer reassignment when needed."
+          },
+          "response": []
+        },
+        {
+          "name": "Revise Delivery Order After Weighing",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"items\": [\n        {\n            \"deliveryOrderId\": \"new-do-uuid-here\",\n            \"productId\": \"product-uuid-here\",\n            \"requestedQuantity\": 60\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id/revise-items",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id", "revise-items"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to revise items for"
+                }
+              ]
+            },
+            "description": "This request revises the delivery order items for a shipment after weighing has been completed. This allows for item quantity adjustments when needed."
+          },
+          "response": []
+        },
+        {
+          "name": "Manually Verify Plate Number",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"plateNumber\": \"B1234CD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/shipments/:id/verify-plate-manual",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "shipments", ":id", "verify-plate-manual"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "shipment-uuid-here",
+                  "description": "UUID of the shipment to manually verify plate for"
+                }
+              ]
+            },
+            "description": "This request manually verifies a shipment's plate number without using AI verification. This is useful when AI verification fails or when manual verification is preferred."
           },
           "response": []
         },

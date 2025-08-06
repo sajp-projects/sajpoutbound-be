@@ -426,7 +426,17 @@
           },
           "entityType": {
             "type": "string",
-            "enum": ["USER", "ROLE", "PERMISSION", "WAREHOUSE", "PRODUCT", "CUSTOMER", "ARMADA", "DELIVERY_ORDER", "SHIPMENT"]
+            "enum": [
+              "USER",
+              "ROLE",
+              "PERMISSION",
+              "WAREHOUSE",
+              "PRODUCT",
+              "CUSTOMER",
+              "ARMADA",
+              "DELIVERY_ORDER",
+              "SHIPMENT"
+            ]
           },
           "action": {
             "type": "string",
@@ -1481,6 +1491,45 @@
           }
         }
       },
+      "/api/roles/options": {
+        "get": {
+          "tags": ["Roles"],
+          "summary": "Get all roles for options",
+          "description": "Retrieve all roles without pagination for use in dropdowns and options.",
+          "security": [
+            {
+              "OutmanageAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Roles retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                        "example": true
+                      },
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Role"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
+          }
+        }
+      },
       "post": {
         "tags": ["Roles"],
         "summary": "Create new role",
@@ -1568,6 +1617,169 @@
         }
       }
     },
+    "/api/role-permissions/{roleId}": {
+      "get": {
+        "tags": ["Permissions"],
+        "summary": "Get permissions for a specific role",
+        "description": "Retrieve all permissions assigned to a specific role.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "description": "Role UUID identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role permissions retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Permission"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/role-permissions/{roleId}/update-all": {
+      "put": {
+        "tags": ["Permissions"],
+        "summary": "Update all permissions for a role",
+        "description": "Toggle permissions for a role (add if not assigned, remove if already assigned).",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "required": true,
+            "description": "Role UUID identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["permissions"],
+                "properties": {
+                  "permissions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["entityType", "action"],
+                      "properties": {
+                        "entityType": {
+                          "type": "string",
+                          "enum": [
+                            "USER",
+                            "ROLE",
+                            "PERMISSION",
+                            "WAREHOUSE",
+                            "PRODUCT",
+                            "CUSTOMER",
+                            "ARMADA",
+                            "DELIVERY_ORDER",
+                            "SHIPMENT"
+                          ]
+                        },
+                        "action": {
+                          "type": "string",
+                          "enum": ["CREATE", "READ", "UPDATE", "DELETE"]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Role permissions updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string",
+                          "example": "Role permissions updated successfully"
+                        },
+                        "permissions": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Permission"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/api/warehouses": {
       "get": {
         "tags": ["Warehouses"],
@@ -1602,6 +1814,45 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "/api/warehouses/options": {
+        "get": {
+          "tags": ["Warehouses"],
+          "summary": "Get all warehouses for options",
+          "description": "Retrieve all warehouses without pagination for use in dropdowns and options.",
+          "security": [
+            {
+              "OutmanageAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Warehouses retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "success": {
+                        "type": "boolean",
+                        "example": true
+                      },
+                      "data": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/components/schemas/Warehouse"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "$ref": "#/components/responses/Unauthorized"
+            }
           }
         }
       },
@@ -1747,6 +1998,220 @@
         }
       }
     },
+    "/api/products/{id}": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get product by ID",
+        "description": "Retrieve a single product by its UUID.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Product"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Products"],
+        "summary": "Update product",
+        "description": "Update an existing product's information.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductCreateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Product"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Products"],
+        "summary": "Delete product",
+        "description": "Soft delete a product (sets deletedAt timestamp).",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SuccessResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/products/logs": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get all product logs",
+        "description": "Retrieve all product audit logs across all products with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/products/logs/{productId}": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get logs for specific product",
+        "description": "Retrieve audit logs for a specific product with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "description": "Product UUID identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/api/customers": {
       "get": {
         "tags": ["Customers"],
@@ -1832,6 +2297,220 @@
         }
       }
     },
+    "/api/customers/{id}": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "Get customer by ID",
+        "description": "Retrieve a single customer by their UUID.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Customer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Customers"],
+        "summary": "Update customer",
+        "description": "Update an existing customer's information.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerCreateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customer updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Customer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Customers"],
+        "summary": "Delete customer",
+        "description": "Soft delete a customer (sets deletedAt timestamp).",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SuccessResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/customers/logs": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get all customer logs",
+        "description": "Retrieve all customer audit logs across all customers with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/customers/logs/{customerId}": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get logs for specific customer",
+        "description": "Retrieve audit logs for a specific customer with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customerId",
+            "in": "path",
+            "required": true,
+            "description": "Customer UUID identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/api/armadas": {
       "get": {
         "tags": ["Armadas"],
@@ -1913,6 +2592,220 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/armadas/{id}": {
+      "get": {
+        "tags": ["Armadas"],
+        "summary": "Get armada by ID",
+        "description": "Retrieve a single armada by its UUID.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Armada retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Armada"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Armadas"],
+        "summary": "Update armada",
+        "description": "Update an existing armada's information.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArmadaCreateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Armada updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Armada"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Armadas"],
+        "summary": "Delete armada",
+        "description": "Soft delete an armada (sets deletedAt timestamp).",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SuccessResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/armadas/logs": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get all armada logs",
+        "description": "Retrieve all armada audit logs across all armadas with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Armada logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/armadas/logs/{armadaId}": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get logs for specific armada",
+        "description": "Retrieve audit logs for a specific armada with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "armadaId",
+            "in": "path",
+            "required": true,
+            "description": "Armada UUID identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Armada logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -2020,11 +2913,328 @@
         }
       }
     },
+    "/api/delivery-orders/by-ids": {
+      "post": {
+        "tags": ["Delivery Orders"],
+        "summary": "Get multiple delivery orders by IDs",
+        "description": "Retrieve multiple delivery orders by their UUIDs.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["ids"],
+                "properties": {
+                  "ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "description": "Array of delivery order UUIDs"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delivery orders retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DeliveryOrder"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/delivery-orders/{id}": {
+      "get": {
+        "tags": ["Delivery Orders"],
+        "summary": "Get delivery order by ID",
+        "description": "Retrieve a single delivery order by its UUID.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery order retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/DeliveryOrder"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Delivery Orders"],
+        "summary": "Update delivery order",
+        "description": "Update an existing delivery order's information.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryOrderCreateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delivery order updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/DeliveryOrder"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Delivery Orders"],
+        "summary": "Delete delivery order",
+        "description": "Soft delete a delivery order (sets deletedAt timestamp).",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SuccessResponse"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/delivery-orders/{id}/shipments": {
+      "get": {
+        "tags": ["Delivery Orders"],
+        "summary": "Get shipments by delivery order ID",
+        "description": "Retrieve all shipments that use items from a given delivery order.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipments retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Shipment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/delivery-orders/logs": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get all delivery order logs",
+        "description": "Retrieve all delivery order audit logs across all delivery orders with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery order logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/delivery-orders/logs/{id}": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get logs for specific delivery order",
+        "description": "Retrieve audit logs for a specific delivery order with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          },
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery order logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/api/shipments": {
       "get": {
         "tags": ["Shipments"],
         "summary": "Get all shipments",
-        "description": "Retrieve paginated list of shipments with optional filtering by type, status, and armada.",
+        "description": "Retrieve paginated list of shipments with optional filtering by type, status, armada, and verification status.",
         "security": [
           {
             "OutmanageAuth": []
@@ -2065,6 +3275,15 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "unverified",
+            "in": "query",
+            "description": "Filter to show only unverified shipments",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
             }
           }
         ],
@@ -2136,9 +3355,7 @@
       "post": {
         "summary": "Bulk weigh multiple shipment items with the same product",
         "description": "This endpoint handles weighing all items with the same product at once, by:\n1. Finding all chosen items for this product in the shipment\n2. Distributing the weight proportionally based on each item's requested quantity\n3. Recording the weights for each item and its chosen product\n4. Updating all items to COMPLETED status",
-        "tags": [
-          "Shipment Weighing"
-        ],
+        "tags": ["Shipment Weighing"],
         "requestBody": {
           "required": true,
           "content": {
@@ -2254,9 +3471,7 @@
       "get": {
         "summary": "Get available items for weighing in shipments",
         "description": "Returns a list of items that are ready for weighing across all shipments.\nThese items have been marked as \"CHOSEN\" and are grouped by product to facilitate\nbulk weighing operations.",
-        "tags": [
-          "Shipment Weighing"
-        ],
+        "tags": ["Shipment Weighing"],
         "responses": {
           "200": {
             "description": "Successfully retrieved available items",
@@ -2377,9 +3592,7 @@
       "get": {
         "summary": "Get available items for weighing in a specific shipment",
         "description": "Returns a list of items that are ready for weighing in a specific shipment.\nThese items have been marked as \"CHOSEN\" and are grouped by product to facilitate\nbulk weighing operations.",
-        "tags": [
-          "Shipment Weighing"
-        ],
+        "tags": ["Shipment Weighing"],
         "parameters": [
           {
             "name": "shipmentId",
@@ -2667,6 +3880,346 @@
         }
       }
     },
+    "/api/reports/dashboard-summary": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Get dashboard summary",
+        "description": "Retrieve dashboard summary metrics and KPIs for the main dashboard view.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard summary retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalShipments": {
+                          "type": "integer",
+                          "description": "Total number of shipments"
+                        },
+                        "pendingShipments": {
+                          "type": "integer",
+                          "description": "Number of pending shipments"
+                        },
+                        "completedShipments": {
+                          "type": "integer",
+                          "description": "Number of completed shipments"
+                        },
+                        "totalWeight": {
+                          "type": "number",
+                          "description": "Total weight processed"
+                        },
+                        "totalCustomers": {
+                          "type": "integer",
+                          "description": "Total number of customers"
+                        },
+                        "totalProducts": {
+                          "type": "integer",
+                          "description": "Total number of products"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/reports/operational": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Get operational report",
+        "description": "Retrieve operational report data with filtering options.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date for report period",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date for report period",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "warehouseId",
+            "in": "query",
+            "description": "Filter by warehouse ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status",
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "PROSES", "SELESAI"]
+            }
+          },
+          {
+            "name": "shipmentType",
+            "in": "query",
+            "description": "Filter by shipment type",
+            "schema": {
+              "type": "string",
+              "enum": ["ANTAR", "JEMPUT"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Operational report retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/reports/daily-output": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Get daily output report",
+        "description": "Retrieve daily output report data with filtering options.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date for report period",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date for report period",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "warehouseId",
+            "in": "query",
+            "description": "Filter by warehouse ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "groupBy",
+            "in": "query",
+            "description": "Group by option",
+            "schema": {
+              "type": "string",
+              "enum": ["item", "customer", "product"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily output report retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/reports/daily-output/table": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Get daily output report table data",
+        "description": "Retrieve detailed daily output report table data with filtering options.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date for report period",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date for report period",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "warehouseId",
+            "in": "query",
+            "description": "Filter by warehouse ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "groupBy",
+            "in": "query",
+            "description": "Group by option",
+            "schema": {
+              "type": "string",
+              "enum": ["item", "customer", "product"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily output report table data retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/reports/shipment-assignment": {
+      "get": {
+        "tags": ["Reports"],
+        "summary": "Get shipment assignment report",
+        "description": "Retrieve shipment assignment report data with filtering options.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date for report period",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date for report period",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "warehouseId",
+            "in": "query",
+            "description": "Filter by warehouse ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status",
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "PROSES", "SELESAI"]
+            }
+          },
+          {
+            "name": "shipmentType",
+            "in": "query",
+            "description": "Filter by shipment type",
+            "schema": {
+              "type": "string",
+              "enum": ["ANTAR", "JEMPUT"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipment assignment report retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
     "/api/users/archived": {
       "get": {
         "tags": ["Users"],
@@ -2759,6 +4312,95 @@
                       "$ref": "#/components/schemas/User"
                     }
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/users/logs": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get all user logs",
+        "description": "Retrieve all user audit logs across all users with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/users/logs/{userId}": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get logs for specific user",
+        "description": "Retrieve audit logs for a specific user with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "User UUID identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
                 }
               }
             }
@@ -3157,6 +4799,95 @@
         }
       }
     },
+    "/api/warehouses/logs": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get all warehouse logs",
+        "description": "Retrieve all warehouse audit logs across all warehouses with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Warehouse logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/warehouses/logs/{warehouseId}": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get logs for specific warehouse",
+        "description": "Retrieve audit logs for a specific warehouse with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "warehouseId",
+            "in": "path",
+            "required": true,
+            "description": "Warehouse UUID identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Warehouse logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
     "/api/shipments/{id}/upload-plate-photo": {
       "patch": {
         "tags": ["Shipments"],
@@ -3336,6 +5067,712 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/shipments/{id}/change-customer": {
+      "patch": {
+        "tags": ["Shipments"],
+        "summary": "Change customer after weighing",
+        "description": "Change the customer for a shipment after weighing has been completed. This allows for customer reassignment when needed.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["customerId"],
+                "properties": {
+                  "customerId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the new customer to assign"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Customer changed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "deliveryOrder": {
+                          "$ref": "#/components/schemas/DeliveryOrder"
+                        },
+                        "message": {
+                          "type": "string",
+                          "example": "Customer berhasil diubah"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/shipments/{id}/revise-items": {
+      "patch": {
+        "tags": ["Shipments"],
+        "summary": "Revise delivery order items after weighing",
+        "description": "Revise the delivery order items for a shipment after weighing has been completed. This allows for item quantity adjustments when needed.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["id", "quantity"],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "ID of the delivery order item"
+                        },
+                        "quantity": {
+                          "type": "number",
+                          "minimum": 0,
+                          "description": "New quantity for the item"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Items revised successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "deliveryOrder": {
+                          "$ref": "#/components/schemas/DeliveryOrder"
+                        },
+                        "message": {
+                          "type": "string",
+                          "example": "DO berhasil direvisi"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/shipments/{id}/verify-plate-manual": {
+      "patch": {
+        "tags": ["Shipments"],
+        "summary": "Manually verify plate number",
+        "description": "Manually verify a shipment's plate number without using AI verification. This is useful when AI verification fails or when manual verification is preferred.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/UuidPathParam"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["plateNumber"],
+                "properties": {
+                  "plateNumber": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "description": "The plate number to manually verify"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Plate manually verified successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "verifikasiPlat": {
+                          "type": "object",
+                          "properties": {
+                            "plateNumber": {
+                              "type": "string"
+                            },
+                            "verificationType": {
+                              "type": "string",
+                              "example": "manual"
+                            },
+                            "message": {
+                              "type": "string",
+                              "example": "Plat berhasil diverifikasi secara manual"
+                            }
+                          }
+                        },
+                        "shipment": {
+                          "$ref": "#/components/schemas/Shipment"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/shipments/{shipmentId}/manual-weigh-items": {
+      "post": {
+        "tags": ["Shipments"],
+        "summary": "Manually weigh shipment items",
+        "description": "Manually weigh multiple shipment items with the same product. This endpoint handles weighing all items with the same product at once.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shipmentId",
+            "in": "path",
+            "required": true,
+            "description": "ID of the shipment",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkWeighInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Items weighed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "product": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "satuan": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "shipment": {
+                          "type": "object"
+                        },
+                        "weights": {
+                          "type": "object",
+                          "properties": {
+                            "gross": {
+                              "type": "number"
+                            },
+                            "net": {
+                              "type": "number"
+                            },
+                            "tare": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "COMPLETED"
+                        },
+                        "locationType": {
+                          "type": "string"
+                        },
+                        "weighedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/shipments/{shipmentId}/choosen-product": {
+      "get": {
+        "tags": ["Shipments"],
+        "summary": "Get chosen products for shipment",
+        "description": "Retrieve all chosen products for a specific shipment.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shipmentId",
+            "in": "path",
+            "required": true,
+            "description": "ID of the shipment",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chosen products retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "chosenProducts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "shipmentId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "productId": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "code": {
+                                "type": "string"
+                              },
+                              "product": {
+                                "$ref": "#/components/schemas/Product"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Shipments"],
+        "summary": "Choose product for shipment",
+        "description": "Choose a product for a specific shipment. This marks the product as selected for weighing.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shipmentId",
+            "in": "path",
+            "required": true,
+            "description": "ID of the shipment",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["productId"],
+                "properties": {
+                  "productId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "description": "ID of the product to choose"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product chosen successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "shipmentId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        "code": {
+                          "type": "string"
+                        },
+                        "product": {
+                          "$ref": "#/components/schemas/Product"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/shipments/{shipmentId}/choosen-product/{productId}": {
+      "delete": {
+        "tags": ["Shipments"],
+        "summary": "Delete chosen product from shipment",
+        "description": "Remove a chosen product from a shipment.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shipmentId",
+            "in": "path",
+            "required": true,
+            "description": "ID of the shipment",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "description": "ID of the product to remove",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product removed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string",
+                          "example": "Produk dihapus dari pengiriman"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ValidationError"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/api/shipments/logs": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get all shipment logs",
+        "description": "Retrieve all shipment logs across all shipments with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipment logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/api/shipments/logs/{shipmentId}": {
+      "get": {
+        "tags": ["Audit Logs"],
+        "summary": "Get logs for specific shipment",
+        "description": "Retrieve logs for a specific shipment with pagination.",
+        "security": [
+          {
+            "OutmanageAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shipmentId",
+            "in": "path",
+            "required": true,
+            "description": "Shipment UUID identifier",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/PageParam"
+          },
+          {
+            "$ref": "#/components/parameters/LimitParam"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipment logs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }

@@ -183,8 +183,6 @@ export default {
 
       const report = await reportService.getShipmentAssignmentReport(filters, page, limit);
 
-      console.log(report, 'report');
-
       res.status(200).json(
         success({
           report,
