@@ -85,6 +85,7 @@ async function main() {
     const specialActions: Set<PERMISSION_ACTION> = new Set([
       PERMISSION_ACTION.WEIGH,
       PERMISSION_ACTION.VERIFY_PLATE,
+      PERMISSION_ACTION.VERIFY_PLATE_MANUAL,
       PERMISSION_ACTION.CHANGE_CUSTOMER,
       PERMISSION_ACTION.REVISE_DO,
     ]);
@@ -92,6 +93,7 @@ async function main() {
     const specialActionDescriptions = new Map<PERMISSION_ACTION, string>([
       [PERMISSION_ACTION.WEIGH, 'Mengizinkan untuk melakukan penimbangan'],
       [PERMISSION_ACTION.VERIFY_PLATE, 'Mengizinkan untuk verifikasi plat nomor kendaraan'],
+      [PERMISSION_ACTION.VERIFY_PLATE_MANUAL, 'Mengizinkan untuk verifikasi plat nomor kendaraan secara manual'],
       [
         PERMISSION_ACTION.CHANGE_CUSTOMER,
         'Mengizinkan untuk mengubah pelanggan setelah pengiriman di proses',
@@ -1237,6 +1239,7 @@ async function main() {
       PERMISSION_ACTION.DELETE,
       PERMISSION_ACTION.WEIGH,
       PERMISSION_ACTION.VERIFY_PLATE,
+      PERMISSION_ACTION.VERIFY_PLATE_MANUAL,
       PERMISSION_ACTION.CHANGE_CUSTOMER,
       PERMISSION_ACTION.REVISE_DO,
     ]);

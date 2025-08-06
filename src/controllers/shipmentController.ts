@@ -1077,6 +1077,98 @@ export default {
   },
 
   /**
+   * Manually verify plate number without AI verification
+   *
+   * This can only be done when all shipment items are in CHOSEN or COMPLETED status
+   */
+  async manualVerifyPlate(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+
+      await shipmentIdSchema.validateAsync({
+        id,
+      });
+
+      const performedById = req.user?.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
+          status: 401,
+        });
+      }
+
+      // Check if shipment exists and get its items
+      const existingShipment = await shipmentService.getShipmentById(id);
+
+      if (!existingShipment) {
+        throw new CustomError({
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      // Ensure all shipment items are either in CHOSEN or COMPLETED status
+      const invalidItems = existingShipment.shipmentItems.filter((item) => {
+        return item.status !== 'CHOSEN' && item.status !== 'COMPLETED';
+      });
+
+      if (invalidItems.length > 0) {
+        throw new CustomError({
+          message:
+            'Semua item pengiriman harus dipilih atau selesai sebelum memverifikasi nomor plat',
+          errorCode:
+            'SEMUA_ITEM_PENGIRIMAN_MUSTI_DIPILIH_ATAU_SELESAI_SEBELUM_MEMVERIFIKASI_NOMOR_PLAT',
+          status: 400,
+        });
+      }
+
+      // Check if shipment is already verified or completed
+      if (existingShipment.isVerified || existingShipment.status === 'SELESAI') {
+        throw new CustomError({
+          message: 'Pengiriman sudah diverifikasi',
+          errorCode: 'PENGIRIMAN_SUDAH_DIVERIFIKASI',
+          status: 400,
+        });
+      }
+
+      // Verify that plate number exists (from shipment or armada)
+      if (!existingShipment.plateNumber && !existingShipment.armada?.plateNumber) {
+        throw new CustomError({
+          message: 'Pengiriman harus memiliki nomor plat sebelum verifikasi',
+          errorCode: 'PENGIRIMAN_MUSTI_MEMILIKI_NOMOR_PLAT_SEBELUM_MEMVERIFIKASI',
+          status: 400,
+        });
+      }
+
+      // Get the plate number from either the shipment or its armada
+      const plateNumber = existingShipment.plateNumber || existingShipment.armada?.plateNumber;
+
+      // Proceed with manual verification (no AI involved)
+      const shipment = await shipmentService.verifyPlateNumberAndPhoto(
+        id,
+        performedById,
+        existingShipment,
+      );
+
+      res.status(200).json(
+        success({
+          ...shipment,
+          verifikasiPlat: {
+            plateNumber,
+            verificationType: 'manual',
+            message: 'Plat berhasil diverifikasi secara manual',
+          },
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
    * Bulk weigh multiple shipment items with the same product
    *
    * This endpoint handles weighing all items with the same product at once, by:

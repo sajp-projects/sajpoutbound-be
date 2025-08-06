@@ -110,6 +110,14 @@ router.patch(
   shipmentController.verifyPlateNumberAndPhoto,
 );
 
+// Manually Verify Plate Number (No AI verification)
+router.patch(
+  '/:id/verify-plate-manual',
+  checkPermission('shipment', PERMISSION_ACTION.VERIFY_PLATE_MANUAL),
+  checkShipmentNotArchived,
+  shipmentController.manualVerifyPlate,
+);
+
 router.post(
   '/:shipmentId/manual-weigh-items',
   checkPermission('shipment', PERMISSION_ACTION.WEIGH),
