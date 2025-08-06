@@ -33,6 +33,7 @@ export default {
     search?: string,
     status?: STATUS,
     type?: SHIPMENT_TYPE,
+    unverifiedOnly?: boolean,
   ) {
     const skip = (page - 1) * limit;
 
@@ -46,6 +47,14 @@ export default {
 
     if (type) {
       whereConditions.type = type;
+    }
+
+    // Filter for unverified shipments (have platePhoto but no verifiedAt)
+    if (unverifiedOnly) {
+      whereConditions.platePhoto = {
+        not: null, 
+      };
+      whereConditions.verifiedAt = null;
     }
 
     if (search) {
