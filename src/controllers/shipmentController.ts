@@ -1,4 +1,6 @@
-import { SHIPMENT_TYPE, STATUS } from '@prisma/client';
+import {
+  SHIPMENT_TYPE, STATUS, WEIGHING_METHOD, 
+} from '@prisma/client';
 import dotenv from 'dotenv';
 import {
   NextFunction, Request, Response, 
@@ -680,7 +682,7 @@ export default {
   ) {
     try {
       const { shipmentId } = req.params;
-      const { productId } = req.body;
+      const { productId, weighingMethod } = req.body;
 
       // Validate shipment ID
       await shipmentIdSchema.validateAsync({
@@ -691,6 +693,7 @@ export default {
       const data: ShipmentChosenProductInput = {
         shipmentId,
         productId,
+        weighingMethod,
       };
 
       await shipmentChosenProductSchema.validateAsync(data);
@@ -791,6 +794,7 @@ export default {
   ) {
     try {
       const { shipmentId } = req.params;
+      const weighingMethod = req.query.method as WEIGHING_METHOD | undefined;
 
       // Validate shipment ID
       await shipmentIdSchema.validateAsync({
@@ -807,8 +811,8 @@ export default {
         });
       }
 
-      // Get chosen products - these are already combined by product ID
-      const chosenProducts = await shipmentService.getChosenProductsForShipment(shipmentId);
+      // Get chosen products - filtered by weighing method if provided
+      const chosenProducts = await shipmentService.getChosenProductsForShipment(shipmentId, weighingMethod);
 
       res.status(200).json(
         success({
@@ -1332,6 +1336,28 @@ export default {
           message: 'Produk tidak ditemukan',
           errorCode: 'PRODUK_TIDAK_DITEMUKAN',
           status: 404,
+        });
+      }
+
+      // Validate that the chosen product is marked for manual weighing
+      const chosenProduct = await shipmentService.getShipmentChosenProduct(
+        validated.shipmentId,
+        validated.productId,
+      );
+
+      if (!chosenProduct) {
+        throw new CustomError({
+          message: 'Produk dipilih untuk pengiriman tidak ditemukan',
+          errorCode: 'PRODUK_DIPILIH_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      if (chosenProduct.weighingMethod !== WEIGHING_METHOD.MANUAL) {
+        throw new CustomError({
+          message: 'Produk ini tidak ditandai untuk penimbangan manual',
+          errorCode: 'BUKAN_PRODUK_MANUAL',
+          status: 400,
         });
       }
 

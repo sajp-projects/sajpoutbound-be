@@ -1,5 +1,5 @@
 import {
-  SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, 
+  SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, WEIGHING_METHOD, 
 } from '@prisma/client';
 import fs from 'fs';
 import { customAlphabet } from 'nanoid';
@@ -486,6 +486,7 @@ export default {
       id: chosenProduct.id,
       shipmentId,
       productId,
+      weighingMethod: chosenProduct.weighingMethod,
       product,
       deliveryOrders,
       customers,
@@ -1762,6 +1763,7 @@ export default {
               code,
               shipmentId: data.shipmentId,
               productId: data.productId,
+              weighingMethod: data.weighingMethod,
               createdAt: jakartaTime,
               updatedAt: jakartaTime,
             },
@@ -1839,14 +1841,21 @@ export default {
   },
 
   /**
-   * Get all chosen products for a shipment
+   * Get all chosen products for a shipment, optionally filtered by weighing method
    */
-  async getChosenProductsForShipment(shipmentId: string) {
+  async getChosenProductsForShipment(shipmentId: string, weighingMethod?: WEIGHING_METHOD) {
     // Get all chosen products for this shipment
+    const whereCondition: any = {
+      shipmentId,
+    };
+    
+    // Add weighing method filter if provided
+    if (weighingMethod) {
+      whereCondition.weighingMethod = weighingMethod;
+    }
+    
     const chosenProducts = await prisma.shipmentChosenProduct.findMany({
-      where: {
-        shipmentId,
-      },
+      where: whereCondition,
       include: {
         weighings: {
           select: {
@@ -1945,6 +1954,7 @@ export default {
           code: chosenProduct.code,
           shipmentId,
           productId: chosenProduct.productId,
+          weighingMethod: chosenProduct.weighingMethod,
           product: {
             id: product.id,
             name: product.name,
@@ -2558,6 +2568,179 @@ export default {
 
       return combinedData;
     });
+  },
+
+  /**
+   * Get all shipments that have vendor-marked chosen products with CHOSEN status
+   */
+  async getVendorPendingShipments() {
+    return prisma.shipment.findMany({
+      where: {
+        deletedAt: null,
+        chosenProducts: {
+          some: {
+            weighingMethod: WEIGHING_METHOD.VENDOR,
+          },
+        },
+        shipmentItems: {
+          some: {
+            status: SHIPMENT_ITEM_STATUS.CHOSEN,
+          },
+        },
+      },
+      include: {
+        armada: {
+          select: {
+            id: true,
+            model: true,
+            plateNumber: true,
+          },
+        },
+        shipmentItems: {
+          where: {
+            status: SHIPMENT_ITEM_STATUS.CHOSEN,
+          },
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                satuan: true,
+              },
+            },
+            deliveryOrder: {
+              select: {
+                id: true,
+                customer: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            warehouse: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  },
+
+  /**
+   * Get vendor-marked available items for weighing by shipment ID
+   */
+  async getVendorAvailableItemsForWeighingByShipmentId(shipmentId: string) {
+    const items = await prisma.shipmentItem.findMany({
+      where: {
+        status: SHIPMENT_ITEM_STATUS.CHOSEN,
+        shipmentId,
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            satuan: true,
+          },
+        },
+        deliveryOrder: {
+          select: {
+            id: true,
+            customer: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        warehouse: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    // Get chosen products for this shipment that are marked for vendor weighing
+    const vendorChosenProducts = await prisma.shipmentChosenProduct.findMany({
+      where: {
+        shipmentId,
+        weighingMethod: WEIGHING_METHOD.VENDOR,
+      },
+      select: {
+        productId: true,
+        code: true,
+      },
+    });
+
+    const vendorProductIds = new Set(vendorChosenProducts.map(cp => cp.productId));
+    const codeMap = new Map(vendorChosenProducts.map((cp) => [cp.productId, cp.code]));
+
+    // Filter items to only include those that are marked for vendor weighing
+    const vendorItems = items.filter(item => vendorProductIds.has(item.productId));
+
+    // Create a map to group items by product ID
+    const productMap = new Map();
+
+    // Process each vendor item and combine those with the same product ID
+    for (const item of vendorItems) {
+      const productId = item.product.id;
+
+      if (!productMap.has(productId)) {
+        productMap.set(productId, {
+          shipmentId: item.shipmentId,
+          product: {
+            ...item.product,
+            code: codeMap.get(productId) || null,
+          },
+          warehouse: item.warehouse,
+          // Create arrays to track all related delivery orders and their info
+          deliveryOrders: [item.deliveryOrder],
+          requestedQuantity: item.requestedQuantity,
+          // Track all shipment item IDs for reference if needed
+          shipmentItemIds: [item.id],
+        });
+      } else {
+        // Product already exists in our map, update the entry
+        const existingItem = productMap.get(productId);
+
+        // Add to the total quantity
+        existingItem.requestedQuantity += item.requestedQuantity;
+
+        // Add this item's ID to the list
+        existingItem.shipmentItemIds.push(item.id);
+
+        // Add this delivery order if it's not already included
+        const doExists = existingItem.deliveryOrders.some(
+          (do1: { id: string; customer?: { id: string; name: string } }) =>
+            do1.id === item.deliveryOrder.id,
+        );
+
+        if (!doExists) {
+          existingItem.deliveryOrders.push(item.deliveryOrder);
+        }
+      }
+    }
+
+    // Convert the map back to an array
+    const combinedItems = Array.from(productMap.values());
+
+    return {
+      availableItems: combinedItems,
+    };
   },
 
   /**

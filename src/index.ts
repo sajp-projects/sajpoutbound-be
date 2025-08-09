@@ -59,11 +59,12 @@ app.get(
 );
 
 // Auto-generated documentation (JSDoc-based, limited coverage)
-app.use('/api-docs/auto', swaggerUi.serveFiles(swaggerSpec));
+app.use('/weighing-docs', swaggerUi.serveFiles(swaggerSpec));
+
 app.get(
-  '/api-docs/auto',
+  '/weighing-docs',
   swaggerUi.setup(swaggerSpec, {
-    customSiteTitle: 'Outmanage API - Auto-generated Documentation',
+    customSiteTitle: 'Outmanage API - Weighings Documentation',
     customCss: '.swagger-ui .topbar { display: none }',
   }),
 );
@@ -74,7 +75,7 @@ app.get('/api-docs.json', (_, res) => {
   res.send(comprehensiveSwaggerSpec);
 });
 
-app.get('/api-docs/auto.json', (_, res) => {
+app.get('/weighing-docs.json', (_, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerSpec);
 });
@@ -113,8 +114,8 @@ process.on('SIGINT', async () => {
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}`);
   console.log('📚 Comprehensive API Documentation: /api-docs');
-  console.log('🔧 Auto-generated Documentation: /api-docs/auto');
-  console.log('📄 JSON Specs: /api-docs.json & /api-docs/auto.json');
+  console.log('🔧 Weighing-generated Documentation: /weighing-docs');
+  console.log('📄 JSON Specs: /api-docs.json & /weighing-docs.json');
 });
 
 export default app;

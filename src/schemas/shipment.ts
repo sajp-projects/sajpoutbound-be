@@ -1,4 +1,6 @@
-import { SHIPMENT_TYPE, STATUS } from '@prisma/client';
+import {
+  SHIPMENT_TYPE, STATUS, WEIGHING_METHOD, 
+} from '@prisma/client';
 import Joi from 'joi';
 import { createResourceIdSchema } from './base';
 
@@ -56,6 +58,7 @@ export type ShipmentBulkWeighInput = {
 export type ShipmentChosenProductInput = {
   shipmentId: string;
   productId: string;
+  weighingMethod: WEIGHING_METHOD;
 };
 
 export const createShipmentSchema = Joi.object<ShipmentCreateInput>({
@@ -243,6 +246,14 @@ export const shipmentChosenProductSchema = Joi.object<ShipmentChosenProductInput
     'string.guid': 'Product ID must be a valid UUID',
     'any.required': 'Product ID is required',
   }),
+  weighingMethod: Joi.string()
+    .valid(...Object.values(WEIGHING_METHOD))
+    .required()
+    .messages({
+      'string.empty': 'Weighing method is required',
+      'any.only': 'Invalid weighing method. Must be MANUAL or VENDOR',
+      'any.required': 'Weighing method is required',
+    }),
 });
 
 // Using createResourceIdSchema for shipment ID validation

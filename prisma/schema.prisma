@@ -361,15 +361,16 @@ model ShipmentLog {
 }
 
 model ShipmentChosenProduct {
-  id         String                          @id @default(uuid())
-  code       String                          @unique
-  shipmentId String
-  productId  String
-  createdAt  DateTime                        @default(now())
-  updatedAt  DateTime                        @updatedAt
-  product    Product                         @relation(fields: [productId], references: [id])
-  shipment   Shipment                        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-  weighings  ShipmentChosenProductWeighing[]
+  id             String                          @id @default(uuid())
+  code           String                          @unique
+  shipmentId     String
+  productId      String
+  weighingMethod WEIGHING_METHOD                 @default(MANUAL)
+  createdAt      DateTime                        @default(now())
+  updatedAt      DateTime                        @updatedAt
+  product        Product                         @relation(fields: [productId], references: [id])
+  shipment       Shipment                        @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  weighings      ShipmentChosenProductWeighing[]
 
   @@unique([shipmentId, productId], name: "unique_shipment_do_product")
   @@index([shipmentId], map: "ShipmentChosenProduct_shipmentId_fkey")
@@ -439,4 +440,9 @@ enum SHIPMENT_ITEM_STATUS {
 enum SHIPMENT_TYPE {
   ANTAR
   JEMPUT
+}
+
+enum WEIGHING_METHOD {
+  MANUAL
+  VENDOR
 }
