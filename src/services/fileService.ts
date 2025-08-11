@@ -13,7 +13,7 @@ dotenv.config();
 const isProd = process.env.NODE_ENV === 'production';
 
 const PUBLIC_DIR = isProd
-  ? '/var/www/benzeta.shop/public'
+  ? '/var/www/sajpoutbound.com/public'
   : path.join(process.cwd(), 'src', 'public');
 const PLATE_PHOTOS_DIR = path.join(PUBLIC_DIR, 'plate-photos');
 

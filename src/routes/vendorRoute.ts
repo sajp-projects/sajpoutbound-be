@@ -8,39 +8,39 @@ const router = express.Router();
  * tags:
  *   - name: Vendor Weighing API
  *     description: |
- *       Public API endpoints for third-party vendor weighing systems.
+ *       Endpoint API publik untuk sistem penimbangan vendor pihak ketiga.
  *       
- *       ## Authentication
- *       These endpoints are **public** and do not require JWT Bearer authentication.
- *       Instead, they use a custom `x-auth` header for vendor authentication.
+ *       ## Autentikasi
+ *       Endpoint ini bersifat **publik** dan tidak memerlukan autentikasi JWT Bearer.
+ *       Sebaliknya, menggunakan header `x-auth` khusus untuk autentikasi vendor.
  *       
- *       ## Usage
- *       1. Obtain vendor API key from system administrator
- *       2. Include API key in `x-auth` header for all requests
- *       3. Only access items marked with VENDOR weighing method
+ *       ## Penggunaan
+ *       1. Dapatkan kunci API vendor dari administrator sistem
+ *       2. Sertakan kunci API dalam header `x-auth` untuk semua permintaan
+ *       3. Hanya akses item yang ditandai dengan metode penimbangan VENDOR
  *       
- *       ## Workflow
- *       1. Get available shipments with vendor items: `GET /api/vendor/shipments/available-items`
- *       2. Get specific shipment items: `GET /api/vendor/shipments/{shipmentId}/available-items`
- *       3. Submit weighing data: `POST /api/vendor/shipments/bulk-weigh`
+ *       ## Alur Kerja
+ *       1. Dapatkan pengiriman yang tersedia dengan item vendor: `GET /api/vendor/shipments/available-items`
+ *       2. Dapatkan item pengiriman spesifik: `GET /api/vendor/shipments/{shipmentId}/available-items`
+ *       3. Kirim data penimbangan: `POST /api/vendor/shipments/bulk-weigh`
  */
 
 /**
  * @openapi
  * /api/vendor/shipments/available-items:
  *   get:
- *     summary: Get available items for vendor weighing across all shipments
+ *     summary: Dapatkan item yang tersedia untuk penimbangan vendor di semua pengiriman
  *     description: |
- *       **Public API Endpoint** - No JWT authentication required, only x-auth header.
+ *       **Endpoint API Publik** - Tidak memerlukan autentikasi JWT, hanya header x-auth.
  *       
- *       Returns a list of shipments that have items marked for VENDOR weighing method.
- *       These items have been chosen with VENDOR weighing method and are ready for 
- *       external vendor weighing processing via API.
+ *       Mengembalikan daftar pengiriman yang memiliki item yang ditandai untuk metode penimbangan VENDOR.
+ *       Item-item ini telah dipilih dengan metode penimbangan VENDOR dan siap untuk 
+ *       pemrosesan penimbangan vendor eksternal melalui API.
  *       
- *       This endpoint only returns items that were specifically marked for vendor weighing
- *       during the product selection process.
+ *       Endpoint ini hanya mengembalikan item yang secara khusus ditandai untuk penimbangan vendor
+ *       selama proses pemilihan produk.
  *       
- *       **Authentication**: Uses x-auth header instead of JWT Bearer token.
+ *       **Autentikasi**: Menggunakan header x-auth alih-alih token JWT Bearer.
  *     tags:
  *       - Vendor Weighing API
  *     parameters:
@@ -50,10 +50,10 @@ const router = express.Router();
  *         schema:
  *           type: string
  *           example: "vendor-api-key-12345"
- *         description: Vendor API key for authentication (provided by system administrator)
+ *         description: Kunci API vendor untuk autentikasi (disediakan oleh administrator sistem)
  *     responses:
  *       200:
- *         description: Successfully retrieved vendor weighing items
+ *         description: Berhasil mengambil item penimbangan vendor
  *         content:
  *           application/json:
  *             schema:
@@ -85,7 +85,7 @@ const router = express.Router();
  *                                 type: string
  *                           shipmentItems:
  *                             type: array
- *                             description: Items marked for vendor weighing
+ *                             description: Item yang ditandai untuk penimbangan vendor
  *                             items:
  *                               type: object
  *                               properties:
@@ -106,9 +106,9 @@ const router = express.Router();
  *                                     satuan:
  *                                       type: string
  *       401:
- *         description: Unauthorized - Invalid or missing vendor API key
+ *         description: Tidak diotorisasi - Kunci API vendor tidak valid atau hilang
  *       500:
- *         description: Server error
+ *         description: Kesalahan server
  */
 router.get('/shipments/available-items', vendorController.getAvailableItemsForWeighing);
 
@@ -116,17 +116,17 @@ router.get('/shipments/available-items', vendorController.getAvailableItemsForWe
  * @openapi
  * /api/vendor/shipments/{shipmentId}/available-items:
  *   get:
- *     summary: Get available vendor weighing items for a specific shipment
+ *     summary: Dapatkan item penimbangan vendor yang tersedia untuk pengiriman tertentu
  *     description: |
- *       **Public API Endpoint** - No JWT authentication required, only x-auth header.
+ *       **Endpoint API Publik** - Tidak memerlukan autentikasi JWT, hanya header x-auth.
  *       
- *       Returns items marked for VENDOR weighing method in a specific shipment.
- *       These items are ready for external vendor weighing processing and are grouped
- *       by product to facilitate bulk weighing operations.
+ *       Mengembalikan item yang ditandai untuk metode penimbangan VENDOR dalam pengiriman tertentu.
+ *       Item-item ini siap untuk pemrosesan penimbangan vendor eksternal dan dikelompokkan
+ *       berdasarkan produk untuk memfasilitasi operasi penimbangan massal.
  *       
- *       Only items that were chosen with VENDOR weighing method will be returned.
+ *       Hanya item yang dipilih dengan metode penimbangan VENDOR yang akan dikembalikan.
  *       
- *       **Authentication**: Uses x-auth header instead of JWT Bearer token.
+ *       **Autentikasi**: Menggunakan header x-auth alih-alih token JWT Bearer.
  *     tags:
  *       - Vendor Weighing API
  *     parameters:
@@ -136,17 +136,17 @@ router.get('/shipments/available-items', vendorController.getAvailableItemsForWe
  *         schema:
  *           type: string
  *           example: "vendor-api-key-12345"
- *         description: Vendor API key for authentication (provided by system administrator)
+ *         description: Kunci API vendor untuk autentikasi (disediakan oleh administrator sistem)
  *       - name: shipmentId
  *         in: path
  *         required: true
- *         description: The ID of the shipment to get vendor items for
+ *         description: ID pengiriman untuk mendapatkan item vendor
  *         schema:
  *           type: string
  *           format: uuid
  *     responses:
  *       200:
- *         description: Successfully retrieved vendor weighing items for shipment
+ *         description: Berhasil mengambil item penimbangan vendor untuk pengiriman
  *         content:
  *           application/json:
  *             schema:
@@ -178,7 +178,7 @@ router.get('/shipments/available-items', vendorController.getAvailableItemsForWe
  *                                 type: string
  *                               code:
  *                                 type: string
- *                                 description: Product code for vendor reference
+ *                                 description: Kode produk untuk referensi vendor
  *                           warehouse:
  *                             type: object
  *                             properties:
@@ -189,23 +189,23 @@ router.get('/shipments/available-items', vendorController.getAvailableItemsForWe
  *                                 type: string
  *                           deliveryOrders:
  *                             type: array
- *                             description: Delivery orders associated with these items
+ *                             description: Pesanan pengiriman yang terkait dengan item ini
  *                             items:
  *                               type: object
  *                           requestedQuantity:
  *                             type: number
- *                             description: Total quantity to be weighed
+ *                             description: Total kuantitas yang akan ditimbang
  *                           shipmentItemIds:
  *                             type: array
  *                             items:
  *                               type: string
  *                               format: uuid
  *       401:
- *         description: Unauthorized - Invalid or missing vendor API key
+ *         description: Tidak diotorisasi - Kunci API vendor tidak valid atau hilang
  *       404:
- *         description: Shipment not found
+ *         description: Pengiriman tidak ditemukan
  *       500:
- *         description: Server error
+ *         description: Kesalahan server
  */
 router.get('/shipments/:shipmentId/available-items', vendorController.getAvailableItemsForWeighingByShipmentId);
 
@@ -213,23 +213,23 @@ router.get('/shipments/:shipmentId/available-items', vendorController.getAvailab
  * @openapi
  * /api/vendor/shipments/bulk-weigh:
  *   post:
- *     summary: Vendor bulk weigh items marked for vendor weighing
+ *     summary: Penimbangan massal vendor untuk item yang ditandai untuk penimbangan vendor
  *     description: |
- *       **Public API Endpoint** - No JWT authentication required, only x-auth header.
+ *       **Endpoint API Publik** - Tidak memerlukan autentikasi JWT, hanya header x-auth.
  *       
- *       This endpoint allows vendor systems to submit weighing data for items that were
- *       marked with VENDOR weighing method. It processes all CHOSEN items with the 
- *       specified product in the shipment by:
- *       1. Validating that the chosen product is marked for VENDOR weighing
- *       2. Finding all chosen items for this product in the shipment
- *       3. Distributing the weight proportionally based on each item's requested quantity
- *       4. Recording the weights for each item and its chosen product
- *       5. Updating all items to COMPLETED status
+ *       Endpoint ini memungkinkan sistem vendor untuk mengirim data penimbangan untuk item yang
+ *       ditandai dengan metode penimbangan VENDOR. Endpoint ini memproses semua item CHOSEN dengan
+ *       produk yang ditentukan dalam pengiriman dengan:
+ *       1. Memvalidasi bahwa produk yang dipilih ditandai untuk penimbangan VENDOR
+ *       2. Menemukan semua item yang dipilih untuk produk ini dalam pengiriman
+ *       3. Mendistribusikan berat secara proporsional berdasarkan kuantitas yang diminta setiap item
+ *       4. Mencatat berat untuk setiap item dan produk yang dipilih
+ *       5. Memperbarui semua item ke status COMPLETED
  *       
- *       This endpoint only accepts weighing data for products that were specifically
- *       chosen with VENDOR weighing method during the product selection process.
+ *       Endpoint ini hanya menerima data penimbangan untuk produk yang secara khusus
+ *       dipilih dengan metode penimbangan VENDOR selama proses pemilihan produk.
  *       
- *       **Authentication**: Uses x-auth header instead of JWT Bearer token.
+ *       **Autentikasi**: Menggunakan header x-auth alih-alih token JWT Bearer.
  *     tags:
  *       - Vendor Weighing API
  *     parameters:
@@ -239,7 +239,7 @@ router.get('/shipments/:shipmentId/available-items', vendorController.getAvailab
  *         schema:
  *           type: string
  *           example: "vendor-api-key-12345"
- *         description: Vendor API key for authentication (provided by system administrator)
+ *         description: Kunci API vendor untuk autentikasi (disediakan oleh administrator sistem)
  *     requestBody:
  *       required: true
  *       content:
@@ -254,26 +254,26 @@ router.get('/shipments/:shipmentId/available-items', vendorController.getAvailab
  *               shipmentId:
  *                 type: string
  *                 format: uuid
- *                 description: The ID of the shipment containing the items to weigh
+ *                 description: ID pengiriman yang berisi item yang akan ditimbang
  *               productId:
  *                 type: string
  *                 format: uuid
- *                 description: The ID of the product to weigh (must be marked for vendor weighing)
+ *                 description: ID produk yang akan ditimbang (harus ditandai untuk penimbangan vendor)
  *               grossWeight:
  *                 type: number
- *                 description: The total gross weight for all items with this product
+ *                 description: Total berat kotor untuk semua item dengan produk ini
  *                 minimum: 0
  *               netWeight:
  *                 type: number
- *                 description: The total net weight for all items with this product (optional)
+ *                 description: Total berat bersih untuk semua item dengan produk ini (opsional)
  *                 minimum: 0
  *               tareWeight:
  *                 type: number
- *                 description: The total tare weight for all items with this product (optional)
+ *                 description: Total berat tara untuk semua item dengan produk ini (opsional)
  *                 minimum: 0
  *     responses:
  *       200:
- *         description: Successfully processed vendor weighing
+ *         description: Berhasil memproses penimbangan vendor
  *         content:
  *           application/json:
  *             schema:
@@ -297,7 +297,7 @@ router.get('/shipments/:shipmentId/available-items', vendorController.getAvailab
  *                           type: string
  *                     shipment:
  *                       type: object
- *                       description: Shipment information
+ *                       description: Informasi pengiriman
  *                     weights:
  *                       type: object
  *                       properties:
@@ -316,7 +316,7 @@ router.get('/shipments/:shipmentId/available-items', vendorController.getAvailab
  *                       type: string
  *                       format: date-time
  *       400:
- *         description: Bad request - Product not marked for vendor weighing or validation errors
+ *         description: Permintaan buruk - Produk tidak ditandai untuk penimbangan vendor atau kesalahan validasi
  *         content:
  *           application/json:
  *             schema:
@@ -335,11 +335,11 @@ router.get('/shipments/:shipmentId/available-items', vendorController.getAvailab
  *                       type: string
  *                       example: "BUKAN_PRODUK_VENDOR"
  *       401:
- *         description: Unauthorized - Invalid or missing vendor API key
+ *         description: Tidak diotorisasi - Kunci API vendor tidak valid atau hilang
  *       404:
- *         description: Shipment, product, or chosen items not found
+ *         description: Pengiriman, produk, atau item yang dipilih tidak ditemukan
  *       500:
- *         description: Server error
+ *         description: Kesalahan server
  */
 router.post('/shipments/bulk-weigh', vendorController.bulkWeighShipmentItems);
 

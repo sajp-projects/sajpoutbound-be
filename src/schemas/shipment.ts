@@ -28,6 +28,19 @@ export type ShipmentUpdateInput = {
   status?: STATUS;
 };
 
+export type WeighingType = {
+  id: string;
+  grossWeight: number;
+  netWeight: number;
+  tareWeight: number;
+  createdAt: Date;
+  notaTimbangan: {
+    id: string;
+    ticketNumber: string;
+    documentPath: string;
+  } | null;
+};
+
 export type ShipmentItemUpdateInput = {
   shipmentItemId?: string; // Optional for existing items
   deliveryOrderId: string;

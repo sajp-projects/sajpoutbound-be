@@ -412,8 +412,6 @@ export default {
       hasPrev: page > 1,
     };
 
-    console.log(pagination, 'pagniaton');
-
     return {
       ...result,
       kpi,

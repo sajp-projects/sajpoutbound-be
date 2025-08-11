@@ -13,6 +13,7 @@ import {
   ShipmentItemUpdateInput,
   ShipmentUpdateInput,
   ShipmentWeighInput,
+  WeighingType,
 } from '../schemas/shipment';
 import { SPMBCreateInput } from '../schemas/spmb';
 import armadaService from './armadaService';
@@ -52,7 +53,7 @@ export default {
     // Filter for unverified shipments (have platePhoto but no verifiedAt)
     if (unverifiedOnly) {
       whereConditions.platePhoto = {
-        not: null, 
+        not: null,
       };
       whereConditions.verifiedAt = null;
     }
@@ -621,15 +622,15 @@ export default {
             where: {
               id: deliveryOrderItem.id,
               pendingQuantity: {
-                gte: processingQuantity, 
+                gte: processingQuantity,
               }, // Ensure sufficient pending quantity
             },
             data: {
               pendingQuantity: {
-                decrement: processingQuantity, 
+                decrement: processingQuantity,
               },
               processingQuantity: {
-                increment: processingQuantity, 
+                increment: processingQuantity,
               },
               updatedAt: jakartaTime,
             },
@@ -1098,7 +1099,7 @@ export default {
         // Delete existing SPMB PDF files from file system
         const isProd = process.env.NODE_ENV === 'production';
         const PUBLIC_DIR = isProd
-          ? '/var/www/benzeta.shop/public'
+          ? '/var/www/sajpoutbound.com/public'
           : path.join(process.cwd(), 'src', 'public');
 
         for (const spmb of existingSpmbs) {
@@ -1302,7 +1303,7 @@ export default {
       // Delete existing SPMB PDF files from file system
       const isProd = process.env.NODE_ENV === 'production';
       const PUBLIC_DIR = isProd
-        ? '/var/www/benzeta.shop/public'
+        ? '/var/www/sajpoutbound.com/public'
         : path.join(process.cwd(), 'src', 'public');
 
       for (const spmb of existingSpmbs) {
@@ -1768,6 +1769,17 @@ export default {
               updatedAt: jakartaTime,
             },
           });
+        } else if (existingChosen.weighingMethod !== data.weighingMethod) {
+          // If it exists, align weighingMethod with the latest selection
+          await tx.shipmentChosenProduct.update({
+            where: {
+              id: existingChosen.id,
+            },
+            data: {
+              weighingMethod: data.weighingMethod,
+              updatedAt: jakartaTime,
+            },
+          });
         }
       }
 
@@ -1848,12 +1860,12 @@ export default {
     const whereCondition: any = {
       shipmentId,
     };
-    
+
     // Add weighing method filter if provided
     if (weighingMethod) {
       whereCondition.weighingMethod = weighingMethod;
     }
-    
+
     const chosenProducts = await prisma.shipmentChosenProduct.findMany({
       where: whereCondition,
       include: {
@@ -1863,6 +1875,7 @@ export default {
             grossWeight: true,
             netWeight: true,
             tareWeight: true,
+            createdAt: true,
             notaTimbangan: {
               select: {
                 id: true,
@@ -1875,116 +1888,155 @@ export default {
       },
     });
 
-    // For each chosen product, get additional details
-    const result = await Promise.all(
-      chosenProducts.map(async (chosenProduct) => {
-        // Get product details
-        const product = await prisma.product.findUnique({
-          where: {
-            id: chosenProduct.productId,
-          },
-          include: {
-            warehouse: true,
-          },
+    // Group chosen products by product ID to aggregate weighings
+    const productMap = new Map();
+
+    for (const chosenProduct of chosenProducts) {
+      if (!productMap.has(chosenProduct.productId)) {
+        productMap.set(chosenProduct.productId, {
+          chosenProducts: [chosenProduct],
+          allWeighings: [...chosenProduct.weighings],
         });
+      } else {
+        const existing = productMap.get(chosenProduct.productId);
+        existing.chosenProducts.push(chosenProduct);
+        // Aggregate weighings from all chosen product records for the same product
+        existing.allWeighings.push(...chosenProduct.weighings);
+      }
+    }
 
-        if (!product) {
-          return null; // Skip if product not found
-        }
+    // For each unique product, get additional details
+    const result = await Promise.all(
+      Array.from(productMap.entries()).map(
+        async ([productId, { chosenProducts: productChosenProducts, allWeighings }]) => {
+          // Use the first chosen product for basic info
+          const chosenProduct = productChosenProducts[0];
 
-        // Get all delivery orders for this product in this shipment
-        const shipmentItems = await prisma.shipmentItem.findMany({
-          where: {
-            shipmentId,
-            productId: chosenProduct.productId,
-            chosenProduct: true,
-          },
-          include: {
-            deliveryOrder: {
-              include: {
-                customer: true,
+          // Get product details
+          const product = await prisma.product.findUnique({
+            where: {
+              id: productId,
+            },
+            include: {
+              warehouse: true,
+            },
+          });
+
+          if (!product) {
+            return null; // Skip if product not found
+          }
+
+          // Get all delivery orders for this product in this shipment
+          const shipmentItems = await prisma.shipmentItem.findMany({
+            where: {
+              shipmentId,
+              productId: productId,
+              chosenProduct: true,
+            },
+            include: {
+              deliveryOrder: {
+                include: {
+                  customer: true,
+                },
               },
             },
-          },
-        });
+          });
 
-        // Extract unique delivery orders and customers
-        type DeliveryOrder = {
-          id: string;
-          customer: {
+          // Extract unique delivery orders and customers
+          type DeliveryOrder = {
+            id: string;
+            customer: {
+              id: string;
+              name: string;
+              [key: string]: any;
+            };
+            [key: string]: any;
+          };
+          type Customer = {
             id: string;
             name: string;
             [key: string]: any;
           };
-          [key: string]: any;
-        };
-        type Customer = {
-          id: string;
-          name: string;
-          [key: string]: any;
-        };
-        const deliveryOrders: DeliveryOrder[] = [];
-        const customers: Customer[] = [];
-        const locationTypes: string[] = [];
-        let totalRequestedQuantity = 0;
+          const deliveryOrders: DeliveryOrder[] = [];
+          const customers: Customer[] = [];
+          const locationTypes: string[] = [];
+          let totalRequestedQuantity = 0;
 
-        for (const item of shipmentItems) {
-          totalRequestedQuantity += item.requestedQuantity;
+          for (const item of shipmentItems) {
+            totalRequestedQuantity += item.requestedQuantity;
 
-          if (item.locationType && !locationTypes.includes(item.locationType)) {
-            locationTypes.push(item.locationType);
-          }
+            if (item.locationType && !locationTypes.includes(item.locationType)) {
+              locationTypes.push(item.locationType);
+            }
 
-          const existingDO = deliveryOrders.find((d) => d.id === item.deliveryOrder.id);
-          if (!existingDO) {
-            deliveryOrders.push(item.deliveryOrder);
+            const existingDO = deliveryOrders.find((d) => d.id === item.deliveryOrder.id);
+            if (!existingDO) {
+              deliveryOrders.push(item.deliveryOrder);
 
-            if (
-              item.deliveryOrder.customer &&
-              !customers.some((c) => c.id === item.deliveryOrder.customer.id)
-            ) {
-              customers.push(item.deliveryOrder.customer);
+              if (
+                item.deliveryOrder.customer &&
+                !customers.some((c) => c.id === item.deliveryOrder.customer.id)
+              ) {
+                customers.push(item.deliveryOrder.customer);
+              }
             }
           }
-        }
 
-        // Build combined result
-        return {
-          id: chosenProduct.id,
-          code: chosenProduct.code,
-          shipmentId,
-          productId: chosenProduct.productId,
-          weighingMethod: chosenProduct.weighingMethod,
-          product: {
-            id: product.id,
-            name: product.name,
-            satuan: product.satuan,
-            warehouseId: product.warehouseId,
-            warehouse: product.warehouse,
-          },
-          deliveryOrders,
-          customers,
-          shipmentItems: shipmentItems.map((si) => ({
-            id: si.id,
-            status: si.status,
-            requestedQuantity: si.requestedQuantity,
-            weightedQuantity: si.weightedQuantity,
-            locationType: si.locationType,
-            weighedAt: si.weighedAt,
-          })),
-          weighings: chosenProduct.weighings,
-          totalGrossWeight:
-            chosenProduct.weighings.length > 0 ? chosenProduct.weighings[0].grossWeight : 0,
-          totalNetWeight:
-            chosenProduct.weighings.length > 0 ? chosenProduct.weighings[0].netWeight || 0 : 0,
-          totalTareWeight:
-            chosenProduct.weighings.length > 0 ? chosenProduct.weighings[0].tareWeight || 0 : 0,
-          totalRequestedQuantity,
-          locationType: locationTypes.join(', '),
-          createdAt: chosenProduct.createdAt,
-          updatedAt: chosenProduct.updatedAt,
-        };
-      }),
+          // Sort weighings by creation date (newest first)
+          const sortedWeighings = allWeighings.sort(
+            (a: WeighingType, b: WeighingType) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          );
+
+          // Calculate total weights from all weighings
+          const totalGrossWeight = sortedWeighings.reduce(
+            (sum: number, w: WeighingType) => sum + w.grossWeight,
+            0,
+          );
+          const totalNetWeight = sortedWeighings.reduce(
+            (sum: number, w: WeighingType) => sum + (w.netWeight || 0),
+            0,
+          );
+          const totalTareWeight = sortedWeighings.reduce(
+            (sum: number, w: WeighingType) => sum + (w.tareWeight || 0),
+            0,
+          );
+
+          // Build combined result
+          return {
+            id: chosenProduct.id,
+            code: chosenProduct.code,
+            shipmentId,
+            productId: productId,
+            weighingMethod: chosenProduct.weighingMethod,
+            product: {
+              id: product.id,
+              name: product.name,
+              satuan: product.satuan,
+              warehouseId: product.warehouseId,
+              warehouse: product.warehouse,
+            },
+            deliveryOrders,
+            customers,
+            shipmentItems: shipmentItems.map((si) => ({
+              id: si.id,
+              status: si.status,
+              requestedQuantity: si.requestedQuantity,
+              weightedQuantity: si.weightedQuantity,
+              locationType: si.locationType,
+              weighedAt: si.weighedAt,
+            })),
+            weighings: sortedWeighings, // Now includes ALL weighings for this product
+            totalGrossWeight,
+            totalNetWeight,
+            totalTareWeight,
+            totalRequestedQuantity,
+            locationType: locationTypes.join(', '),
+            createdAt: chosenProduct.createdAt,
+            updatedAt: chosenProduct.updatedAt,
+          };
+        },
+      ),
     );
 
     // Filter out nulls and return
@@ -2415,12 +2467,8 @@ export default {
         });
       }
 
-      // Delete any existing weighing records for this chosen product
-      await tx.shipmentChosenProductWeighing.deleteMany({
-        where: {
-          shipmentChosenProductId: shipmentChosenProduct.id,
-        },
-      });
+      // Note: We don't delete existing weighing records to preserve multiple weighing sessions
+      // This allows for multiple weighings of the same product (e.g., when DOs are added via editing)
 
       // Create a new weighing record with the total weight
       const weighing = await tx.shipmentChosenProductWeighing.create({
@@ -2475,6 +2523,7 @@ export default {
           timeOut: weighing.createdAt,
         },
         ticketNumber,
+        totalRequestedQuantity, // Pass the actual quantity being weighed
       );
       await tx.notaTimbangan.create({
         data: {
@@ -2635,6 +2684,123 @@ export default {
   },
 
   /**
+   * Get all Nota Timbangan documents for a product in a shipment
+   */
+  async getNotaTimbanganForProduct(shipmentId: string, productId: string) {
+    // Get all weighings for this product in the shipment with proper DO correlation
+    const weighings = await prisma.shipmentChosenProductWeighing.findMany({
+      where: {
+        shipmentChosenProduct: {
+          shipmentId,
+          productId,
+        },
+        notaTimbangan: {
+          isNot: null,
+        },
+      },
+      include: {
+        notaTimbangan: {
+          select: {
+            id: true,
+            ticketNumber: true,
+            documentPath: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        shipmentChosenProduct: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                satuan: true,
+              },
+            },
+            shipment: {
+              select: {
+                id: true,
+                shipmentNumber: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (weighings.length === 0) {
+      return {
+        notaTimbanganList: [],
+        totalCount: 0,
+      };
+    }
+
+    // Get all delivery orders related to this product in the shipment for context
+    const shipmentItems = await prisma.shipmentItem.findMany({
+      where: {
+        shipmentId,
+        productId,
+      },
+      include: {
+        deliveryOrder: {
+          select: {
+            id: true,
+            doNumber: true,
+            customer: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Map weighings to include delivery order context
+    const notaTimbanganList = weighings.map((weighing) => {
+      const chosenProduct = weighing.shipmentChosenProduct;
+
+      // Find related DOs for this specific weighing based on timing or other logic
+      // For now, include all DOs for this product as context
+      const relatedDOs = shipmentItems.map((item) => ({
+        id: item.deliveryOrder.id,
+        doNumber: item.deliveryOrder.doNumber,
+        customer: item.deliveryOrder.customer,
+      }));
+
+      return {
+        id: weighing.notaTimbangan!.id,
+        ticketNumber: weighing.notaTimbangan!.ticketNumber,
+        documentPath: weighing.notaTimbangan!.documentPath,
+        createdAt: weighing.notaTimbangan!.createdAt,
+        updatedAt: weighing.notaTimbangan!.updatedAt,
+        weighing: {
+          id: weighing.id,
+          grossWeight: weighing.grossWeight,
+          netWeight: weighing.netWeight,
+          tareWeight: weighing.tareWeight,
+          timeIn: weighing.timeIn,
+          timeOut: weighing.timeOut,
+        },
+        product: chosenProduct.product,
+        shipment: chosenProduct.shipment,
+        deliveryOrders: relatedDOs,
+        // Add primary DO number for display purposes (first DO as fallback)
+        primaryDoNumber: relatedDOs.length > 0 ? relatedDOs[0].doNumber : 'N/A',
+      };
+    });
+
+    return {
+      notaTimbanganList,
+      totalCount: notaTimbanganList.length,
+    };
+  },
+
+  /**
    * Get vendor-marked available items for weighing by shipment ID
    */
   async getVendorAvailableItemsForWeighingByShipmentId(shipmentId: string) {
@@ -2686,11 +2852,11 @@ export default {
       },
     });
 
-    const vendorProductIds = new Set(vendorChosenProducts.map(cp => cp.productId));
+    const vendorProductIds = new Set(vendorChosenProducts.map((cp) => cp.productId));
     const codeMap = new Map(vendorChosenProducts.map((cp) => [cp.productId, cp.code]));
 
     // Filter items to only include those that are marked for vendor weighing
-    const vendorItems = items.filter(item => vendorProductIds.has(item.productId));
+    const vendorItems = items.filter((item) => vendorProductIds.has(item.productId));
 
     // Create a map to group items by product ID
     const productMap = new Map();

@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import dotenv from 'dotenv';
 import fs from 'fs';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import path from 'path';
 import PDFDocument from 'pdfkit';
 import { promisify } from 'util';
@@ -14,7 +14,7 @@ dotenv.config();
 const isProd = process.env.NODE_ENV === 'production';
 
 const PUBLIC_DIR = isProd
-  ? '/var/www/benzeta.shop/public'
+  ? '/var/www/sajpoutbound.com/public'
   : path.join(process.cwd(), 'src', 'public');
 const NOTA_TIMBANGAN_DIR = path.join(PUBLIC_DIR, 'nota-timbangan');
 
@@ -65,6 +65,7 @@ export default {
   async generateNotaTimbangan(
     weighing: WeighingWithIncludes,
     ticketNumber: string,
+    weighedQuantity?: number, // Optional parameter for specific weighing quantity
   ): Promise<string> {
     await ensureDirectoriesExist();
 
@@ -93,7 +94,19 @@ export default {
 
       const formatDate = (date: Date | null | undefined) => {
         if (!date) return 'N/A';
-        return moment(date).format('DD/MM/YY - HH:mm:ss');
+        
+        // Handle timezone based on environment
+        // VPS (UTC+0): dates stored correctly as UTC+7, format directly
+        // Local (UTC+7): dates stored as UTC+14, need to subtract 7 hours
+        const isProductionVPS = process.env.NODE_ENV === 'production';
+        
+        if (isProductionVPS) {
+          // Production VPS: dates are stored correctly as UTC+7
+          return moment(date).format('DD/MM/YY - HH:mm:ss');
+        } else {
+          // Local development: dates are stored as UTC+14, subtract 7 hours
+          return moment(date).subtract(7, 'hours').format('DD/MM/YY - HH:mm:ss');
+        }
       };
 
       const formatNumber = (num: number | null | undefined) => {
@@ -140,9 +153,13 @@ export default {
       addInfoRow('No. Referensi', shipmentChosenProduct.code);
       doc.moveDown(0.5);
 
-      const totalQuantity = shipment.shipmentItems
-        .filter((item) => item.productId === product.id)
-        .reduce((sum, item) => sum + item.requestedQuantity, 0);
+      // Use the specific weighing quantity if provided, otherwise calculate from all shipment items
+      const totalQuantity =
+        weighedQuantity !== undefined
+          ? weighedQuantity
+          : shipment.shipmentItems
+            .filter((item) => item.productId === product.id)
+            .reduce((sum, item) => sum + item.requestedQuantity, 0);
 
       addInfoRow('Jlh. Sak', `${formatNumber(totalQuantity)} ${product.satuan}`);
       doc.moveDown(1);

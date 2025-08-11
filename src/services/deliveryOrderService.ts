@@ -887,7 +887,7 @@ export default {
       // Delete existing SPMB PDF files from file system
       const isProd = process.env.NODE_ENV === 'production';
       const PUBLIC_DIR = isProd
-        ? '/var/www/benzeta.shop/public'
+        ? '/var/www/sajpoutbound.com/public'
         : path.join(process.cwd(), 'src', 'public');
 
       for (const spmb of existingSpmbs) {
@@ -1319,7 +1319,7 @@ export default {
       // Delete old nota timbangan files and regenerate them
       const isProd = process.env.NODE_ENV === 'production';
       const PUBLIC_DIR = isProd
-        ? '/var/www/benzeta.shop/public'
+        ? '/var/www/sajpoutbound.com/public'
         : path.join(process.cwd(), 'src', 'public');
 
       for (const weighingUpdate of weighingsToUpdate) {

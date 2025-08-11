@@ -64,6 +64,13 @@ router.delete(
   shipmentController.deleteChosenProduct,
 );
 
+// Get Nota Timbangan documents for a product
+router.get(
+  '/:shipmentId/nota-timbangan/:productId',
+  checkPermission('shipment', PERMISSION_ACTION.READ),
+  shipmentController.getNotaTimbanganForProduct,
+);
+
 // Get shipment by ID
 router.get(
   '/:id',

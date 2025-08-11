@@ -8,6 +8,7 @@ import {
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import { CustomError } from '../middlewares/error';
+import { deliveryOrderIdSchema } from '../schemas/deliveryOrder';
 import {
   createShipmentSchema,
   ShipmentBulkWeighInput,
@@ -23,7 +24,6 @@ import {
   shipmentWeighSchema,
   updateShipmentSchema,
 } from '../schemas/shipment';
-import { deliveryOrderIdSchema } from '../schemas/deliveryOrder';
 import armadaService from '../services/armadaService';
 import customerService from '../services/customerService';
 import deliveryOrderService from '../services/deliveryOrderService';
@@ -75,7 +75,14 @@ export default {
         });
       }
 
-      const result = await shipmentService.getAllShipments(page, limit, search, status, type, unverifiedOnly);
+      const result = await shipmentService.getAllShipments(
+        page,
+        limit,
+        search,
+        status,
+        type,
+        unverifiedOnly,
+      );
 
       res.status(200).json(
         success({
@@ -728,19 +735,6 @@ export default {
         });
       }
 
-      // Check if product is already chosen for this shipment
-      const existingChosenProducts = await shipmentService.getChosenProductsForShipment(shipmentId);
-      const isDuplicate =
-        existingChosenProducts?.some((item) => item?.productId === productId) || false;
-
-      if (isDuplicate) {
-        throw new CustomError({
-          message: 'Produk ini sudah dipilih untuk pengiriman ini',
-          errorCode: 'PRODUK_DUPLIKAT',
-          status: 400,
-        });
-      }
-
       // Check if there are any pending shipment items for this product
       const pendingItems = shipment.shipmentItems.filter(
         (item) => item.productId === productId && item.status === 'PENDING',
@@ -812,7 +806,10 @@ export default {
       }
 
       // Get chosen products - filtered by weighing method if provided
-      const chosenProducts = await shipmentService.getChosenProductsForShipment(shipmentId, weighingMethod);
+      const chosenProducts = await shipmentService.getChosenProductsForShipment(
+        shipmentId,
+        weighingMethod,
+      );
 
       res.status(200).json(
         success({
@@ -867,6 +864,43 @@ export default {
           message: 'Produk dihapus dari pengiriman',
         }),
       );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Get all Nota Timbangan documents for a product in a shipment
+   */
+  async getNotaTimbanganForProduct(
+    req: Request<{ shipmentId: string; productId: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { shipmentId, productId } = req.params;
+
+      // Validate shipment ID
+      await shipmentIdSchema.validateAsync({
+        id: shipmentId,
+      });
+
+      // Check if shipment exists
+      const shipment = await shipmentService.getShipmentById(shipmentId);
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      // Get all Nota Timbangan documents for this product
+      const result = await shipmentService.getNotaTimbanganForProduct(shipmentId, productId);
+
+      console.log(result);
+
+      res.status(200).json(success(result));
     } catch (error) {
       next(error);
     }
@@ -1028,7 +1062,7 @@ export default {
       // Get the absolute path to the uploaded plate photo
       const platePhotoRelativePath = existingShipment.platePhoto;
       const platePhotoAbsolutePath = isProd
-        ? path.join('/var/www/benzeta.shop/public', platePhotoRelativePath)
+        ? path.join('/var/www/sajpoutbound.com/public', platePhotoRelativePath)
         : path.join(process.cwd(), 'src', 'public', platePhotoRelativePath);
 
       // Use Gemini AI to extract plate number from the photo
