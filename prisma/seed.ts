@@ -116,6 +116,11 @@ async function main() {
 
     for (const resource of resources) {
       for (const action of actions) {
+        // For log resources, only allow READ actions
+        if (resource.endsWith('_log') && action !== PERMISSION_ACTION.READ) {
+          continue;
+        }
+
         // Skip special actions for non-shipment resources
         if (specialActions.has(action) && resource !== 'shipment') {
           continue;
