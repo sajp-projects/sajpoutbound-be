@@ -1,7 +1,5 @@
 import { Prisma } from '@prisma/client';
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { CustomError } from '../middlewares/error';
 import {
   createWarehouseSchema,

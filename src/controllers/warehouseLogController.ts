@@ -1,6 +1,4 @@
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { CustomError } from '../middlewares/error';
 import { warehouseIdSchema } from '../schemas/warehouse';
 import warehouseLogService from '../services/warehouseLogService';

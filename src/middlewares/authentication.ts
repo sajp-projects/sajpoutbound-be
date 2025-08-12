@@ -1,6 +1,4 @@
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import jwt from '../lib/jwt';
 import { JwtPayload } from '../types/jwt';
 import { error } from './error';

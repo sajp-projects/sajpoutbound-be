@@ -1,7 +1,5 @@
 import { Prisma, STATUS } from '@prisma/client';
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { customAlphabet } from 'nanoid';
 import { CustomError } from '../middlewares/error';
 import {

@@ -1,6 +1,4 @@
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import winston from 'winston';
 import { Logger } from './error';
 

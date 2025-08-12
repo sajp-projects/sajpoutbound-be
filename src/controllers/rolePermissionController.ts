@@ -1,6 +1,4 @@
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { CustomError } from '../middlewares/error';
 import { rolePermissionIdSchema } from '../schemas/rolePermission';
 import permissionService from '../services/permissionService';

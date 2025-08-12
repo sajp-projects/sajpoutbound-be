@@ -1,6 +1,4 @@
-import {
-  ACTION, ENTITY_TYPE, WarehouseLog, 
-} from '@prisma/client';
+import { ACTION, ENTITY_TYPE, WarehouseLog } from '@prisma/client';
 import prisma from '../config/prisma';
 
 interface RawWarehouseLog extends WarehouseLog {

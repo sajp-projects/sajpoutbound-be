@@ -1,6 +1,4 @@
-import {
-  ACTION, CustomerLog, ENTITY_TYPE, 
-} from '@prisma/client';
+import { ACTION, CustomerLog, ENTITY_TYPE } from '@prisma/client';
 import prisma from '../config/prisma';
 import { CustomerLogCreateInput } from '../schemas/customerLog';
 

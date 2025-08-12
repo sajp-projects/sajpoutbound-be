@@ -1,6 +1,4 @@
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { CustomError } from '../middlewares/error';
 import {
   dailyOutputReportQuerySchema,
@@ -52,9 +50,7 @@ export default {
     try {
       const validatedQuery = await operationalReportQuerySchema.validateAsync(req.query);
 
-      const {
-        page, limit, ...filters 
-      } = validatedQuery;
+      const { page, limit, ...filters } = validatedQuery;
 
       // Handle 'ALL' status
       if (filters.status === 'ALL') {
@@ -80,9 +76,7 @@ export default {
     try {
       const validatedQuery = await operationalReportTableQuerySchema.validateAsync(req.query);
 
-      const {
-        page, limit, ...filters 
-      } = validatedQuery;
+      const { page, limit, ...filters } = validatedQuery;
 
       const result = await reportService.getOperationalReportTable(filters, page, limit);
 
@@ -108,9 +102,7 @@ export default {
     try {
       const validatedQuery = await dailyOutputReportQuerySchema.validateAsync(req.query);
 
-      const {
-        page, limit, ...filters 
-      } = validatedQuery;
+      const { page, limit, ...filters } = validatedQuery;
 
       // Validate period-specific parameters
       if (filters.period === 'monthly') {
@@ -149,9 +141,7 @@ export default {
     try {
       const validatedQuery = await dailyOutputReportTableQuerySchema.validateAsync(req.query);
 
-      const {
-        page, limit, ...filters 
-      } = validatedQuery;
+      const { page, limit, ...filters } = validatedQuery;
 
       const result = await reportService.getDailyOutputReportTable(filters, page, limit);
 
@@ -177,9 +167,7 @@ export default {
     try {
       const validatedQuery = await shipmentAssignmentReportQuerySchema.validateAsync(req.query);
 
-      const {
-        page, limit, ...filters 
-      } = validatedQuery;
+      const { page, limit, ...filters } = validatedQuery;
 
       const report = await reportService.getShipmentAssignmentReport(filters, page, limit);
 

@@ -1,6 +1,4 @@
-import {
-  ACTION, ENTITY_TYPE, ProductLog as ProductLogModel, 
-} from '@prisma/client';
+import { ACTION, ENTITY_TYPE, ProductLog as ProductLogModel } from '@prisma/client';
 import Joi from 'joi';
 import { createResourceIdSchema } from './base';
 

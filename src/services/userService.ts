@@ -245,9 +245,7 @@ export default {
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
       // Extract relationship IDs and basic fields
-      const {
-        roleId, warehouseId, ...basicFields 
-      } = data;
+      const { roleId, warehouseId, ...basicFields } = data;
 
       // Update the user in the database
       const updatedUser = await tx.user.update({
@@ -262,24 +260,24 @@ export default {
           role:
             roleId !== undefined
               ? {
-                connect: {
-                  id: roleId as string,
-                },
-              }
+                  connect: {
+                    id: roleId as string,
+                  },
+                }
               : undefined,
 
           // Handle warehouse relationship - three cases with direct ternary
           warehouse:
             warehouseId === null
               ? {
-                disconnect: true,
-              }
+                  disconnect: true,
+                }
               : warehouseId
                 ? {
-                  connect: {
-                    id: warehouseId,
-                  },
-                }
+                    connect: {
+                      id: warehouseId,
+                    },
+                  }
                 : undefined,
         },
         include: {

@@ -1,6 +1,4 @@
-import {
-  SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, 
-} from '@prisma/client';
+import { SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS } from '@prisma/client';
 
 // Report filter types
 export type ReportDateFilter = {

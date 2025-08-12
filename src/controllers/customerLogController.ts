@@ -1,6 +1,4 @@
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { CustomError } from '../middlewares/error';
 import { customerIdSchema } from '../schemas/customer';
 import customerLogService from '../services/customerLogService';

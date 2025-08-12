@@ -1,6 +1,4 @@
-import {
-  SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, WEIGHING_METHOD, 
-} from '@prisma/client';
+import { SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, WEIGHING_METHOD } from '@prisma/client';
 import fs from 'fs';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
@@ -804,6 +802,81 @@ export default {
       // Track if we need to regenerate SPMBs
       let shouldRegenerateSpmbs = false;
 
+      // --- Begin compute item-level diffs for logging ---
+      type ItemKey = string;
+      type SimpleItem = { deliveryOrderId: string; productId: string; requestedQuantity: number };
+      const itemDiff = {
+        added: [] as SimpleItem[],
+        removed: [] as SimpleItem[],
+        updated: [] as {
+          deliveryOrderId: string;
+          productId: string;
+          oldQuantity: number;
+          newQuantity: number;
+        }[],
+      };
+
+      const makeKey = (deliveryOrderId: string, productId: string): ItemKey =>
+        `${deliveryOrderId}-${productId}`;
+
+      const existingItemsMap = new Map<ItemKey, SimpleItem & { status: string }>();
+      for (const si of existingShipment.shipmentItems) {
+        existingItemsMap.set(makeKey(si.deliveryOrderId, si.productId), {
+          deliveryOrderId: si.deliveryOrderId,
+          productId: si.productId,
+          requestedQuantity: si.requestedQuantity,
+          status: si.status,
+        });
+      }
+
+      const itemsFromPayload =
+        'items' in data && Array.isArray(data.items)
+          ? (data.items as ShipmentItemUpdateInput[])
+          : [];
+
+      const updatedItemsMap = new Map<ItemKey, SimpleItem>();
+      for (const it of itemsFromPayload) {
+        updatedItemsMap.set(makeKey(it.deliveryOrderId, it.productId), {
+          deliveryOrderId: it.deliveryOrderId,
+          productId: it.productId,
+          requestedQuantity: it.requestedQuantity,
+        });
+      }
+
+      // Added: keys present in updated but not in existing
+      for (const [key, v] of updatedItemsMap.entries()) {
+        if (!existingItemsMap.has(key)) {
+          itemDiff.added.push({
+            ...v,
+          });
+        }
+      }
+
+      // Removed: keys present in existing but not in updated (only if status PENDING per business logic)
+      for (const [key, v] of existingItemsMap.entries()) {
+        if (!updatedItemsMap.has(key) && v.status === 'PENDING') {
+          itemDiff.removed.push({
+            deliveryOrderId: v.deliveryOrderId,
+            productId: v.productId,
+            requestedQuantity: v.requestedQuantity,
+          });
+        }
+      }
+
+      // Updated quantities: keys present in both with different requestedQuantity
+      for (const [key, v] of updatedItemsMap.entries()) {
+        const ex = existingItemsMap.get(key);
+        if (ex && ex.requestedQuantity !== v.requestedQuantity) {
+          itemDiff.updated.push({
+            deliveryOrderId: v.deliveryOrderId,
+            productId: v.productId,
+            oldQuantity: ex.requestedQuantity,
+            newQuantity: v.requestedQuantity,
+          });
+        }
+      }
+      // --- End compute item-level diffs for logging ---
+
       // If this is a full update with items, make sure the shipment is in PENDING status
       if ('items' in data && Array.isArray(data.items)) {
         shouldRegenerateSpmbs = true;
@@ -1235,25 +1308,142 @@ export default {
         const oldArmada = existingShipment.armada;
         const newArmada = updatedShipment.armada;
 
-        logOldData.armada = oldArmada
+        const oldArmadaSnapshot = oldArmada
           ? {
-            id: oldArmada.id,
-            model: oldArmada.model,
-            plateNumber: oldArmada.plateNumber,
-          }
+              id: oldArmada.id,
+              model: oldArmada.model,
+              plateNumber: oldArmada.plateNumber,
+            }
           : null;
-        logNewData.armada = newArmada
+        const newArmadaSnapshot = newArmada
           ? {
-            id: newArmada.id,
-            model: newArmada.model,
-            plateNumber: newArmada.plateNumber,
-          }
+              id: newArmada.id,
+              model: newArmada.model,
+              plateNumber: newArmada.plateNumber,
+            }
           : null;
+
+        logOldData.armada = oldArmadaSnapshot;
+        logNewData.armada = newArmadaSnapshot;
+      }
+
+      // Attach item-level diffs to log if present
+      if (
+        'items' in data &&
+        (itemDiff.added.length || itemDiff.removed.length || itemDiff.updated.length)
+      ) {
+        // Enrich with DO numbers and product names for readability
+        const doIds = Array.from(
+          new Set([
+            ...itemDiff.added.map((i) => i.deliveryOrderId),
+            ...itemDiff.updated.map((i) => i.deliveryOrderId),
+            ...itemDiff.removed.map((i) => i.deliveryOrderId),
+          ]),
+        );
+        const productIds = Array.from(
+          new Set([
+            ...itemDiff.added.map((i) => i.productId),
+            ...itemDiff.updated.map((i) => i.productId),
+            ...itemDiff.removed.map((i) => i.productId),
+          ]),
+        );
+
+        const [dos, products] = await Promise.all([
+          doIds.length
+            ? tx.deliveryOrder.findMany({
+                where: { id: { in: doIds } },
+                select: { id: true, doNumber: true },
+              })
+            : Promise.resolve([]),
+          productIds.length
+            ? tx.product.findMany({
+                where: { id: { in: productIds } },
+                select: { id: true, name: true },
+              })
+            : Promise.resolve([]),
+        ]);
+
+        const doIdToNumber = new Map(dos.map((d) => [d.id, d.doNumber] as const));
+        const productIdToName = new Map(products.map((p) => [p.id, p.name] as const));
+
+        const enrichedAdded = itemDiff.added.map((a) => ({
+          ...a,
+          deliveryOrderNumber: doIdToNumber.get(a.deliveryOrderId) || null,
+          productName: productIdToName.get(a.productId) || null,
+        }));
+
+        const enrichedRemoved = itemDiff.removed.map((r) => ({
+          ...r,
+          deliveryOrderNumber: doIdToNumber.get(r.deliveryOrderId) || null,
+          productName: productIdToName.get(r.productId) || null,
+        }));
+
+        const enrichedUpdatedOld = itemDiff.updated.map((u) => ({
+          deliveryOrderId: u.deliveryOrderId,
+          deliveryOrderNumber: doIdToNumber.get(u.deliveryOrderId) || null,
+          productId: u.productId,
+          productName: productIdToName.get(u.productId) || null,
+          requestedQuantity: u.oldQuantity,
+        }));
+
+        const enrichedUpdatedNew = itemDiff.updated.map((u) => ({
+          deliveryOrderId: u.deliveryOrderId,
+          deliveryOrderNumber: doIdToNumber.get(u.deliveryOrderId) || null,
+          productId: u.productId,
+          productName: productIdToName.get(u.productId) || null,
+          requestedQuantity: u.newQuantity,
+        }));
+
+        if (enrichedRemoved.length || enrichedUpdatedOld.length) {
+          logOldData.items = {
+            removed: enrichedRemoved,
+            updated: enrichedUpdatedOld,
+          };
+        }
+        if (enrichedAdded.length || enrichedUpdatedNew.length) {
+          logNewData.items = {
+            added: enrichedAdded,
+            updated: enrichedUpdatedNew,
+          };
+        }
+
+        // Build a descriptive message for added DOs
+        const addedByDo = new Map<string | null, { productName: string | null; qty: number }[]>();
+        for (const a of enrichedAdded) {
+          const key = a.deliveryOrderNumber || a.deliveryOrderId;
+          const list = addedByDo.get(key) || [];
+          list.push({ productName: a.productName, qty: a.requestedQuantity });
+          addedByDo.set(key, list);
+        }
+        let addedDesc = '';
+        if (addedByDo.size > 0) {
+          const parts: string[] = [];
+          for (const [doNumOrId, items] of addedByDo.entries()) {
+            const itemsStr = items
+              .map((it) => `${it.productName || 'Produk'} x ${it.qty}`)
+              .join(', ');
+            parts.push(`DO ${doNumOrId}: ${itemsStr}`);
+          }
+          addedDesc = `Penambahan item pada ${parts.join(' ; ')}`;
+        }
+
+        // Attach description hint if any
+        if (addedDesc) {
+          (updateData as any).__logDescription = addedDesc;
+        }
       }
 
       // Log the update only if there are changes
       if (Object.keys(logNewData).length > 0) {
-        await shipmentLogService.logShipmentUpdate(id, performedById, logOldData, logNewData, tx);
+        const description = (updateData as any).__logDescription || undefined;
+        await shipmentLogService.logShipmentUpdate(
+          id,
+          performedById,
+          logOldData,
+          logNewData,
+          tx,
+          description,
+        );
       }
 
       // If status changed, log separately
@@ -1405,6 +1595,7 @@ export default {
   },
 
   /**
+   * !! LEGACY LOGIC
    * Process a shipment item (weigh and update status)
    */
   async weighShipmentItem(
@@ -1474,6 +1665,19 @@ export default {
           updatedAt: jakartaTime,
         },
       });
+
+      // Log the individual item weighing
+      await shipmentLogService.logItemWeighed(
+        existingItem.shipmentId,
+        performedById,
+        existingItem,
+        {
+          grossWeight: data.grossWeight,
+          netWeight: data.netWeight || 0,
+          tareWeight: data.tareWeight || 0,
+        },
+        tx,
+      );
 
       return completedItem;
     });
@@ -1706,7 +1910,12 @@ export default {
   /**
    * Choose a product for a shipment
    */
-  async chooseProductForShipment(data: ShipmentChosenProductInput, product: any, code: string) {
+  async chooseProductForShipment(
+    data: ShipmentChosenProductInput,
+    product: any,
+    code: string,
+    performedById?: string,
+  ) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
@@ -1780,6 +1989,18 @@ export default {
               updatedAt: jakartaTime,
             },
           });
+        }
+
+        // Log the product selection
+        if (performedById) {
+          await shipmentLogService.logProductChosen(
+            data.shipmentId,
+            performedById,
+            product,
+            data.weighingMethod,
+            shipmentItems.length,
+            tx,
+          );
         }
       }
 
@@ -2046,13 +2267,21 @@ export default {
   /**
    * Delete a chosen product from a shipment
    */
-  async deleteChosenProduct(shipmentId: string, productId: string) {
+  async deleteChosenProduct(shipmentId: string, productId: string, performedById?: string) {
     return prisma.$transaction(async (tx) => {
       // Find all chosen products with this shipment and product ID
       const chosenProducts = await tx.shipmentChosenProduct.findMany({
         where: {
           shipmentId,
           productId,
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       });
 
@@ -2064,28 +2293,38 @@ export default {
         },
       });
 
-      // For each delivery order that had this product chosen, update the shipment item
-      for (const _ of chosenProducts) {
-        // Find the matching shipment item
-        const shipmentItem = await tx.shipmentItem.findFirst({
-          where: {
-            shipmentId,
-            productId,
-          },
-        });
+      // Count affected shipment items for logging
+      const affectedItems = await tx.shipmentItem.count({
+        where: {
+          shipmentId,
+          productId,
+          status: 'CHOSEN',
+        },
+      });
 
-        // Update the shipment item if found to mark it as not chosen
-        if (shipmentItem) {
-          await tx.shipmentItem.update({
-            where: {
-              id: shipmentItem.id,
-            },
-            data: {
-              chosenProduct: false,
-              updatedAt: new Date(),
-            },
-          });
-        }
+      // Update all matching shipment items to revert status from CHOSEN to PENDING
+      await tx.shipmentItem.updateMany({
+        where: {
+          shipmentId,
+          productId,
+          status: 'CHOSEN',
+        },
+        data: {
+          status: 'PENDING',
+          chosenProduct: false,
+          updatedAt: new Date(),
+        },
+      });
+
+      // Log the chosen product deletion
+      if (performedById && chosenProducts.length > 0) {
+        await shipmentLogService.logChosenProductDeleted(
+          shipmentId,
+          performedById,
+          chosenProducts[0].product,
+          affectedItems,
+          tx,
+        );
       }
 
       return result;
@@ -2162,6 +2401,9 @@ export default {
         },
         tx,
       );
+
+      // Log specific plate photo upload event
+      await shipmentLogService.logPlatePhotoUploaded(id, performedById, platePhotoPath, tx);
 
       return updatedShipment;
     });
@@ -2369,15 +2611,6 @@ export default {
             updatedAt: jakartaTime,
           },
         });
-
-        // Log shipment status change
-        await shipmentLogService.logShipmentStatusChange(
-          data.shipmentId,
-          performedById,
-          STATUS.PENDING,
-          STATUS.PROSES,
-          tx,
-        );
       }
 
       // TODO: NEED CHORE cleaning code
@@ -2614,6 +2847,21 @@ export default {
       if (updatedShipment) {
         combinedData.shipment = updatedShipment;
       }
+
+      // Log the bulk weighing operation
+      await shipmentLogService.logBulkItemsWeighed(
+        data.shipmentId,
+        performedById,
+        items[0].product,
+        {
+          grossWeight: data.grossWeight,
+          netWeight: data.netWeight || 0,
+          tareWeight: data.tareWeight || 0,
+        },
+        items.length,
+        shipmentChosenProduct.weighingMethod || 'VENDOR',
+        tx,
+      );
 
       return combinedData;
     });

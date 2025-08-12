@@ -94,12 +94,12 @@ export default {
 
       const formatDate = (date: Date | null | undefined) => {
         if (!date) return 'N/A';
-        
+
         // Handle timezone based on environment
         // VPS (UTC+0): dates stored correctly as UTC+7, format directly
         // Local (UTC+7): dates stored as UTC+14, need to subtract 7 hours
         const isProductionVPS = process.env.NODE_ENV === 'production';
-        
+
         if (isProductionVPS) {
           // Production VPS: dates are stored correctly as UTC+7
           return moment(date).format('DD/MM/YY - HH:mm:ss');
@@ -158,8 +158,8 @@ export default {
         weighedQuantity !== undefined
           ? weighedQuantity
           : shipment.shipmentItems
-            .filter((item) => item.productId === product.id)
-            .reduce((sum, item) => sum + item.requestedQuantity, 0);
+              .filter((item) => item.productId === product.id)
+              .reduce((sum, item) => sum + item.requestedQuantity, 0);
 
       addInfoRow('Jlh. Sak', `${formatNumber(totalQuantity)} ${product.satuan}`);
       doc.moveDown(1);

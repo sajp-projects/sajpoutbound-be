@@ -1,10 +1,6 @@
-import {
-  SHIPMENT_TYPE, STATUS, WEIGHING_METHOD, 
-} from '@prisma/client';
+import { SHIPMENT_TYPE, STATUS, WEIGHING_METHOD } from '@prisma/client';
 import dotenv from 'dotenv';
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import { CustomError } from '../middlewares/error';
@@ -595,6 +591,7 @@ export default {
   },
 
   /**
+   * !! LEGACY LOGIC
    * Process a shipment item (weigh and record weights for chosen product)
    *
    * This endpoint handles the weighing process by:
@@ -709,7 +706,7 @@ export default {
       const userId = req.user?.id;
       if (!userId) {
         throw new CustomError({
-          message: 'Autentikasi diperlukan untuk aksi ini',
+          message: 'Autentikasi diperlukan',
           errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
@@ -770,7 +767,12 @@ export default {
         }
       }
 
-      const chosenProduct = await shipmentService.chooseProductForShipment(data, product, code);
+      const chosenProduct = await shipmentService.chooseProductForShipment(
+        data,
+        product,
+        code,
+        userId,
+      );
 
       res.status(200).json(success(chosenProduct));
     } catch (error) {
@@ -856,8 +858,19 @@ export default {
         });
       }
 
+      // Get the authenticated user ID
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new CustomError({
+          message: 'Autentikasi diperlukan',
+          errorCode: 'PERLU_AUTENTIKASI',
+          status: 401,
+        });
+      }
+
       // Delete chosen product
-      await shipmentService.deleteChosenProduct(shipmentId, productId);
+      await shipmentService.deleteChosenProduct(shipmentId, productId, userId);
 
       res.status(200).json(
         success({

@@ -1,9 +1,7 @@
 import { config } from 'dotenv';
 config();
 
-import {
-  Permission, PERMISSION_ACTION, PrismaClient, 
-} from '@prisma/client';
+import { Permission, PERMISSION_ACTION, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -93,7 +91,10 @@ async function main() {
     const specialActionDescriptions = new Map<PERMISSION_ACTION, string>([
       [PERMISSION_ACTION.WEIGH, 'Mengizinkan untuk melakukan penimbangan'],
       [PERMISSION_ACTION.VERIFY_PLATE, 'Mengizinkan untuk verifikasi plat nomor kendaraan'],
-      [PERMISSION_ACTION.VERIFY_PLATE_MANUAL, 'Mengizinkan untuk verifikasi plat nomor kendaraan secara manual'],
+      [
+        PERMISSION_ACTION.VERIFY_PLATE_MANUAL,
+        'Mengizinkan untuk verifikasi plat nomor kendaraan secara manual',
+      ],
       [
         PERMISSION_ACTION.CHANGE_CUSTOMER,
         'Mengizinkan untuk mengubah pelanggan setelah pengiriman di proses',

@@ -1,6 +1,4 @@
-import {
-  ACTION, ArmadaLog, ENTITY_TYPE, 
-} from '@prisma/client';
+import { ACTION, ArmadaLog, ENTITY_TYPE } from '@prisma/client';
 import prisma from '../config/prisma';
 import { ArmadaLogCreateInput } from '../schemas/armadaLog';
 

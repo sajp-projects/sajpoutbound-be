@@ -1,6 +1,4 @@
-import {
-  SHIPMENT_TYPE, STATUS, WEIGHING_METHOD, 
-} from '@prisma/client';
+import { SHIPMENT_TYPE, STATUS, WEIGHING_METHOD } from '@prisma/client';
 import Joi from 'joi';
 import { createResourceIdSchema } from './base';
 

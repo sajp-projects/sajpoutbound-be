@@ -43,9 +43,7 @@ export default {
       };
     }
   > {
-    const {
-      startDate, endDate, type, status, warehouseId, 
-    } = filters;
+    const { startDate, endDate, type, status, warehouseId } = filters;
     const whereConditions: any = {
       deletedAt: null,
     };
@@ -127,10 +125,10 @@ export default {
         plateNumber: shipment.plateNumber || '',
         armada: shipment.armada
           ? {
-            id: shipment.armada.id,
-            model: shipment.armada.model,
-            plateNumber: shipment.armada.plateNumber || '',
-          }
+              id: shipment.armada.id,
+              model: shipment.armada.model,
+              plateNumber: shipment.armada.plateNumber || '',
+            }
           : null,
         createdAt: shipment.createdAt,
         updatedAt: shipment.updatedAt,
@@ -438,9 +436,7 @@ export default {
       hasPrev: boolean;
     };
   }> {
-    const {
-      startDate, endDate, type, status, warehouseId, 
-    } = filters;
+    const { startDate, endDate, type, status, warehouseId } = filters;
     const whereConditions: any = {
       deletedAt: null,
     };
@@ -542,10 +538,10 @@ export default {
         plateNumber: shipment.plateNumber || '',
         armada: shipment.armada
           ? {
-            id: shipment.armada.id,
-            model: shipment.armada.model,
-            plateNumber: shipment.armada.plateNumber || '',
-          }
+              id: shipment.armada.id,
+              model: shipment.armada.model,
+              plateNumber: shipment.armada.plateNumber || '',
+            }
           : null,
         createdAt: shipment.createdAt,
         updatedAt: shipment.updatedAt,
@@ -771,58 +767,58 @@ export default {
         };
 
         switch (groupBy) {
-        case 'item':
-          groupKey = item.product.id;
-          groupInfo = {
-            id: item.product.id,
-            name: item.product.name,
-            type: 'item',
-            satuan: item.product.satuan,
-            totalQuantity: 0,
-            totalWeight: 0,
-            shipmentCount: 0,
-            shipments: [],
-          };
-          break;
-        case 'customer':
-          groupKey = item.deliveryOrder.customer.id;
-          groupInfo = {
-            id: item.deliveryOrder.customer.id,
-            name: item.deliveryOrder.customer.name,
-            type: 'customer',
-            satuan: undefined, // will be set after grouping
-            totalQuantity: 0,
-            totalWeight: 0,
-            shipmentCount: 0,
-            shipments: [],
-          };
-          break;
-        case 'vehicle':
-          groupKey = shipment.armada?.id || 'no-vehicle';
-          groupInfo = {
-            id: shipment.armada?.id || 'no-vehicle',
-            name: shipment.armada?.model || 'Tanpa Armada',
-            type: 'vehicle',
-            satuan: undefined, // will be set after grouping
-            totalQuantity: 0,
-            totalWeight: 0,
-            shipmentCount: 0,
-            shipments: [],
-          };
-          break;
-        case 'warehouse':
-          groupKey = item.warehouse.id;
-          groupInfo = {
-            id: item.warehouse.id,
-            name: item.warehouse.name,
-            type: 'warehouse',
-            satuan: undefined, // will be set after grouping
-            totalQuantity: 0,
-            totalWeight: 0,
-            shipmentCount: 0,
-            shipments: [],
-          };
-          break;
+          case 'item':
+            groupKey = item.product.id;
+            groupInfo = {
+              id: item.product.id,
+              name: item.product.name,
+              type: 'item',
+              satuan: item.product.satuan,
+              totalQuantity: 0,
+              totalWeight: 0,
+              shipmentCount: 0,
+              shipments: [],
+            };
+            break;
+          case 'customer':
+            groupKey = item.deliveryOrder.customer.id;
+            groupInfo = {
+              id: item.deliveryOrder.customer.id,
+              name: item.deliveryOrder.customer.name,
+              type: 'customer',
+              satuan: undefined, // will be set after grouping
+              totalQuantity: 0,
+              totalWeight: 0,
+              shipmentCount: 0,
+              shipments: [],
+            };
+            break;
+          case 'vehicle':
+            groupKey = shipment.armada?.id || 'no-vehicle';
+            groupInfo = {
+              id: shipment.armada?.id || 'no-vehicle',
+              name: shipment.armada?.model || 'Tanpa Armada',
+              type: 'vehicle',
+              satuan: undefined, // will be set after grouping
+              totalQuantity: 0,
+              totalWeight: 0,
+              shipmentCount: 0,
+              shipments: [],
+            };
+            break;
+          case 'warehouse':
+            groupKey = item.warehouse.id;
+            groupInfo = {
+              id: item.warehouse.id,
+              name: item.warehouse.name,
+              type: 'warehouse',
+              satuan: undefined, // will be set after grouping
+              totalQuantity: 0,
+              totalWeight: 0,
+              shipmentCount: 0,
+              shipments: [],
+            };
+            break;
         }
 
         if (!groupedData.some((g) => g.id === groupKey)) {
@@ -853,10 +849,10 @@ export default {
               },
               armada: shipment.armada
                 ? {
-                  id: shipment.armada.id,
-                  model: shipment.armada.model,
-                  plateNumber: shipment.armada.plateNumber || '',
-                }
+                    id: shipment.armada.id,
+                    model: shipment.armada.model,
+                    plateNumber: shipment.armada.plateNumber || '',
+                  }
                 : null,
               plateNumber: shipment.plateNumber || '',
             });
@@ -1148,58 +1144,58 @@ export default {
         };
 
         switch (groupBy) {
-        case 'item':
-          groupKey = item.product.id;
-          groupInfo = {
-            id: item.product.id,
-            name: item.product.name,
-            type: 'item',
-            satuan: item.product.satuan,
-            totalQuantity: 0,
-            totalWeight: 0,
-            shipmentCount: 0,
-            shipments: [],
-          };
-          break;
-        case 'customer':
-          groupKey = item.deliveryOrder.customer.id;
-          groupInfo = {
-            id: item.deliveryOrder.customer.id,
-            name: item.deliveryOrder.customer.name,
-            type: 'customer',
-            satuan: undefined,
-            totalQuantity: 0,
-            totalWeight: 0,
-            shipmentCount: 0,
-            shipments: [],
-          };
-          break;
-        case 'vehicle':
-          groupKey = shipment.armada?.id || 'no-vehicle';
-          groupInfo = {
-            id: shipment.armada?.id || 'no-vehicle',
-            name: shipment.armada?.model || 'Tanpa Armada',
-            type: 'vehicle',
-            satuan: undefined,
-            totalQuantity: 0,
-            totalWeight: 0,
-            shipmentCount: 0,
-            shipments: [],
-          };
-          break;
-        case 'warehouse':
-          groupKey = item.warehouse.id;
-          groupInfo = {
-            id: item.warehouse.id,
-            name: item.warehouse.name,
-            type: 'warehouse',
-            satuan: undefined,
-            totalQuantity: 0,
-            totalWeight: 0,
-            shipmentCount: 0,
-            shipments: [],
-          };
-          break;
+          case 'item':
+            groupKey = item.product.id;
+            groupInfo = {
+              id: item.product.id,
+              name: item.product.name,
+              type: 'item',
+              satuan: item.product.satuan,
+              totalQuantity: 0,
+              totalWeight: 0,
+              shipmentCount: 0,
+              shipments: [],
+            };
+            break;
+          case 'customer':
+            groupKey = item.deliveryOrder.customer.id;
+            groupInfo = {
+              id: item.deliveryOrder.customer.id,
+              name: item.deliveryOrder.customer.name,
+              type: 'customer',
+              satuan: undefined,
+              totalQuantity: 0,
+              totalWeight: 0,
+              shipmentCount: 0,
+              shipments: [],
+            };
+            break;
+          case 'vehicle':
+            groupKey = shipment.armada?.id || 'no-vehicle';
+            groupInfo = {
+              id: shipment.armada?.id || 'no-vehicle',
+              name: shipment.armada?.model || 'Tanpa Armada',
+              type: 'vehicle',
+              satuan: undefined,
+              totalQuantity: 0,
+              totalWeight: 0,
+              shipmentCount: 0,
+              shipments: [],
+            };
+            break;
+          case 'warehouse':
+            groupKey = item.warehouse.id;
+            groupInfo = {
+              id: item.warehouse.id,
+              name: item.warehouse.name,
+              type: 'warehouse',
+              satuan: undefined,
+              totalQuantity: 0,
+              totalWeight: 0,
+              shipmentCount: 0,
+              shipments: [],
+            };
+            break;
         }
 
         if (!groupedData.some((g) => g.id === groupKey)) {
@@ -1226,10 +1222,10 @@ export default {
             },
             armada: shipment.armada
               ? {
-                id: shipment.armada.id,
-                model: shipment.armada.model,
-                plateNumber: shipment.armada.plateNumber || '',
-              }
+                  id: shipment.armada.id,
+                  model: shipment.armada.model,
+                  plateNumber: shipment.armada.plateNumber || '',
+                }
               : null,
             plateNumber: shipment.plateNumber || '',
           });
@@ -1298,9 +1294,7 @@ export default {
       };
     }
   > {
-    const {
-      startDate, endDate, armadaId, warehouseId, status, 
-    } = filters;
+    const { startDate, endDate, armadaId, warehouseId, status } = filters;
     const whereConditions: any = {
       deletedAt: null,
       armadaId: {
@@ -1487,10 +1481,10 @@ export default {
         plateNumber: shipment.plateNumber || '',
         armada: shipment.armada
           ? {
-            id: shipment.armada.id,
-            model: shipment.armada.model,
-            plateNumber: shipment.armada.plateNumber || '',
-          }
+              id: shipment.armada.id,
+              model: shipment.armada.model,
+              plateNumber: shipment.armada.plateNumber || '',
+            }
           : null,
         createdAt: shipment.createdAt,
         updatedAt: shipment.updatedAt,

@@ -9,16 +9,16 @@ const router = express.Router();
  *   - name: Vendor Weighing API
  *     description: |
  *       Endpoint API publik untuk sistem penimbangan vendor pihak ketiga.
- *       
+ *
  *       ## Autentikasi
  *       Endpoint ini bersifat **publik** dan tidak memerlukan autentikasi JWT Bearer.
  *       Sebaliknya, menggunakan header `x-auth` khusus untuk autentikasi vendor.
- *       
+ *
  *       ## Penggunaan
  *       1. Dapatkan kunci API vendor dari administrator sistem
  *       2. Sertakan kunci API dalam header `x-auth` untuk semua permintaan
  *       3. Hanya akses item yang ditandai dengan metode penimbangan VENDOR
- *       
+ *
  *       ## Alur Kerja
  *       1. Dapatkan pengiriman yang tersedia dengan item vendor: `GET /api/vendor/shipments/available-items`
  *       2. Dapatkan item pengiriman spesifik: `GET /api/vendor/shipments/{shipmentId}/available-items`
@@ -32,14 +32,14 @@ const router = express.Router();
  *     summary: Dapatkan item yang tersedia untuk penimbangan vendor di semua pengiriman
  *     description: |
  *       **Endpoint API Publik** - Tidak memerlukan autentikasi JWT, hanya header x-auth.
- *       
+ *
  *       Mengembalikan daftar pengiriman yang memiliki item yang ditandai untuk metode penimbangan VENDOR.
- *       Item-item ini telah dipilih dengan metode penimbangan VENDOR dan siap untuk 
+ *       Item-item ini telah dipilih dengan metode penimbangan VENDOR dan siap untuk
  *       pemrosesan penimbangan vendor eksternal melalui API.
- *       
+ *
  *       Endpoint ini hanya mengembalikan item yang secara khusus ditandai untuk penimbangan vendor
  *       selama proses pemilihan produk.
- *       
+ *
  *       **Autentikasi**: Menggunakan header x-auth alih-alih token JWT Bearer.
  *     tags:
  *       - Vendor Weighing API
@@ -119,13 +119,13 @@ router.get('/shipments/available-items', vendorController.getAvailableItemsForWe
  *     summary: Dapatkan item penimbangan vendor yang tersedia untuk pengiriman tertentu
  *     description: |
  *       **Endpoint API Publik** - Tidak memerlukan autentikasi JWT, hanya header x-auth.
- *       
+ *
  *       Mengembalikan item yang ditandai untuk metode penimbangan VENDOR dalam pengiriman tertentu.
  *       Item-item ini siap untuk pemrosesan penimbangan vendor eksternal dan dikelompokkan
  *       berdasarkan produk untuk memfasilitasi operasi penimbangan massal.
- *       
+ *
  *       Hanya item yang dipilih dengan metode penimbangan VENDOR yang akan dikembalikan.
- *       
+ *
  *       **Autentikasi**: Menggunakan header x-auth alih-alih token JWT Bearer.
  *     tags:
  *       - Vendor Weighing API
@@ -207,7 +207,10 @@ router.get('/shipments/available-items', vendorController.getAvailableItemsForWe
  *       500:
  *         description: Kesalahan server
  */
-router.get('/shipments/:shipmentId/available-items', vendorController.getAvailableItemsForWeighingByShipmentId);
+router.get(
+  '/shipments/:shipmentId/available-items',
+  vendorController.getAvailableItemsForWeighingByShipmentId,
+);
 
 /**
  * @openapi
@@ -216,7 +219,7 @@ router.get('/shipments/:shipmentId/available-items', vendorController.getAvailab
  *     summary: Penimbangan massal vendor untuk item yang ditandai untuk penimbangan vendor
  *     description: |
  *       **Endpoint API Publik** - Tidak memerlukan autentikasi JWT, hanya header x-auth.
- *       
+ *
  *       Endpoint ini memungkinkan sistem vendor untuk mengirim data penimbangan untuk item yang
  *       ditandai dengan metode penimbangan VENDOR. Endpoint ini memproses semua item CHOSEN dengan
  *       produk yang ditentukan dalam pengiriman dengan:
@@ -225,10 +228,10 @@ router.get('/shipments/:shipmentId/available-items', vendorController.getAvailab
  *       3. Mendistribusikan berat secara proporsional berdasarkan kuantitas yang diminta setiap item
  *       4. Mencatat berat untuk setiap item dan produk yang dipilih
  *       5. Memperbarui semua item ke status COMPLETED
- *       
+ *
  *       Endpoint ini hanya menerima data penimbangan untuk produk yang secara khusus
  *       dipilih dengan metode penimbangan VENDOR selama proses pemilihan produk.
- *       
+ *
  *       **Autentikasi**: Menggunakan header x-auth alih-alih token JWT Bearer.
  *     tags:
  *       - Vendor Weighing API

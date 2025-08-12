@@ -1,6 +1,4 @@
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import bcrypt from '../lib/bcrypt';
 import jwt from '../lib/jwt';
 import { CustomError } from '../middlewares/error';

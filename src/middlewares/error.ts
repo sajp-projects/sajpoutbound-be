@@ -1,7 +1,5 @@
 import * as dotenv from 'dotenv';
-import {
-  ErrorRequestHandler, Request, Response, 
-} from 'express';
+import { ErrorRequestHandler, Request, Response } from 'express';
 import Joi from 'joi';
 import { ErrorParams, ICustomError } from '../types/error';
 

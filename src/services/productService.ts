@@ -160,10 +160,10 @@ export default {
           updatedAt: jakartaTime,
           warehouse: warehouseId
             ? {
-              connect: {
-                id: warehouseId,
-              },
-            }
+                connect: {
+                  id: warehouseId,
+                },
+              }
             : undefined,
         },
         include: {

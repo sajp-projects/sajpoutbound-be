@@ -1,7 +1,5 @@
 import { WEIGHING_METHOD } from '@prisma/client';
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { customAlphabet } from 'nanoid';
 import { CustomError } from '../middlewares/error';
 import {
@@ -79,7 +77,8 @@ export default {
       }
 
       // Get only vendor-marked chosen products for this shipment
-      const items = await shipmentService.getVendorAvailableItemsForWeighingByShipmentId(shipmentId);
+      const items =
+        await shipmentService.getVendorAvailableItemsForWeighingByShipmentId(shipmentId);
 
       res.status(200).json(success(items));
     } catch (error) {

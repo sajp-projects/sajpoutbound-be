@@ -1,6 +1,4 @@
-import {
-  ACTION, ENTITY_TYPE, STATUS, 
-} from '@prisma/client';
+import { ACTION, ENTITY_TYPE, STATUS } from '@prisma/client';
 import fs from 'fs';
 import { customAlphabet } from 'nanoid';
 import path from 'path';

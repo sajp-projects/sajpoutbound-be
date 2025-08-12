@@ -229,16 +229,18 @@ export default {
     jakartaTime.setHours(jakartaTime.getHours() + 7);
 
     // Create a detailed description of changes
-    const changedItems = newData.items.map((newItem: any) => {
-      const oldItem = oldData.items.find((old: any) => old.id === newItem.id);
-      const oldQuantity = oldItem ? oldItem.quantity : 0;
-      const newQuantity = newItem.quantity;
-      return {
-        productName: newItem.productName,
-        oldQuantity,
-        newQuantity,
-      };
-    }).filter((item: any) => item.oldQuantity !== item.newQuantity);
+    const changedItems = newData.items
+      .map((newItem: any) => {
+        const oldItem = oldData.items.find((old: any) => old.id === newItem.id);
+        const oldQuantity = oldItem ? oldItem.quantity : 0;
+        const newQuantity = newItem.quantity;
+        return {
+          productName: newItem.productName,
+          oldQuantity,
+          newQuantity,
+        };
+      })
+      .filter((item: any) => item.oldQuantity !== item.newQuantity);
 
     const description = `DO direvisi setelah penimbangan. Item yang diubah: ${changedItems
       .map((item: any) => `${item.productName} (${item.oldQuantity} → ${item.newQuantity})`)

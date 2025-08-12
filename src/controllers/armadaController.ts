@@ -1,10 +1,6 @@
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { CustomError } from '../middlewares/error';
-import {
-  armadaIdSchema, createArmadaSchema, updateArmadaSchema, 
-} from '../schemas/armada';
+import { armadaIdSchema, createArmadaSchema, updateArmadaSchema } from '../schemas/armada';
 import armadaService from '../services/armadaService';
 import { success } from '../types/response';
 

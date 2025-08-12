@@ -1,7 +1,5 @@
 import { PERMISSION_ACTION } from '@prisma/client';
-import {
-  NextFunction, Request, Response, 
-} from 'express';
+import { NextFunction, Request, Response } from 'express';
 import permissionService from '../services/permissionService';
 import productService from '../services/productService';
 import rolePermissionService from '../services/rolePermissionService';
