@@ -8,14 +8,14 @@ const router = express.Router();
 // Get all logs across all shipments
 router.get(
   '/',
-  checkPermission('shipment', PERMISSION_ACTION.READ),
+  checkPermission('shipment_log', PERMISSION_ACTION.READ),
   shipmentLogController.getAllShipmentLogs,
 );
 
 // Get all logs for a specific shipment
 router.get(
   '/:shipmentId',
-  checkPermission('shipment', PERMISSION_ACTION.READ),
+  checkPermission('shipment_log', PERMISSION_ACTION.READ),
   shipmentLogController.getShipmentLogs,
 );
 

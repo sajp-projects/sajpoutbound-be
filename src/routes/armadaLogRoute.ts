@@ -8,14 +8,14 @@ const router = express.Router();
 // Get all armada logs
 router.get(
   '/',
-  checkPermission('armada', PERMISSION_ACTION.READ),
+  checkPermission('armada_log', PERMISSION_ACTION.READ),
   armadaLogController.getAllArmadaLogs,
 );
 
 // Get armada logs by armada ID
 router.get(
   '/:armadaId',
-  checkPermission('armada', PERMISSION_ACTION.READ),
+  checkPermission('armada_log', PERMISSION_ACTION.READ),
   armadaLogController.getArmadaLogs,
 );
 

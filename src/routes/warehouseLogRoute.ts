@@ -8,14 +8,14 @@ const router = express.Router();
 // Get all warehouse logs
 router.get(
   '/',
-  checkPermission('warehouse', PERMISSION_ACTION.READ),
+  checkPermission('warehouse_log', PERMISSION_ACTION.READ),
   warehouseLogController.getAllWarehouseLogs,
 );
 
 // Get warehouse logs by warehouse ID
 router.get(
   '/:warehouseId',
-  checkPermission('warehouse', PERMISSION_ACTION.READ),
+  checkPermission('warehouse_log', PERMISSION_ACTION.READ),
   warehouseLogController.getWarehouseLogsByWarehouseId,
 );
 

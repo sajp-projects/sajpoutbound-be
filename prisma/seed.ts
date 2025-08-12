@@ -41,24 +41,24 @@ async function main() {
           description: 'Manager with access to manage teams and projects',
         },
       }),
-      prisma.role.create({
-        data: {
-          name: 'Employee',
-          description: 'Regular employee with limited access',
-        },
-      }),
-      prisma.role.create({
-        data: {
-          name: 'Accountant',
-          description: 'Finance team member with access to financial data',
-        },
-      }),
-      prisma.role.create({
-        data: {
-          name: 'Customer',
-          description: 'External user with minimal access to the system',
-        },
-      }),
+      // prisma.role.create({
+      //   data: {
+      //     name: 'Employee',
+      //     description: 'Regular employee with limited access',
+      //   },
+      // }),
+      // prisma.role.create({
+      //   data: {
+      //     name: 'Accountant',
+      //     description: 'Finance team member with access to financial data',
+      //   },
+      // }),
+      // prisma.role.create({
+      //   data: {
+      //     name: 'Customer',
+      //     description: 'External user with minimal access to the system',
+      //   },
+      // }),
     ]);
 
     console.log('Created 5 roles');
@@ -75,6 +75,13 @@ async function main() {
       'delivery_order',
       'shipment',
       'report',
+      'user_log',
+      'product_log',
+      'customer_log',
+      'warehouse_log',
+      'armada_log',
+      'delivery_order_log',
+      'shipment_log',
     ];
     const actions = Object.values(PERMISSION_ACTION);
 
@@ -88,6 +95,9 @@ async function main() {
       PERMISSION_ACTION.REVISE_DO,
     ]);
 
+    // Resources that support soft deletion (unarchiving)
+    const softDeletableResources: Set<string> = new Set(['user', 'delivery_order', 'shipment']);
+
     const specialActionDescriptions = new Map<PERMISSION_ACTION, string>([
       [PERMISSION_ACTION.WEIGH, 'Mengizinkan untuk melakukan penimbangan'],
       [PERMISSION_ACTION.VERIFY_PLATE, 'Mengizinkan untuk verifikasi plat nomor kendaraan'],
@@ -100,11 +110,22 @@ async function main() {
         'Mengizinkan untuk mengubah pelanggan setelah pengiriman di proses',
       ],
       [PERMISSION_ACTION.REVISE_DO, 'Mengizinkan untuk merevisi DO setelah pengiriman di proses'],
+      [PERMISSION_ACTION.UNARCHIVE, 'Mengizinkan untuk mengembalikan data yang telah diarsipkan'],
+      [PERMISSION_ACTION.READ_ARCHIVED, 'Mengizinkan untuk melihat data yang telah diarsipkan'],
     ]);
 
     for (const resource of resources) {
       for (const action of actions) {
+        // Skip special actions for non-shipment resources
         if (specialActions.has(action) && resource !== 'shipment') {
+          continue;
+        }
+
+        // Skip UNARCHIVE and READ_ARCHIVED actions for resources that don't support soft deletion
+        if (
+          (action === PERMISSION_ACTION.UNARCHIVE || action === PERMISSION_ACTION.READ_ARCHIVED) &&
+          !softDeletableResources.has(resource)
+        ) {
           continue;
         }
 
@@ -1243,6 +1264,8 @@ async function main() {
       PERMISSION_ACTION.VERIFY_PLATE_MANUAL,
       PERMISSION_ACTION.CHANGE_CUSTOMER,
       PERMISSION_ACTION.REVISE_DO,
+      PERMISSION_ACTION.UNARCHIVE,
+      PERMISSION_ACTION.READ_ARCHIVED,
     ]);
 
     //
@@ -1272,7 +1295,7 @@ async function main() {
         name: 'Admin User',
         password: defaultPassword,
         roleId: roles[0].id,
-        warehouseId: warehouses[0].id, // Assign only the first warehouse to admin
+        // warehouseId: warehouses[0].id, // Assign only the first warehouse to admin
       },
     });
 
@@ -1289,76 +1312,76 @@ async function main() {
           roleId: roles[1].id,
         },
       }),
-      prisma.user.create({
-        data: {
-          email: 'sarah.manager@example.com',
-          name: 'Sarah Johnson',
-          password: defaultPassword,
-          roleId: roles[1].id,
-        },
-      }),
-      // Employees
-      prisma.user.create({
-        data: {
-          email: 'mike.employee@example.com',
-          name: 'Mike Wilson',
-          password: defaultPassword,
-          roleId: roles[2].id,
-        },
-      }),
-      prisma.user.create({
-        data: {
-          email: 'emma.employee@example.com',
-          name: 'Emma Davis',
-          password: defaultPassword,
-          roleId: roles[2].id,
-        },
-      }),
-      prisma.user.create({
-        data: {
-          email: 'alex.employee@example.com',
-          name: 'Alex Johnson',
-          password: defaultPassword,
-          roleId: roles[2].id,
-        },
-      }),
-      // Accountants
-      prisma.user.create({
-        data: {
-          email: 'lisa.accountant@example.com',
-          name: 'Lisa Chen',
-          password: defaultPassword,
-          roleId: roles[3].id,
-        },
-      }),
-      prisma.user.create({
-        data: {
-          email: 'robert.accountant@example.com',
-          name: 'Robert Taylor',
-          password: defaultPassword,
-          roleId: roles[3].id,
-          deletedAt: new Date(),
-        },
-      }),
-      // Customers
-      prisma.user.create({
-        data: {
-          email: 'customer1@example.com',
-          name: 'James Wilson',
-          password: defaultPassword,
-          roleId: roles[4].id,
-          deletedAt: new Date(),
-        },
-      }),
-      prisma.user.create({
-        data: {
-          email: 'customer2@example.com',
-          name: 'Maria Garcia',
-          password: defaultPassword,
-          roleId: roles[4].id,
-          deletedAt: new Date(),
-        },
-      }),
+      // prisma.user.create({
+      //   data: {
+      //     email: 'sarah.manager@example.com',
+      //     name: 'Sarah Johnson',
+      //     password: defaultPassword,
+      //     roleId: roles[1].id,
+      //   },
+      // }),
+      // // Employees
+      // prisma.user.create({
+      //   data: {
+      //     email: 'mike.employee@example.com',
+      //     name: 'Mike Wilson',
+      //     password: defaultPassword,
+      //     roleId: roles[2].id,
+      //   },
+      // }),
+      // prisma.user.create({
+      //   data: {
+      //     email: 'emma.employee@example.com',
+      //     name: 'Emma Davis',
+      //     password: defaultPassword,
+      //     roleId: roles[2].id,
+      //   },
+      // }),
+      // prisma.user.create({
+      //   data: {
+      //     email: 'alex.employee@example.com',
+      //     name: 'Alex Johnson',
+      //     password: defaultPassword,
+      //     roleId: roles[2].id,
+      //   },
+      // }),
+      // // Accountants
+      // prisma.user.create({
+      //   data: {
+      //     email: 'lisa.accountant@example.com',
+      //     name: 'Lisa Chen',
+      //     password: defaultPassword,
+      //     roleId: roles[3].id,
+      //   },
+      // }),
+      // prisma.user.create({
+      //   data: {
+      //     email: 'robert.accountant@example.com',
+      //     name: 'Robert Taylor',
+      //     password: defaultPassword,
+      //     roleId: roles[3].id,
+      //     deletedAt: new Date(),
+      //   },
+      // }),
+      // // Customers
+      // prisma.user.create({
+      //   data: {
+      //     email: 'customer1@example.com',
+      //     name: 'James Wilson',
+      //     password: defaultPassword,
+      //     roleId: roles[4].id,
+      //     deletedAt: new Date(),
+      //   },
+      // }),
+      // prisma.user.create({
+      //   data: {
+      //     email: 'customer2@example.com',
+      //     name: 'Maria Garcia',
+      //     password: defaultPassword,
+      //     roleId: roles[4].id,
+      //     deletedAt: new Date(),
+      //   },
+      // }),
     ]);
 
     // Log summary of created data
@@ -1368,11 +1391,11 @@ async function main() {
     console.log(`- Permissions: ${permissions.length}`);
     console.log(`- Admin permissions: ${adminPermissionAssignments.length}`);
     console.log(`- Manager permissions: ${managerPermissionAssignments.length}`);
-    console.log(`- Warehouses: ${warehouses.length}`);
-    console.log(`- Products: ${products.length}`);
-    console.log(`- Customers: ${customers.length}`);
-    console.log(`- Armadas: ${armadas.length}`);
-    console.log(`- Delivery Orders: ${deliveryOrders.length}`);
+    // console.log(`- Warehouses: ${warehouses.length}`);
+    // console.log(`- Products: ${products.length}`);
+    // console.log(`- Customers: ${customers.length}`);
+    // console.log(`- Armadas: ${armadas.length}`);
+    // console.log(`- Delivery Orders: ${deliveryOrders.length}`);
   } catch (error) {
     console.error('Error seeding database:', error);
   } finally {

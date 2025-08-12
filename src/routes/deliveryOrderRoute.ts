@@ -26,7 +26,7 @@ router.get(
 // Get archived delivery orders
 router.get(
   '/archived',
-  checkPermission('delivery_order', PERMISSION_ACTION.READ),
+  checkPermission('delivery_order', PERMISSION_ACTION.READ_ARCHIVED),
   deliveryOrderController.getArchivedDeliveryOrders,
 );
 
@@ -68,7 +68,7 @@ router.delete(
 // Restore archived delivery order
 router.patch(
   '/:id/restore',
-  checkPermission('delivery_order', PERMISSION_ACTION.UPDATE),
+  checkPermission('delivery_order', PERMISSION_ACTION.UNARCHIVE),
   deliveryOrderController.restoreDeliveryOrder,
 );
 

@@ -23,7 +23,7 @@ router.get(
 // Get archived shipments
 router.get(
   '/archived',
-  checkPermission('shipment', PERMISSION_ACTION.READ),
+  checkPermission('shipment', PERMISSION_ACTION.READ_ARCHIVED),
   shipmentController.getArchivedShipments,
 );
 

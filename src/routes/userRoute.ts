@@ -14,7 +14,7 @@ router.get('/', checkPermission('user', PERMISSION_ACTION.READ), userController.
 // Get archived users
 router.get(
   '/archived',
-  checkPermission('user', PERMISSION_ACTION.READ),
+  checkPermission('user', PERMISSION_ACTION.READ_ARCHIVED),
   userController.getArchivedUsers,
 );
 
@@ -30,7 +30,7 @@ router.put('/:id', checkPermission('user', PERMISSION_ACTION.UPDATE), userContro
 // Unarchive user
 router.patch(
   '/:id/unarchived',
-  checkPermission('user', PERMISSION_ACTION.UPDATE),
+  checkPermission('user', PERMISSION_ACTION.UNARCHIVE),
   userController.unarchiveUser,
 );
 
