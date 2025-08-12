@@ -6,35 +6,53 @@ import prisma from '../config/prisma';
  */
 export default {
   /**
-   * Get all permissions with pagination
+   * Get all permissions with optional pagination
    *
-   * @param page The page number (1-based)
-   * @param limit The number of items per page
+   * @param page The page number (1-based), undefined for no pagination
+   * @param limit The number of items per page, undefined for no pagination
    * @returns Object containing permissions array and total count
    */
-  async getAllPermissions(page: number = 1, limit: number = 10) {
-    // Calculate skip value for pagination
-    const skip = (page - 1) * limit;
+  async getAllPermissions(page?: number, limit?: number) {
+    // If pagination parameters are provided, use pagination
+    if (page !== undefined && limit !== undefined) {
+      // Calculate skip value for pagination
+      const skip = (page - 1) * limit;
 
-    // Execute both queries in parallel for efficiency
-    const [permissions, total] = await Promise.all([
-      // Get paginated permissions
-      prisma.permission.findMany({
-        skip,
-        take: limit,
-        orderBy: {
-          resource: 'asc',
-        },
-      }),
+      // Execute both queries in parallel for efficiency
+      const [permissions, total] = await Promise.all([
+        // Get paginated permissions
+        prisma.permission.findMany({
+          skip,
+          take: limit,
+          orderBy: {
+            resource: 'asc',
+          },
+        }),
 
-      // Get total count for pagination
-      prisma.permission.count(),
-    ]);
+        // Get total count for pagination
+        prisma.permission.count(),
+      ]);
 
-    return {
-      permissions,
-      total,
-    };
+      return {
+        permissions,
+        total,
+      };
+    } else {
+      // Get all permissions without pagination
+      const [permissions, total] = await Promise.all([
+        prisma.permission.findMany({
+          orderBy: {
+            resource: 'asc',
+          },
+        }),
+        prisma.permission.count(),
+      ]);
+
+      return {
+        permissions,
+        total,
+      };
+    }
   },
 
   /**

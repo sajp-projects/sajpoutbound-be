@@ -6,11 +6,7 @@ import { checkPermission } from '../middlewares/permission';
 const router = express.Router();
 
 // Dashboard Summary route
-router.get(
-  '/dashboard-summary',
-  checkPermission('report', PERMISSION_ACTION.READ),
-  reportController.getDashboardSummary,
-);
+router.get('/dashboard-summary', reportController.getDashboardSummary);
 
 // Operational Report routes
 router.get(
