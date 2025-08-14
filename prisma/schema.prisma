@@ -236,12 +236,12 @@ model DeliveryOrderItem {
   id                 String        @id @default(uuid())
   deliveryOrderId    String
   productId          String
-  quantity           Int           @default(0)
+  quantity           Float         @default(0)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
-  completedQuantity  Int           @default(0)
-  pendingQuantity    Int           @default(0)
-  processingQuantity Int           @default(0)
+  completedQuantity  Float         @default(0)
+  pendingQuantity    Float         @default(0)
+  processingQuantity Float         @default(0)
   deliveryOrder      DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
   product            Product       @relation(fields: [productId], references: [id])
 
@@ -295,7 +295,7 @@ model ShipmentItem {
   shipmentId        String
   deliveryOrderId   String
   productId         String
-  requestedQuantity Int                  @default(0)
+  requestedQuantity Float                @default(0)
   weightedQuantity  Float?
   status            SHIPMENT_ITEM_STATUS @default(PENDING)
   warehouseId       String
@@ -425,6 +425,7 @@ enum PERMISSION_ACTION {
   REVISE_DO
   UNARCHIVE
   READ_ARCHIVED
+  CHOSE_PRODUCT
 }
 
 enum STATUS {

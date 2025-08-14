@@ -405,6 +405,7 @@ export default {
         },
         data: {
           deletedAt: jakartaTime,
+          updatedAt: jakartaTime,
         },
       });
 

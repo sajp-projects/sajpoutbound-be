@@ -94,8 +94,16 @@ export default {
    * @returns Created role
    */
   async createRole(data: { name: string; description?: string }) {
+    // Create a Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
     return prisma.role.create({
-      data,
+      data: {
+        ...data,
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
+      },
     });
   },
 

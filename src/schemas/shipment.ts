@@ -103,10 +103,9 @@ export const createShipmentSchema = Joi.object<ShipmentCreateInput>({
           'string.guid': 'Product ID must be a valid UUID',
           'any.required': 'Product ID is required',
         }),
-        requestedQuantity: Joi.number().required().integer().min(1).messages({
+        requestedQuantity: Joi.number().required().positive().messages({
           'number.base': 'Requested quantity must be a number',
-          'number.integer': 'Requested quantity must be an integer',
-          'number.min': 'Requested quantity must be at least 1',
+          'number.positive': 'Requested quantity must be greater than 0',
           'any.required': 'Requested quantity is required',
         }),
         locationType: Joi.string().allow('', null).max(100).messages({
@@ -225,10 +224,9 @@ export const shipmentFullUpdateSchema = Joi.object<ShipmentFullUpdateInput>({
           'string.guid': 'Product ID must be a valid UUID',
           'any.required': 'Product ID is required',
         }),
-        requestedQuantity: Joi.number().required().integer().min(1).messages({
+        requestedQuantity: Joi.number().required().positive().messages({
           'number.base': 'Requested quantity must be a number',
-          'number.integer': 'Requested quantity must be an integer',
-          'number.min': 'Requested quantity must be at least 1',
+          'number.positive': 'Requested quantity must be greater than 0',
           'any.required': 'Requested quantity is required',
         }),
         locationType: Joi.string().allow('', null).max(100).messages({

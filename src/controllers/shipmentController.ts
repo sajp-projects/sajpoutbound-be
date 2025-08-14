@@ -46,6 +46,8 @@ export default {
       const status = req.query.status as STATUS | undefined;
       const type = req.query.type as SHIPMENT_TYPE | undefined;
       const unverifiedOnly = req.query.unverified === 'true';
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
 
       if (status && !Object.values(STATUS).includes(status as STATUS)) {
         throw new CustomError({
@@ -78,6 +80,8 @@ export default {
         status,
         type,
         unverifiedOnly,
+        startDate,
+        endDate,
       );
 
       res.status(200).json(

@@ -229,4 +229,60 @@ export default {
       next(error);
     }
   },
+
+  async getCustomerDeliveryOrders(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 5) : 10;
+
+      if (isNaN(page) || page < 1) {
+        throw new CustomError({
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new CustomError({
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      await customerIdSchema.validateAsync({
+        id,
+      });
+
+      // Check if customer exists
+      const customer = await customerService.getCustomerById(id);
+      if (!customer) {
+        throw new CustomError({
+          message: 'Pelanggan tidak ditemukan',
+          errorCode: 'PELANGGAN_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      const result = await deliveryOrderService.getCustomerDeliveryOrdersPaginated(id, page, limit);
+
+      res.status(200).json(
+        success({
+          deliveryOrders: result.deliveryOrders,
+          pagination: {
+            total: result.total,
+            page,
+            limit,
+            totalPages: Math.ceil(result.total / limit),
+            hasNext: page * limit < result.total,
+            hasPrev: page > 1,
+          },
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
 };

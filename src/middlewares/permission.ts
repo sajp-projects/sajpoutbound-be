@@ -145,6 +145,7 @@ export const checkAnyPermission = (
 /**
  * Higher-order middleware that checks if a user has warehouse access for a specific product
  * This ensures users can only access products from their assigned warehouse
+ * However, users with CHOSE_PRODUCT permission can access products from any warehouse
  * @returns Express middleware function
  */
 export const checkWarehouseAccess = () => {
@@ -157,6 +158,29 @@ export const checkWarehouseAccess = () => {
           errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
+      }
+
+      // Get user's roleId from the request
+      const { roleId } = req.user;
+
+      // If roleId exists, check if user has CHOSE_PRODUCT permission for override
+      if (roleId) {
+        const permission = await permissionService.findPermissionByResourceAndAction(
+          'shipment',
+          'CHOSE_PRODUCT' as PERMISSION_ACTION,
+        );
+
+        if (permission) {
+          const hasOverridePermission = await rolePermissionService.hasPermission(
+            roleId,
+            permission.id,
+          );
+
+          // If user has the override permission, allow access to any warehouse
+          if (hasOverridePermission) {
+            return next();
+          }
+        }
       }
 
       // Get product ID from request body or params

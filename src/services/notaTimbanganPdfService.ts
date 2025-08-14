@@ -161,7 +161,7 @@ export default {
               .filter((item) => item.productId === product.id)
               .reduce((sum, item) => sum + item.requestedQuantity, 0);
 
-      addInfoRow('Jlh. Sak', `${formatNumber(totalQuantity)} ${product.satuan}`);
+      addInfoRow('Jumlah', `${formatNumber(totalQuantity)}`);
       doc.moveDown(1);
 
       // Weight Section

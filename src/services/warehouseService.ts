@@ -103,6 +103,128 @@ export default {
   },
 
   /**
+   * Get users associated with a warehouse with pagination
+   *
+   * @param warehouseId The warehouse ID
+   * @param page The page number (1-based)
+   * @param limit The number of items per page
+   * @param search Optional search term
+   * @returns Object containing users array and total count
+   */
+  async getWarehouseUsers(
+    warehouseId: string,
+    page: number = 1,
+    limit: number = 5,
+    search?: string,
+  ) {
+    const skip = (page - 1) * limit;
+    const whereConditions: any = { warehouseId, deletedAt: null };
+
+    if (search) {
+      whereConditions.OR = [
+        {
+          name: {
+            contains: search,
+          },
+        },
+        {
+          email: {
+            contains: search,
+          },
+        },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: whereConditions,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      prisma.user.count({
+        where: whereConditions,
+      }),
+    ]);
+
+    return {
+      users,
+      total,
+    };
+  },
+
+  /**
+   * Get warehouse products with pagination
+   */
+  async getWarehouseProducts(
+    warehouseId: string,
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const whereConditions: any = {
+      warehouseId,
+    };
+
+    if (search) {
+      whereConditions.OR = [
+        {
+          name: {
+            contains: search,
+          },
+        },
+        {
+          id_sl: {
+            contains: search,
+          },
+        },
+        {
+          satuan: {
+            contains: search,
+          },
+        },
+      ];
+    }
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where: whereConditions,
+        include: {
+          warehouse: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      prisma.product.count({
+        where: whereConditions,
+      }),
+    ]);
+
+    return {
+      products,
+      total,
+    };
+  },
+
+  /**
    * Create a new warehouse
    */
   async createWarehouse(data: WarehouseCreateInput, performedById: string) {

@@ -25,6 +25,8 @@ export default {
       const search = req.query.search as string | undefined;
       const status = req.query.status as STATUS | undefined;
       const availableOnly = req.query.availableOnly === 'true';
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
 
       if (status && !Object.values(STATUS).includes(status as STATUS)) {
         throw new CustomError({
@@ -56,6 +58,8 @@ export default {
         search,
         status,
         availableOnly,
+        startDate,
+        endDate,
       );
 
       res.status(200).json(

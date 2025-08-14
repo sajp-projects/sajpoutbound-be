@@ -1,5 +1,6 @@
 import { SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, WEIGHING_METHOD } from '@prisma/client';
 import fs from 'fs';
+import moment from 'moment';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import prisma from '../config/prisma';
@@ -33,6 +34,8 @@ export default {
     status?: STATUS,
     type?: SHIPMENT_TYPE,
     unverifiedOnly?: boolean,
+    startDate?: string,
+    endDate?: string,
   ) {
     const skip = (page - 1) * limit;
 
@@ -46,6 +49,12 @@ export default {
 
     if (type) {
       whereConditions.type = type;
+    }
+
+    if (startDate || endDate) {
+      whereConditions.createdAt = {};
+      if (startDate) whereConditions.createdAt.gte = moment(startDate).startOf('day').toDate();
+      if (endDate) whereConditions.createdAt.lte = moment(endDate).endOf('day').toDate();
     }
 
     // Filter for unverified shipments (have platePhoto but no verifiedAt)

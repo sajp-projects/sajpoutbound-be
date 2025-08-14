@@ -1,5 +1,6 @@
 import { ACTION, ENTITY_TYPE, STATUS } from '@prisma/client';
 import fs from 'fs';
+import moment from 'moment';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import prisma from '../config/prisma';
@@ -21,6 +22,8 @@ export default {
    * @param search Optional search term
    * @param status Optional status filter
    * @param availableOnly Optional filter to only show DOs with available items (pendingQuantity > 0)
+   * @param startDate Optional start date for filtering
+   * @param endDate Optional end date for filtering
    * @returns Object containing delivery orders array and total count
    */
   async getAllDeliveryOrders(
@@ -29,6 +32,8 @@ export default {
     search?: string,
     status?: STATUS,
     availableOnly?: boolean,
+    startDate?: string,
+    endDate?: string,
   ) {
     const skip = (page - 1) * limit;
 
@@ -38,6 +43,12 @@ export default {
 
     if (status) {
       whereConditions.status = status;
+    }
+
+    if (startDate || endDate) {
+      whereConditions.createdAt = {};
+      if (startDate) whereConditions.createdAt.gte = moment(startDate).startOf('day').toDate();
+      if (endDate) whereConditions.createdAt.lte = moment(endDate).endOf('day').toDate();
     }
 
     // Filter untuk DO yang masih memiliki barang dengan pendingQuantity > 0
@@ -693,6 +704,65 @@ export default {
   },
 
   /**
+   * Get delivery orders for a specific customer with pagination
+   *
+   * @param customerId The ID of the customer
+   * @param page The page number (1-based)
+   * @param limit The number of items per page
+   * @returns Object containing customer delivery orders array and total count
+   */
+  async getCustomerDeliveryOrdersPaginated(
+    customerId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const whereConditions = {
+      customerId,
+      deletedAt: null,
+    };
+
+    const [deliveryOrders, total] = await Promise.all([
+      prisma.deliveryOrder.findMany({
+        where: whereConditions,
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  satuan: true,
+                },
+              },
+            },
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      prisma.deliveryOrder.count({
+        where: whereConditions,
+      }),
+    ]);
+
+    return {
+      deliveryOrders,
+      total,
+    };
+  },
+
+  /**
    * Get all delivery order items for a specific product
    *
    * @param productId The ID of the product
@@ -1223,9 +1293,9 @@ export default {
         const newQuantity = revisedItem.quantity;
         const ratio = originalQuantity > 0 ? newQuantity / originalQuantity : 1;
 
-        // Recalculate all status quantities proportionally
-        const newCompletedQuantity = Math.round(existingItem.completedQuantity * ratio);
-        const newProcessingQuantity = Math.round(existingItem.processingQuantity * ratio);
+        // Recalculate all status quantities proportionally (preserve decimal precision)
+        const newCompletedQuantity = existingItem.completedQuantity * ratio;
+        const newProcessingQuantity = existingItem.processingQuantity * ratio;
         const newPendingQuantity = Math.max(
           0,
           newQuantity - newCompletedQuantity - newProcessingQuantity,
@@ -1246,17 +1316,17 @@ export default {
 
         // Update related shipment items with recalculated quantities if they exist
         if (relatedShipmentItem) {
-          // Recalculate the shipment item quantities proportionally
-          const newRequestedQuantity = Math.round(relatedShipmentItem.requestedQuantity * ratio);
+          // Recalculate the shipment item quantities proportionally (preserve decimal precision)
+          const newRequestedQuantity = relatedShipmentItem.requestedQuantity * ratio;
           let newWeightedQuantity = relatedShipmentItem.weightedQuantity;
 
           // If item was previously weighed, recalculate based on weight per unit
           if (weightPerUnit > 0) {
             newWeightedQuantity = newRequestedQuantity * weightPerUnit;
           } else {
-            // If no weighing data, scale the weighted quantity proportionally
+            // If no weighing data, scale the weighted quantity proportionally (preserve decimal precision)
             newWeightedQuantity = relatedShipmentItem.weightedQuantity
-              ? Math.round(relatedShipmentItem.weightedQuantity * ratio)
+              ? relatedShipmentItem.weightedQuantity * ratio
               : null;
           }
 
@@ -1281,10 +1351,10 @@ export default {
               // Update the weighing record with recalculated weight based on new requested quantity
               const newGrossWeight = newRequestedQuantity * weightPerUnit;
 
-              // Also scale net weight proportionally if it exists
+              // Also scale net weight proportionally if it exists (preserve decimal precision)
               const currentWeighing = chosenProduct.weighings[0];
               const newNetWeight = currentWeighing.netWeight
-                ? Math.round(currentWeighing.netWeight * ratio)
+                ? currentWeighing.netWeight * ratio
                 : null;
 
               await tx.shipmentChosenProductWeighing.updateMany({
@@ -1613,8 +1683,8 @@ export default {
             const oldRequestedQuantity =
               originalShipmentItem?.requestedQuantity || item.requestedQuantity;
 
-            // Calculate the new quantities (this mirrors the calculation logic above)
-            const newRequestedQuantity = Math.round(oldRequestedQuantity * ratio);
+            // Calculate the new quantities (this mirrors the calculation logic above) - preserve decimal precision
+            const newRequestedQuantity = oldRequestedQuantity * ratio;
 
             // Get weighing data - calculate the new weight based on the ratio and weight per unit
             const oldWeighing = chosenProduct?.weighings?.[0]?.grossWeight || 0;

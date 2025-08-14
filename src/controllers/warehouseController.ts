@@ -81,6 +81,114 @@ export default {
     }
   },
 
+  /**
+   * Get warehouse products with pagination
+   */
+  async getWarehouseProducts(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const page = parseInt(req.query.page as string, 10) || 1;
+      const limit = parseInt(req.query.limit as string, 5) || 5;
+      const search = (req.query.search as string) || '';
+
+      await warehouseIdSchema.validateAsync({
+        id,
+      });
+
+      if (isNaN(page) || page < 1) {
+        throw new CustomError({
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new CustomError({
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      const result = await warehouseService.getWarehouseProducts(id, page, limit, search);
+
+      const totalPages = Math.ceil(result.total / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      res.status(200).json(
+        success({
+          products: result.products,
+          pagination: {
+            total: result.total,
+            page,
+            limit,
+            totalPages,
+            hasNext,
+            hasPrev,
+          },
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Get warehouse users with pagination
+   */
+  async getWarehouseUsers(req: Request<{ id: string }>, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const page = parseInt(req.query.page as string, 10) || 1;
+      const limit = parseInt(req.query.limit as string, 10) || 10;
+      const search = (req.query.search as string) || '';
+
+      await warehouseIdSchema.validateAsync({
+        id,
+      });
+
+      if (isNaN(page) || page < 1) {
+        throw new CustomError({
+          message: 'Halaman harus berupa bilangan bulat positif',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      if (isNaN(limit) || limit < 1 || limit > 100) {
+        throw new CustomError({
+          message: 'Batas harus berupa bilangan bulat positif antara 1 dan 100',
+          errorCode: 'PAGINASI_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      const result = await warehouseService.getWarehouseUsers(id, page, limit, search);
+
+      const totalPages = Math.ceil(result.total / limit);
+      const hasNext = page < totalPages;
+      const hasPrev = page > 1;
+
+      res.status(200).json(
+        success({
+          users: result.users,
+          pagination: {
+            total: result.total,
+            page,
+            limit,
+            totalPages,
+            hasNext,
+            hasPrev,
+          },
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createWarehouse(
     req: Request<Record<string, never>, unknown, WarehouseCreateInput>,
     res: Response,

@@ -26,6 +26,20 @@ router.get(
   warehouseController.getWarehouseById,
 );
 
+// Get warehouse products with pagination
+router.get(
+  '/:id/products',
+  checkPermission('warehouse', PERMISSION_ACTION.READ),
+  warehouseController.getWarehouseProducts,
+);
+
+// Get warehouse users with pagination
+router.get(
+  '/:id/users',
+  checkPermission('warehouse', PERMISSION_ACTION.READ),
+  warehouseController.getWarehouseUsers,
+);
+
 // Create warehouse
 router.post(
   '/',

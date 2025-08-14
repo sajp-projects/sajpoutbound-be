@@ -23,6 +23,14 @@ router.get(
   customerController.getCustomerById,
 );
 
+// Get customer delivery orders with pagination
+router.get(
+  '/:id/delivery-orders',
+  checkPermission('customer', PERMISSION_ACTION.READ),
+  checkPermission('delivery_order', PERMISSION_ACTION.READ),
+  customerController.getCustomerDeliveryOrders,
+);
+
 // Create customer
 router.post(
   '/',
