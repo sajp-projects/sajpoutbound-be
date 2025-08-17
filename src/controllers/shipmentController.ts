@@ -27,7 +27,6 @@ import fileService from '../services/fileService';
 import geminiAiService from '../services/geminiAiService';
 import productService from '../services/productService';
 import shipmentService from '../services/shipmentService';
-import userService from '../services/userService';
 import { success } from '../types/response';
 
 dotenv.config();
@@ -48,6 +47,25 @@ export default {
       const unverifiedOnly = req.query.unverified === 'true';
       const startDate = req.query.startDate as string | undefined;
       const endDate = req.query.endDate as string | undefined;
+
+      console.log(
+        page,
+        'page',
+        limit,
+        'limit',
+        search,
+        'search',
+        status,
+        'status',
+        type,
+        'type',
+        unverifiedOnly,
+        'unverified Only',
+        startDate,
+        'startDate',
+        endDate,
+        'endDate',
+      );
 
       if (status && !Object.values(STATUS).includes(status as STATUS)) {
         throw new CustomError({
@@ -83,6 +101,8 @@ export default {
         startDate,
         endDate,
       );
+
+      console.log(result, 'result');
 
       res.status(200).json(
         success({
@@ -595,15 +615,14 @@ export default {
   },
 
   /**
-   * !! LEGACY LOGIC
    * Process a shipment item (weigh and record weights for chosen product)
    *
    * This endpoint handles the weighing process by:
    * 1. Validating the shipment item exists and is in CHOSEN status
-   * 2. Finding the associated chosen product
-   * 3. Recording the weights (gross, net, tare)
-   * 4. Updating the status directly to COMPLETED
-   * 5. Updating delivery order quantities
+   * 2. Validating the chosen product exists and is marked for manual weighing
+   * 3. Checking there are chosen items for this product
+   * 4. Recording the weights (gross, net, tare)
+   * 5. Updating the status to COMPLETED
    */
   async weighShipmentItem(
     req: Request<Record<string, never>, unknown, ShipmentWeighInput>,
@@ -612,19 +631,30 @@ export default {
   ) {
     try {
       const validated = await shipmentWeighSchema.validateAsync(req.body);
-
-      const performedById = req.user?.id;
+      const performedById = (req as any).user?.id;
 
       if (!performedById) {
         throw new CustomError({
-          message: 'Autentikasi diperlukan untuk aksi ini',
+          message: 'Autentikasi diperlukan',
           errorCode: 'PERLU_AUTENTIKASI',
           status: 401,
         });
       }
 
-      // First, get the shipment item to check if it exists and validate its state
-      const existingItem = await shipmentService.getShipmentItemById(validated.shipmentItemId);
+      // Get the shipment first to verify it exists
+      const shipment = await shipmentService.getShipmentById(validated.shipmentId);
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      // Get the specific shipment item
+      const existingItem = shipment.shipmentItems.find(
+        (item) => item.id === validated.shipmentItemId,
+      );
 
       if (!existingItem) {
         throw new CustomError({
@@ -634,25 +664,45 @@ export default {
         });
       }
 
-      // Check if item is in CHOSEN status
       if (existingItem.status !== 'CHOSEN') {
         throw new CustomError({
-          message: 'Anda belum menambahkan produk ini untuk diukur',
-          errorCode: 'TIDAK_DAPAT_MENAMBAHKAN_PRODUK',
+          message: 'Item pengiriman belum dipilih',
+          errorCode: 'ITEM_BELUM_DIPILIH',
           status: 400,
         });
       }
 
-      // Find the shipment chosen product associated with this item
-      const shipmentChosenProduct = await shipmentService.getShipmentChosenProduct(
-        existingItem.shipmentId,
+      // Get the chosen product to verify it exists and is marked for manual weighing
+      const chosenProduct = await shipmentService.getShipmentChosenProduct(
+        validated.shipmentId,
         existingItem.productId,
       );
 
-      if (!shipmentChosenProduct) {
+      if (!chosenProduct) {
         throw new CustomError({
           message: 'Produk dipilih untuk pengiriman tidak ditemukan',
           errorCode: 'PRODUK_DIPILIH_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      if (chosenProduct.weighingMethod !== WEIGHING_METHOD.MANUAL) {
+        throw new CustomError({
+          message: 'Produk ini tidak ditandai untuk penimbangan manual',
+          errorCode: 'BUKAN_PRODUK_MANUAL',
+          status: 400,
+        });
+      }
+
+      // Check if there are any items with this product that are in CHOSEN status
+      const chosenItems = shipment.shipmentItems.filter(
+        (item) => item.productId === existingItem.productId && item.status === 'CHOSEN',
+      );
+
+      if (chosenItems.length === 0) {
+        throw new CustomError({
+          message: 'Tidak ada item dipilih untuk produk ini dalam pengiriman',
+          errorCode: 'TIDAK_ADA_ITEM_DIPILIH_UNTUK_PRODUK',
           status: 404,
         });
       }
@@ -662,7 +712,8 @@ export default {
         validated,
         performedById,
         existingItem,
-        shipmentChosenProduct,
+        chosenProduct,
+        shipment,
       );
 
       res.status(200).json(
@@ -1251,13 +1302,14 @@ export default {
 
       const validated = await shipmentBulkWeighSchema.validateAsync(req.body);
 
-      let performedById;
+      const performedById = (req as any).user?.id;
 
-      if ((req as any).user) {
-        performedById = (req as any).user.id;
-      } else {
-        const user = await userService.getUserByEmail('admin@example.com');
-        performedById = user?.id;
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
+          status: 401,
+        });
       }
 
       // Check if shipment exists
@@ -1604,6 +1656,46 @@ export default {
           message: 'DO berhasil direvisi',
         }),
       );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateTally(
+    req: Request<{ id: string }, unknown, { tally: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { id } = req.params;
+      const { tally } = req.body;
+
+      await shipmentIdSchema.validateAsync({
+        id,
+      });
+
+      const performedById = req.user?.id;
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
+          status: 401,
+        });
+      }
+
+      const shipment = await shipmentService.getShipmentById(id);
+
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      const updatedShipment = await shipmentService.updateTally(id, tally, performedById, shipment);
+
+      res.status(200).json(success(updatedShipment));
     } catch (error) {
       next(error);
     }

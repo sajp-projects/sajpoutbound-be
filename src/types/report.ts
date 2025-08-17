@@ -278,6 +278,7 @@ export type DashboardSummaryFilter = ReportDateFilter;
 export interface RecentActivity {
   id: string;
   shipmentNumber: string;
+  plateNumber: string | null;
   status: STATUS;
   createdAt: Date;
 }
@@ -303,6 +304,27 @@ export interface ArmadaInfo {
   id_sl?: string;
 }
 
+export interface UnprocessedDO {
+  id: string;
+  doNumber: string | null;
+  customer: {
+    id: string;
+    name: string;
+  };
+  items: Array<{
+    id: string;
+    product: {
+      id: string;
+      name: string;
+      satuan: string;
+    };
+    quantity: number;
+    pendingQuantity: number;
+  }>;
+  createdAt: Date;
+  status: STATUS;
+}
+
 export interface DashboardSummaryResult {
   // Main KPI metrics
   kpi: {
@@ -326,6 +348,9 @@ export interface DashboardSummaryResult {
 
   // Recent activities
   recentActivities: RecentActivity[];
+
+  // Unprocessed DOs list
+  unprocessedDOs: UnprocessedDO[];
 
   // Performance metrics
   performance: PerformanceMetrics;

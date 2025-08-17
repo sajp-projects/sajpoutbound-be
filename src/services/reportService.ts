@@ -1,5 +1,5 @@
 import { STATUS } from '@prisma/client';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import prisma from '../config/prisma';
 import {
   ArmadaInfo,
@@ -49,8 +49,20 @@ export default {
     };
     if (startDate || endDate) {
       whereConditions.createdAt = {};
-      if (startDate) whereConditions.createdAt.gte = moment(startDate).startOf('day').toDate();
-      if (endDate) whereConditions.createdAt.lte = moment(endDate).endOf('day').toDate();
+      if (startDate) {
+        // Since DB stores Jakarta time with +7 offset, create date with same offset
+        const startMoment = moment.tz(startDate, 'Asia/Jakarta').startOf('day');
+        const startDate7Plus = new Date(startMoment.toDate());
+        startDate7Plus.setHours(startDate7Plus.getHours() + 7);
+        whereConditions.createdAt.gte = startDate7Plus;
+      }
+      if (endDate) {
+        // Since DB stores Jakarta time with +7 offset, create date with same offset
+        const endMoment = moment.tz(endDate, 'Asia/Jakarta').endOf('day');
+        const endDate7Plus = new Date(endMoment.toDate());
+        endDate7Plus.setHours(endDate7Plus.getHours() + 7);
+        whereConditions.createdAt.lte = endDate7Plus;
+      }
     }
     if (type) whereConditions.type = type;
     if (status) whereConditions.status = status;
@@ -213,8 +225,12 @@ export default {
     const allShipmentsForCustomerCalc = shipments; // Always use all shipments for customer calculations
 
     // Use date filter for KPI calculations instead of just today
-    const startDateForKPI = startDate ? moment(startDate).startOf('day') : moment().startOf('day');
-    const endDateForKPI = endDate ? moment(endDate).endOf('day') : moment().endOf('day');
+    const startDateForKPI = startDate
+      ? moment.tz(startDate, 'Asia/Jakarta').startOf('day')
+      : moment.tz('Asia/Jakarta').startOf('day');
+    const endDateForKPI = endDate
+      ? moment.tz(endDate, 'Asia/Jakarta').endOf('day')
+      : moment.tz('Asia/Jakarta').endOf('day');
 
     // 1. Total Shipments Created in Date Range (all statuses)
     const totalShipmentsCreatedToday = filteredShipments.filter((s) =>
@@ -442,8 +458,20 @@ export default {
     };
     if (startDate || endDate) {
       whereConditions.createdAt = {};
-      if (startDate) whereConditions.createdAt.gte = moment(startDate).startOf('day').toDate();
-      if (endDate) whereConditions.createdAt.lte = moment(endDate).endOf('day').toDate();
+      if (startDate) {
+        // Since DB stores Jakarta time with +7 offset, create date with same offset
+        const startMoment = moment.tz(startDate, 'Asia/Jakarta').startOf('day');
+        const startDate7Plus = new Date(startMoment.toDate());
+        startDate7Plus.setHours(startDate7Plus.getHours() + 7);
+        whereConditions.createdAt.gte = startDate7Plus;
+      }
+      if (endDate) {
+        // Since DB stores Jakarta time with +7 offset, create date with same offset
+        const endMoment = moment.tz(endDate, 'Asia/Jakarta').endOf('day');
+        const endDate7Plus = new Date(endMoment.toDate());
+        endDate7Plus.setHours(endDate7Plus.getHours() + 7);
+        whereConditions.createdAt.lte = endDate7Plus;
+      }
     }
     if (type) whereConditions.type = type;
     if (status) whereConditions.status = status;
@@ -612,10 +640,12 @@ export default {
     let end: moment.Moment;
 
     if (period === 'daily') {
-      const defaultStartDate = moment().startOf('day');
-      const defaultEndDate = moment().endOf('day');
-      start = startDate ? moment(startDate).startOf('day') : defaultStartDate;
-      end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
+      start = startDate
+        ? moment.tz(startDate, 'Asia/Jakarta').startOf('day')
+        : moment.tz('Asia/Jakarta').startOf('day');
+      end = endDate
+        ? moment.tz(endDate, 'Asia/Jakarta').endOf('day')
+        : moment.tz('Asia/Jakarta').endOf('day');
     } else if (period === 'monthly') {
       if (!year || !month) {
         const now = moment();
@@ -656,10 +686,12 @@ export default {
       }
     } else {
       // Default to daily
-      const defaultStartDate = moment().startOf('day');
-      const defaultEndDate = moment().endOf('day');
-      start = startDate ? moment(startDate).startOf('day') : defaultStartDate;
-      end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
+      start = startDate
+        ? moment.tz(startDate, 'Asia/Jakarta').startOf('day')
+        : moment.tz('Asia/Jakarta').startOf('day');
+      end = endDate
+        ? moment.tz(endDate, 'Asia/Jakarta').endOf('day')
+        : moment.tz('Asia/Jakarta').endOf('day');
     }
 
     const whereConditions: any = {
@@ -991,10 +1023,12 @@ export default {
     let end: moment.Moment;
 
     if (period === 'daily') {
-      const defaultStartDate = moment().startOf('day');
-      const defaultEndDate = moment().endOf('day');
-      start = startDate ? moment(startDate).startOf('day') : defaultStartDate;
-      end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
+      start = startDate
+        ? moment.tz(startDate, 'Asia/Jakarta').startOf('day')
+        : moment.tz('Asia/Jakarta').startOf('day');
+      end = endDate
+        ? moment.tz(endDate, 'Asia/Jakarta').endOf('day')
+        : moment.tz('Asia/Jakarta').endOf('day');
     } else if (period === 'monthly') {
       if (!year || !month) {
         const now = moment();
@@ -1035,10 +1069,12 @@ export default {
       }
     } else {
       // Default to daily
-      const defaultStartDate = moment().startOf('day');
-      const defaultEndDate = moment().endOf('day');
-      start = startDate ? moment(startDate).startOf('day') : defaultStartDate;
-      end = endDate ? moment(endDate).endOf('day') : defaultEndDate;
+      start = startDate
+        ? moment.tz(startDate, 'Asia/Jakarta').startOf('day')
+        : moment.tz('Asia/Jakarta').startOf('day');
+      end = endDate
+        ? moment.tz(endDate, 'Asia/Jakarta').endOf('day')
+        : moment.tz('Asia/Jakarta').endOf('day');
     }
 
     const whereConditions: any = {
@@ -1304,8 +1340,20 @@ export default {
     };
     if (startDate || endDate) {
       whereConditions.createdAt = {};
-      if (startDate) whereConditions.createdAt.gte = moment(startDate).startOf('day').toDate();
-      if (endDate) whereConditions.createdAt.lte = moment(endDate).endOf('day').toDate();
+      if (startDate) {
+        // Since DB stores Jakarta time with +7 offset, create date with same offset
+        const startMoment = moment.tz(startDate, 'Asia/Jakarta').startOf('day');
+        const startDate7Plus = new Date(startMoment.toDate());
+        startDate7Plus.setHours(startDate7Plus.getHours() + 7);
+        whereConditions.createdAt.gte = startDate7Plus;
+      }
+      if (endDate) {
+        // Since DB stores Jakarta time with +7 offset, create date with same offset
+        const endMoment = moment.tz(endDate, 'Asia/Jakarta').endOf('day');
+        const endDate7Plus = new Date(endMoment.toDate());
+        endDate7Plus.setHours(endDate7Plus.getHours() + 7);
+        whereConditions.createdAt.lte = endDate7Plus;
+      }
     }
     if (status) whereConditions.status = status;
     if (armadaId) whereConditions.armadaId = armadaId;
@@ -1362,9 +1410,9 @@ export default {
       },
     });
     // KPIs
-    const today = moment().startOf('day');
-    const startOfWeek = moment().startOf('isoWeek');
-    const startOfMonth = moment().startOf('month');
+    const today = moment.tz('Asia/Jakarta').startOf('day');
+    const startOfWeek = moment.tz('Asia/Jakarta').startOf('isoWeek');
+    const startOfMonth = moment.tz('Asia/Jakarta').startOf('month');
     const totalAssignedToday = shipments.filter((s) =>
       moment(s.createdAt).isSame(today, 'day'),
     ).length;
@@ -1586,8 +1634,12 @@ export default {
     const { startDate, endDate } = filters;
 
     // Determine date range - default to today if not specified
-    const startOfRange = startDate ? moment(startDate).startOf('day') : moment().startOf('day');
-    const endOfRange = endDate ? moment(endDate).endOf('day') : moment().endOf('day');
+    const startOfRange = startDate
+      ? moment.tz(startDate, 'Asia/Jakarta').startOf('day')
+      : moment.tz('Asia/Jakarta').startOf('day');
+    const endOfRange = endDate
+      ? moment.tz(endDate, 'Asia/Jakarta').endOf('day')
+      : moment.tz('Asia/Jakarta').endOf('day');
 
     try {
       // Get all shipments in date range with related data
@@ -1642,8 +1694,8 @@ export default {
         },
       });
 
-      // Get basic counts
-      const [totalDOs, allArmadas] = await Promise.all([
+      // Get basic counts and unprocessed DOs
+      const [totalDOs, allArmadas, unprocessedDOs] = await Promise.all([
         // Total active delivery orders
         prisma.deliveryOrder.count({
           where: {
@@ -1658,6 +1710,50 @@ export default {
             plateNumber: true,
             id_sl: true,
           },
+        }),
+        // Unprocessed DOs (PENDING or PROSES status - not yet SELESAI)
+        prisma.deliveryOrder.findMany({
+          where: {
+            deletedAt: null,
+            status: {
+              in: [STATUS.PENDING, STATUS.PROSES],
+            },
+            items: {
+              some: {
+                pendingQuantity: {
+                  gt: 0,
+                },
+              },
+            },
+          },
+          include: {
+            customer: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            items: {
+              where: {
+                pendingQuantity: {
+                  gt: 0,
+                },
+              },
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    satuan: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+          take: 10, // Limit to 10 for dashboard
         }),
       ]);
 
@@ -1744,6 +1840,7 @@ export default {
       const recentActivities: RecentActivity[] = shipments.slice(0, 10).map((s) => ({
         id: s.id,
         shipmentNumber: s.shipmentNumber || '',
+        plateNumber: s.armada?.plateNumber || s.plateNumber || null,
         status: s.status,
         createdAt: s.createdAt,
       }));
@@ -1787,6 +1884,21 @@ export default {
         id_sl: a.id_sl || '',
       }));
 
+      // Transform unprocessed DOs to the expected format
+      const transformedUnprocessedDOs = unprocessedDOs.map((d) => ({
+        id: d.id,
+        doNumber: d.doNumber,
+        customer: d.customer,
+        items: d.items.map((item) => ({
+          id: item.id,
+          product: item.product,
+          quantity: item.quantity,
+          pendingQuantity: item.pendingQuantity,
+        })),
+        createdAt: d.createdAt,
+        status: d.status,
+      }));
+
       return {
         kpi: {
           totalDOsActive: totalDOs,
@@ -1800,6 +1912,7 @@ export default {
         },
         doSummary,
         recentActivities,
+        unprocessedDOs: transformedUnprocessedDOs,
         performance: performanceMetrics,
         armada: {
           total: allArmadas.length,

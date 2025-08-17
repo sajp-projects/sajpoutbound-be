@@ -5,6 +5,7 @@ import { createResourceIdSchema } from './base';
 export type ShipmentCreateInput = {
   type: SHIPMENT_TYPE;
   armadaId?: string;
+  driverId: string;
   internalNote?: string;
   plateNumber?: string;
 
@@ -19,6 +20,7 @@ export type ShipmentCreateInput = {
 export type ShipmentUpdateInput = {
   type?: SHIPMENT_TYPE;
   armadaId?: string;
+  driverId?: string;
   internalNote?: string;
   plateNumber?: string;
   platePhoto?: string;
@@ -52,6 +54,7 @@ export type ShipmentFullUpdateInput = ShipmentUpdateInput & {
 };
 
 export type ShipmentWeighInput = {
+  shipmentId: string;
   shipmentItemId: string;
   grossWeight: number;
   netWeight?: number;
@@ -83,6 +86,11 @@ export const createShipmentSchema = Joi.object<ShipmentCreateInput>({
     }),
   armadaId: Joi.string().uuid().allow(null).messages({
     'string.guid': 'Armada ID must be a valid UUID',
+  }),
+  driverId: Joi.string().uuid().required().messages({
+    'string.guid': 'Driver ID must be a valid UUID',
+    'string.empty': 'Driver ID is required',
+    'any.required': 'Driver ID is required',
   }),
   internalNote: Joi.string().allow('', null).max(1000).messages({
     'string.max': 'Internal note cannot exceed {#limit} characters',
@@ -130,6 +138,9 @@ export const updateShipmentSchema = Joi.object<ShipmentUpdateInput>({
   armadaId: Joi.string().uuid().allow(null, '').messages({
     'string.guid': 'Armada ID must be a valid UUID',
   }),
+  driverId: Joi.string().uuid().messages({
+    'string.guid': 'Driver ID must be a valid UUID',
+  }),
   internalNote: Joi.string().allow('', null).max(1000).messages({
     'string.max': 'Internal note cannot exceed {#limit} characters',
   }),
@@ -147,6 +158,11 @@ export const updateShipmentSchema = Joi.object<ShipmentUpdateInput>({
   });
 
 export const shipmentWeighSchema = Joi.object<ShipmentWeighInput>({
+  shipmentId: Joi.string().required().uuid().messages({
+    'string.empty': 'Shipment ID is required',
+    'string.guid': 'Shipment ID must be a valid UUID',
+    'any.required': 'Shipment ID is required',
+  }),
   shipmentItemId: Joi.string().required().uuid().messages({
     'string.empty': 'Shipment Item ID is required',
     'string.guid': 'Shipment Item ID must be a valid UUID',
@@ -201,6 +217,9 @@ export const shipmentFullUpdateSchema = Joi.object<ShipmentFullUpdateInput>({
     }),
   armadaId: Joi.string().uuid().allow(null, '').messages({
     'string.guid': 'Armada ID must be a valid UUID',
+  }),
+  driverId: Joi.string().uuid().messages({
+    'string.guid': 'Driver ID must be a valid UUID',
   }),
   internalNote: Joi.string().allow('', null).max(1000).messages({
     'string.max': 'Internal note cannot exceed {#limit} characters',

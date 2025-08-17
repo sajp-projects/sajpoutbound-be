@@ -39,6 +39,7 @@ ensureDirectoriesExist().catch((err) => {
 type ShipmentWithIncludes = Prisma.ShipmentGetPayload<{
   include: {
     armada: true;
+    driver: true;
     shipmentItems: {
       include: {
         product: true;
@@ -67,6 +68,7 @@ type SPMBWithIncludes = Prisma.SPMBGetPayload<{
     shipment: {
       include: {
         armada: true;
+        driver: true;
         shipmentItems: {
           include: {
             product: true;
@@ -74,6 +76,7 @@ type SPMBWithIncludes = Prisma.SPMBGetPayload<{
         };
       };
     };
+    generatedBy: true;
   };
 }>;
 
@@ -109,10 +112,10 @@ export default {
       doc.fontSize(10).text('(Surat Perintah Muat Barang)', {
         align: 'center',
       });
-      doc.moveDown(2);
+      doc.moveDown(1);
 
-      // SPMB Info
-      const spmbInfoTop = doc.y;
+      // SPMB Info (moved above the table)
+      const spmbInfoTop = doc.y + 10;
       doc.fontSize(10);
       doc.text('No.', 20, spmbInfoTop);
       doc.text(`: ${spmb.code}`, 80, spmbInfoTop);
@@ -121,21 +124,18 @@ export default {
       doc.text('Kepada', 20, spmbInfoTop + 30);
       doc.text(`: ${spmb.deliveryOrder.customer.name}`, 80, spmbInfoTop + 30);
 
-      // Shipment Info
-      const shipmentInfoTop = doc.y - 45; // Align with SPMB Info
-      doc.text('Plat Nomor', 350, shipmentInfoTop);
-      doc.text(
-        `: ${shipment.armada?.plateNumber || shipment.plateNumber || ''}`,
-        425,
-        shipmentInfoTop,
-      );
-      doc.text('Keterangan', 350, shipmentInfoTop + 15);
-      doc.text(`: ${shipment.internalNote || ''}`, 425, shipmentInfoTop + 15);
+      // Shipment Info (aligned with SPMB info on the right side)
+      doc.text('Plat Nomor', 350, spmbInfoTop);
+      doc.text(`: ${shipment.armada?.plateNumber || shipment.plateNumber || ''}`, 425, spmbInfoTop);
+      doc.text('Supir', 350, spmbInfoTop + 15);
+      doc.text(`: ${shipment.driver?.name || ''}`, 425, spmbInfoTop + 15);
+      doc.text('Tally', 350, spmbInfoTop + 30);
+      doc.text(`: ${shipment.tally || ''}`, 425, spmbInfoTop + 30);
+      doc.text('Keterangan', 350, spmbInfoTop + 45);
+      doc.text(`: ${shipment.internalNote || ''}`, 425, spmbInfoTop + 45);
 
-      doc.moveDown(4);
-
-      // Table Header
-      const tableTop = doc.y;
+      // Table Header (positioned below SPMB info)
+      const tableTop = spmbInfoTop + 70; // Add more spacing after SPMB info to accommodate shipment info
       const tableWidth = 555;
       const tableLeft = 20;
       const qtyColumnWidth = 70;
@@ -190,6 +190,19 @@ export default {
           .stroke();
         y += rowHeight;
       }
+
+      // Add signature area aligned with Keterangan text
+      const pageHeight = doc.page.height;
+      const bottomMargin = 20;
+      const signatureY = pageHeight - bottomMargin - 60; // Move up a bit more
+
+      // Draw signature line aligned with "Keterangan" text (x=350)
+      const lineLength = 200;
+      const lineX = 350; // Same x position as "Keterangan" text
+      doc
+        .moveTo(lineX, signatureY)
+        .lineTo(lineX + lineLength, signatureY)
+        .stroke();
 
       doc.end();
 

@@ -80,10 +80,11 @@ I need to extract a vehicle license plate number from this image.
 Instructions:
 1. Look for any text that resembles a license plate (usually a combination of letters and numbers)
 2. Focus on rectangular plates typically mounted on the front or back of vehicles
-3. Indonesian plates generally follow formats like: "B 1234 ABC", "AB 1234 CD", or similar patterns
-4. ONLY return the raw plate text with no additional information, explanation, or formatting
-5. If multiple plates are visible, return the most prominently displayed one
-6. If no plate is clearly visible or readable, return "NO_PLATE_FOUND"
+3. If the plate does not match exactly or missing any character, return "NO_PLATE_FOUND"
+4. Indonesian plates generally follow formats like: "B 1234 ABC", "AB 1234 CD", or similar patterns
+5. ONLY return the raw plate text with no additional information, explanation, or formatting
+6. If multiple plates are visible, return the most prominently displayed one
+7. If no plate is clearly visible or readable, return "NO_PLATE_FOUND"
 
 Example outputs:
 - "B 1234 ABC"

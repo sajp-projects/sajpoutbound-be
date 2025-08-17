@@ -29,6 +29,7 @@ model User {
   performedLogs     UserLog[]          @relation("PerformedLogs")
   userLogs          UserLog[]          @relation("UserLogs")
   warehouseLogs     WarehouseLog[]     @relation("PerformedWarehouseLogs")
+  generatedSPMBs    SPMB[]             @relation("GeneratedSPMBs")
 
   @@index([roleId], map: "User_roleId_fkey")
   @@index([warehouseId], map: "User_warehouseId_fkey")
@@ -195,6 +196,15 @@ model Armada {
   shipments   Shipment[]
 }
 
+model Driver {
+  id        String     @id @default(uuid())
+  name      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  deletedAt DateTime?
+  shipments Shipment[]
+}
+
 model ArmadaLog {
   id            String      @id @default(uuid())
   armadaId      String?
@@ -273,6 +283,8 @@ model Shipment {
   type           SHIPMENT_TYPE           @default(ANTAR)
   status         STATUS                  @default(PENDING)
   armadaId       String?
+  driverId       String
+  tally          String?
   internalNote   String?
   plateNumber    String?
   platePhoto     String?
@@ -283,11 +295,13 @@ model Shipment {
   deletedAt      DateTime?
   spmbs          SPMB[]
   armada         Armada?                 @relation(fields: [armadaId], references: [id])
+  driver         Driver                 @relation(fields: [driverId], references: [id])
   chosenProducts ShipmentChosenProduct[]
   shipmentItems  ShipmentItem[]
   shipmentLogs   ShipmentLog[]
 
   @@index([armadaId], map: "Shipment_armadaId_fkey")
+  @@index([driverId], map: "Shipment_driverId_fkey")
 }
 
 model ShipmentItem {
@@ -321,13 +335,16 @@ model SPMB {
   deliveryOrderId String
   code            String        @unique
   documentPath    String?
+  generatedById   String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deliveryOrder   DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
   shipment        Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  generatedBy     User?         @relation("GeneratedSPMBs", fields: [generatedById], references: [id])
 
   @@index([shipmentId], map: "SPMB_shipmentId_fkey")
   @@index([deliveryOrderId], map: "SPMB_deliveryOrderId_fkey")
+  @@index([generatedById], map: "SPMB_generatedById_fkey")
 }
 
 model NotaTimbangan {
@@ -408,6 +425,7 @@ enum ENTITY_TYPE {
   PRODUCT
   CUSTOMER
   ARMADA
+  DRIVER
   DELIVERY_ORDER
   SHIPMENT
   SPMB
@@ -426,6 +444,7 @@ enum PERMISSION_ACTION {
   UNARCHIVE
   READ_ARCHIVED
   CHOSE_PRODUCT
+  UPDATE_TALLY
 }
 
 enum STATUS {

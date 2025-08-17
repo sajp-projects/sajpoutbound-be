@@ -221,4 +221,171 @@ export default {
       next(error);
     }
   },
+
+  /**
+   * Individual weigh a specific shipment item (vendor-only endpoint)
+   */
+  async individualWeighShipmentItem(
+    req: Request<
+      unknown,
+      unknown,
+      {
+        shipmentItemId: string;
+        grossWeight: number;
+        netWeight?: number;
+        tareWeight?: number;
+      }
+    >,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const auth = req.headers['x-auth'] as string;
+
+      if (!auth || auth !== process.env.X_AUTH_KEY) {
+        throw new CustomError({
+          message: 'Tolong cek API Key kembali.',
+          errorCode: 'TIDAK_DIIZINKAN',
+          status: 401,
+        });
+      }
+
+      const { shipmentItemId, grossWeight, netWeight, tareWeight } = req.body;
+
+      // Validate required fields
+      if (!shipmentItemId || !grossWeight) {
+        throw new CustomError({
+          message: 'ID item pengiriman dan berat kotor harus diisi',
+          errorCode: 'DATA_TIDAK_LENGKAP',
+          status: 400,
+        });
+      }
+
+      if (grossWeight <= 0) {
+        throw new CustomError({
+          message: 'Berat kotor harus lebih dari 0',
+          errorCode: 'BERAT_TIDAK_VALID',
+          status: 400,
+        });
+      }
+
+      // Get system user for vendor weighing
+      let performedById;
+      if ((req as any).user) {
+        performedById = (req as any).user.id;
+      } else {
+        const user = await userService.getUserByEmail('jeffrey@gmail.com');
+        performedById = user?.id;
+      }
+
+      // Get the shipment item and validate it's marked for vendor weighing
+      const shipmentItem = await shipmentService.getShipmentItemById(shipmentItemId);
+
+      if (!shipmentItem) {
+        throw new CustomError({
+          message: 'Item pengiriman tidak ditemukan',
+          errorCode: 'ITEM_PENGIRIMAN_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      // Check if the item is in CHOSEN status
+      if (shipmentItem.status !== 'CHOSEN') {
+        throw new CustomError({
+          message: 'Item pengiriman tidak dalam status yang dapat ditimbang',
+          errorCode: 'STATUS_ITEM_TIDAK_SESUAI',
+          status: 400,
+        });
+      }
+
+      // Get the chosen product to check weighing method
+      const chosenProduct = await shipmentService.getShipmentChosenProduct(
+        shipmentItem.shipmentId,
+        shipmentItem.productId,
+      );
+
+      if (!chosenProduct) {
+        throw new CustomError({
+          message: 'Produk dipilih untuk pengiriman tidak ditemukan',
+          errorCode: 'PRODUK_DIPILIH_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      if (chosenProduct.weighingMethod !== WEIGHING_METHOD.VENDOR) {
+        throw new CustomError({
+          message: 'Item ini tidak ditandai untuk penimbangan vendor',
+          errorCode: 'BUKAN_ITEM_VENDOR',
+          status: 400,
+        });
+      }
+
+      // Generate unique code for the weighing
+      const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+      let code;
+      let attempts = 0;
+      const maxAttempts = 1000;
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        code = nanoid();
+        const existing = await shipmentService.getShipmentChosenProductByCode(code);
+        if (!existing) {
+          break;
+        }
+        attempts++;
+
+        if (attempts >= maxAttempts) {
+          throw new CustomError({
+            message: 'Terjadi kesalahan saat membuat kode penimbangan, harap coba lagi.',
+            errorCode: 'DUPLIKASI_KODE_PENIMBANGAN',
+            status: 500,
+          });
+        }
+      }
+
+      // Perform individual weighing
+      const result = await shipmentService.individualWeighShipmentItem(
+        shipmentItemId,
+        {
+          grossWeight,
+          netWeight,
+          tareWeight,
+        },
+        performedById,
+        code,
+      );
+
+      if (!result) {
+        throw new CustomError({
+          message: 'Gagal melakukan penimbangan item',
+          errorCode: 'GAGAL_PENIMBANGAN',
+          status: 500,
+        });
+      }
+
+      // Format the response
+      res.status(200).json(
+        success({
+          shipmentItem: {
+            id: result.shipmentItem.id,
+            status: result.shipmentItem.status,
+          },
+          product: {
+            id: result.product.id,
+            name: result.product.name,
+            satuan: result.product.satuan,
+          },
+          weights: {
+            gross: result.weights.gross,
+            net: result.weights.net,
+            tare: result.weights.tare,
+          },
+          weighedAt: result.weighedAt,
+        }),
+      );
+    } catch (error) {
+      next(error);
+    }
+  },
 };

@@ -4,6 +4,7 @@ import armadaRoutes from './armadaRoute';
 import authRoutes from './authRoute';
 import customerRoutes from './customerRoute';
 import deliveryOrderRoutes from './deliveryOrderRoute';
+import driverRoutes from './driverRoute';
 import permissionRoutes from './permissionRoutes';
 import productRoutes from './productRoute';
 import reportRoutes from './reportRoute';
@@ -46,6 +47,9 @@ router.use('/customers', customerRoutes);
 
 // Armada routes
 router.use('/armadas', armadaRoutes);
+
+// Driver routes
+router.use('/drivers', driverRoutes);
 
 // Delivery Order routes
 router.use('/delivery-orders', deliveryOrderRoutes);

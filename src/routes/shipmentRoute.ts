@@ -132,4 +132,18 @@ router.post(
   shipmentController.manualWeighItems,
 );
 
+// Individual item weighing (legacy)
+router.post(
+  '/:shipmentId/weigh-item',
+  checkPermission('shipment', PERMISSION_ACTION.WEIGH),
+  checkShipmentNotArchived,
+  shipmentController.weighShipmentItem,
+);
+
+router.patch(
+  '/:id/update-tally',
+  checkPermission('shipment', PERMISSION_ACTION.UPDATE_TALLY),
+  shipmentController.updateTally,
+);
+
 export default router;

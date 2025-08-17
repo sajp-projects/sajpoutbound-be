@@ -1,6 +1,6 @@
 import { SHIPMENT_ITEM_STATUS, SHIPMENT_TYPE, STATUS, WEIGHING_METHOD } from '@prisma/client';
 import fs from 'fs';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import prisma from '../config/prisma';
@@ -52,9 +52,23 @@ export default {
     }
 
     if (startDate || endDate) {
+      console.log(startDate, 'startDate');
+      console.log(endDate, 'endDate');
       whereConditions.createdAt = {};
-      if (startDate) whereConditions.createdAt.gte = moment(startDate).startOf('day').toDate();
-      if (endDate) whereConditions.createdAt.lte = moment(endDate).endOf('day').toDate();
+      if (startDate) {
+        // Since DB stores Jakarta time with +7 offset, create date with same offset
+        const startMoment = moment.tz(startDate, 'Asia/Jakarta').startOf('day');
+        const startDate7Plus = new Date(startMoment.toDate());
+        startDate7Plus.setHours(startDate7Plus.getHours() + 7);
+        whereConditions.createdAt.gte = startDate7Plus;
+      }
+      if (endDate) {
+        // Since DB stores Jakarta time with +7 offset, create date with same offset
+        const endMoment = moment.tz(endDate, 'Asia/Jakarta').endOf('day');
+        const endDate7Plus = new Date(endMoment.toDate());
+        endDate7Plus.setHours(endDate7Plus.getHours() + 7);
+        whereConditions.createdAt.lte = endDate7Plus;
+      }
     }
 
     // Filter for unverified shipments (have platePhoto but no verifiedAt)
@@ -108,6 +122,12 @@ export default {
               id: true,
               model: true,
               plateNumber: true,
+            },
+          },
+          driver: {
+            select: {
+              id: true,
+              name: true,
             },
           },
           shipmentItems: {
@@ -180,7 +200,18 @@ export default {
             contains: search,
           },
         },
-
+        {
+          tally: {
+            contains: search,
+          },
+        },
+        {
+          driver: {
+            name: {
+              contains: search,
+            },
+          },
+        },
         {
           armada: {
             model: {
@@ -207,6 +238,12 @@ export default {
               id: true,
               model: true,
               plateNumber: true,
+            },
+          },
+          driver: {
+            select: {
+              id: true,
+              name: true,
             },
           },
           shipmentItems: {
@@ -269,6 +306,12 @@ export default {
             id: true,
             model: true,
             plateNumber: true,
+          },
+        },
+        driver: {
+          select: {
+            id: true,
+            name: true,
           },
         },
         shipmentItems: {
@@ -419,6 +462,7 @@ export default {
             satuan: true,
           },
         },
+        warehouse: true,
       },
     });
   },
@@ -531,6 +575,14 @@ export default {
         updatedAt: jakartaTime,
       };
 
+      if (data.driverId) {
+        shipmentData.driver = {
+          connect: {
+            id: data.driverId,
+          },
+        };
+      }
+
       // Only connect armada if armadaId is provided and not null
       if (data.armadaId) {
         shipmentData.armada = {
@@ -548,6 +600,7 @@ export default {
         },
         include: {
           armada: true,
+          driver: true,
         },
       });
 
@@ -678,6 +731,7 @@ export default {
             deliveryOrderId: doId,
             code: spmbCode,
             createdAt: jakartaTime,
+            generatedById: performedById,
             updatedAt: jakartaTime,
           },
           include: {
@@ -694,6 +748,7 @@ export default {
             shipment: {
               include: {
                 armada: true,
+                driver: true,
                 shipmentItems: {
                   include: {
                     product: true,
@@ -701,6 +756,7 @@ export default {
                 },
               },
             },
+            generatedBy: true,
           },
         });
 
@@ -710,6 +766,7 @@ export default {
           },
           include: {
             armada: true,
+            driver: true,
             shipmentItems: {
               include: {
                 product: true,
@@ -788,9 +845,12 @@ export default {
         updatedAt: jakartaTime,
       };
 
-      // Remove armadaId and items from direct update as Prisma doesn't allow it
+      // Remove armadaId, driverId and items from direct update as Prisma doesn't allow it
       if ('armadaId' in updateData) {
         delete updateData.armadaId;
+      }
+      if ('driverId' in updateData) {
+        delete updateData.driverId;
       }
       if ('items' in updateData) {
         delete updateData.items;
@@ -804,6 +864,14 @@ export default {
         updateData.armada = {
           connect: {
             id: data.armadaId,
+          },
+        };
+      }
+
+      if (data.driverId) {
+        updateData.driver = {
+          connect: {
+            id: data.driverId,
           },
         };
       }
@@ -1229,6 +1297,7 @@ export default {
               shipmentId: id,
               deliveryOrderId: doId,
               code: spmbCode,
+              generatedById: performedById,
               createdAt: jakartaTime,
               updatedAt: jakartaTime,
             },
@@ -1246,6 +1315,7 @@ export default {
               shipment: {
                 include: {
                   armada: true,
+                  driver: true,
                   shipmentItems: {
                     include: {
                       product: true,
@@ -1253,6 +1323,7 @@ export default {
                   },
                 },
               },
+              generatedBy: true,
             },
           });
 
@@ -1263,6 +1334,7 @@ export default {
             },
             include: {
               armada: true,
+              driver: true,
               shipmentItems: {
                 include: {
                   product: true,
@@ -1612,6 +1684,7 @@ export default {
     performedById: string,
     existingItem: any,
     shipmentChosenProduct: any,
+    shipment: NonNullable<Awaited<ReturnType<typeof this.getShipmentById>>>,
   ) {
     return prisma.$transaction(async (tx) => {
       // Create a Jakarta timezone date (UTC+7)a
@@ -1619,7 +1692,7 @@ export default {
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
       // Update the shipment status to PROSES if it's currently PENDING
-      if (existingItem.shipment.status === STATUS.PENDING) {
+      if (shipment.status === STATUS.PENDING) {
         await tx.shipment.update({
           where: {
             id: existingItem.shipmentId,
@@ -1664,12 +1737,68 @@ export default {
       });
 
       // Create shipment chosen product weighing record
-      await tx.shipmentChosenProductWeighing.create({
+      const weighing = await tx.shipmentChosenProductWeighing.create({
         data: {
           shipmentChosenProductId: shipmentChosenProduct.id,
           grossWeight: data.grossWeight,
           netWeight: data.netWeight || 0,
           tareWeight: data.tareWeight || 0,
+          timeIn: shipmentChosenProduct.createdAt,
+          createdAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // Generate Nota Timbangan PDF for individual weighing
+      const { customAlphabet } = await import('nanoid');
+      const nanoid = customAlphabet('1234567890', 6);
+      const ticketNumber = nanoid();
+
+      // Fetch the weighing record with all necessary includes for PDF generation
+      const weighingWithIncludes = await tx.shipmentChosenProductWeighing.findUnique({
+        where: { id: weighing.id },
+        include: {
+          shipmentChosenProduct: {
+            include: {
+              product: true,
+              shipment: {
+                include: {
+                  armada: true,
+                  shipmentItems: {
+                    include: {
+                      deliveryOrder: {
+                        include: {
+                          customer: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!weighingWithIncludes) {
+        throw new Error('Weighing record not found for PDF generation');
+      }
+
+      const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
+        {
+          ...weighingWithIncludes,
+          timeOut: weighingWithIncludes.createdAt,
+        },
+        ticketNumber,
+        existingItem.requestedQuantity, // Use the individual item's requested quantity
+      );
+
+      // Save Nota Timbangan to database
+      await tx.notaTimbangan.create({
+        data: {
+          ticketNumber,
+          documentPath: pdfPath,
+          shipmentChosenProductWeighingId: weighing.id,
           createdAt: jakartaTime,
           updatedAt: jakartaTime,
         },
@@ -1899,6 +2028,7 @@ export default {
           deliveryOrderId: data.deliveryOrderId,
           code: data.code,
           documentPath: data.documentPath,
+          generatedById: data.generatedById,
           createdAt: jakartaTime,
           updatedAt: jakartaTime,
         },
@@ -3235,6 +3365,300 @@ export default {
       where: {
         code,
       },
+    });
+  },
+
+  async updateTally(
+    id: string,
+    tally: string,
+    performedById: string,
+    shipment: NonNullable<Awaited<ReturnType<typeof this.getShipmentById>>>,
+  ) {
+    return prisma.$transaction(async (tx) => {
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      const updatedShipment = await tx.shipment.update({
+        where: { id },
+        data: {
+          tally,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // Regenerate SPMBs
+      const existingSpmbs = await tx.sPMB.findMany({
+        where: { shipmentId: id },
+        include: {
+          deliveryOrder: {
+            include: {
+              customer: true,
+              items: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          },
+          shipment: {
+            include: {
+              armada: true,
+              driver: true,
+              shipmentItems: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          },
+          generatedBy: true,
+        },
+      });
+
+      if (existingSpmbs.length > 0) {
+        const shipmentForPdf = await tx.shipment.findUnique({
+          where: { id },
+          include: {
+            armada: true,
+            driver: true,
+            shipmentItems: {
+              include: {
+                product: true,
+                deliveryOrder: {
+                  include: {
+                    customer: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (shipmentForPdf) {
+          const isProd = process.env.NODE_ENV === 'production';
+          const PUBLIC_DIR = isProd
+            ? '/var/www/sajpoutbound.com/public'
+            : path.join(process.cwd(), 'src', 'public');
+
+          for (const spmb of existingSpmbs) {
+            // Delete old PDF file
+            if (spmb.documentPath) {
+              const filePath = path.join(PUBLIC_DIR, spmb.documentPath);
+              try {
+                if (fs.existsSync(filePath)) {
+                  fs.unlinkSync(filePath);
+                }
+              } catch (error) {
+                console.error(`Failed to delete old SPMB file ${filePath}:`, error);
+              }
+            }
+
+            // Regenerate PDF with updated shipment data (which includes new tally)
+            const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
+
+            // Update SPMB with new path
+            await tx.sPMB.update({
+              where: { id: spmb.id },
+              data: {
+                documentPath: pdfPath,
+                updatedAt: jakartaTime,
+              },
+            });
+          }
+        }
+      }
+
+      // Log the update
+      await shipmentLogService.logShipmentUpdate(
+        id,
+        performedById,
+        { tally: shipment.tally },
+        { tally: updatedShipment.tally },
+        tx,
+        `Tally diubah dari "${shipment.tally || ''}" menjadi "${updatedShipment.tally || ''}"`,
+      );
+
+      return updatedShipment;
+    });
+  },
+
+  /**
+   * Process individual shipment item weighing (vendor endpoint)
+   */
+  async individualWeighShipmentItem(
+    shipmentItemId: string,
+    weights: {
+      grossWeight: number;
+      netWeight?: number;
+      tareWeight?: number;
+    },
+    performedById: string,
+    code: string,
+  ) {
+    return prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Get the shipment item with all necessary relations
+      const shipmentItem = await tx.shipmentItem.findUnique({
+        where: {
+          id: shipmentItemId,
+        },
+        include: {
+          shipment: true,
+          deliveryOrder: {
+            include: {
+              customer: true,
+            },
+          },
+          product: {
+            select: {
+              id: true,
+              name: true,
+              satuan: true,
+            },
+          },
+          warehouse: true,
+        },
+      });
+
+      if (!shipmentItem) {
+        return null;
+      }
+
+      // Update shipment status to PROSES if it's PENDING
+      if (shipmentItem.shipment.status === STATUS.PENDING) {
+        await tx.shipment.update({
+          where: {
+            id: shipmentItem.shipmentId,
+          },
+          data: {
+            status: STATUS.PROSES,
+            updatedAt: jakartaTime,
+          },
+        });
+      }
+
+      // Update the shipment item with weight data
+      const updatedItem = await tx.shipmentItem.update({
+        where: {
+          id: shipmentItemId,
+        },
+        data: {
+          weightedQuantity: weights.grossWeight,
+          status: SHIPMENT_ITEM_STATUS.COMPLETED,
+          weighedAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+        include: {
+          shipment: true,
+          deliveryOrder: {
+            include: {
+              customer: true,
+            },
+          },
+          product: {
+            select: {
+              id: true,
+              name: true,
+              satuan: true,
+            },
+          },
+          warehouse: true,
+        },
+      });
+
+      // Find or create ShipmentChosenProduct for this product in this shipment
+      let shipmentChosenProduct = await tx.shipmentChosenProduct.findFirst({
+        where: {
+          shipmentId: shipmentItem.shipmentId,
+          productId: shipmentItem.productId,
+        },
+      });
+
+      // If no chosen product record exists yet, create one
+      if (!shipmentChosenProduct) {
+        shipmentChosenProduct = await tx.shipmentChosenProduct.create({
+          data: {
+            code,
+            shipmentId: shipmentItem.shipmentId,
+            productId: shipmentItem.productId,
+            createdAt: jakartaTime,
+            updatedAt: jakartaTime,
+          },
+        });
+      }
+
+      // Create a new weighing record
+      const weighing = await tx.shipmentChosenProductWeighing.create({
+        data: {
+          shipmentChosenProductId: shipmentChosenProduct.id,
+          grossWeight: weights.grossWeight,
+          netWeight: weights.netWeight || 0,
+          tareWeight: weights.tareWeight || 0,
+          timeIn: shipmentChosenProduct.createdAt,
+          timeOut: jakartaTime,
+          createdAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+        include: {
+          shipmentChosenProduct: {
+            include: {
+              product: true,
+              shipment: {
+                include: {
+                  armada: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // Generate Nota Timbangan PDF and save to DB
+      const nanoid = customAlphabet('1234567890', 6);
+      const ticketNumber = nanoid();
+      const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
+        weighing,
+        ticketNumber,
+        shipmentItem.requestedQuantity,
+      );
+
+      await tx.notaTimbangan.create({
+        data: {
+          ticketNumber,
+          documentPath: pdfPath,
+          shipmentChosenProductWeighingId: weighing.id,
+          createdAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // Log the individual weighing operation
+      await shipmentLogService.logItemWeighed(
+        shipmentItem.shipmentId,
+        performedById,
+        shipmentItem,
+        {
+          grossWeight: weights.grossWeight,
+          netWeight: weights.netWeight || 0,
+          tareWeight: weights.tareWeight || 0,
+        },
+        tx,
+      );
+
+      // Return the formatted result
+      return {
+        shipmentItem: updatedItem,
+        product: updatedItem.product,
+        weights: {
+          gross: weights.grossWeight,
+          net: weights.netWeight || 0,
+          tare: weights.tareWeight || 0,
+        },
+        weighedAt: jakartaTime,
+      };
     });
   },
 };

@@ -1,6 +1,6 @@
 import { ACTION, ENTITY_TYPE, STATUS } from '@prisma/client';
 import fs from 'fs';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import prisma from '../config/prisma';
@@ -46,9 +46,29 @@ export default {
     }
 
     if (startDate || endDate) {
+      console.log('inside if');
       whereConditions.createdAt = {};
-      if (startDate) whereConditions.createdAt.gte = moment(startDate).startOf('day').toDate();
-      if (endDate) whereConditions.createdAt.lte = moment(endDate).endOf('day').toDate();
+      if (startDate) {
+        // Since DB stores Jakarta time with +7 offset, create date with same offset
+        const startMoment = moment.tz(startDate, 'Asia/Jakarta').startOf('day');
+        const startDate7Plus = new Date(startMoment.toDate());
+        startDate7Plus.setHours(startDate7Plus.getHours() + 7);
+        whereConditions.createdAt.gte = startDate7Plus;
+        console.log(
+          'start moment:',
+          startMoment.format(),
+          'converted to date with +7:',
+          startDate7Plus,
+        );
+      }
+      if (endDate) {
+        // Since DB stores Jakarta time with +7 offset, create date with same offset
+        const endMoment = moment.tz(endDate, 'Asia/Jakarta').endOf('day');
+        const endDate7Plus = new Date(endMoment.toDate());
+        endDate7Plus.setHours(endDate7Plus.getHours() + 7);
+        whereConditions.createdAt.lte = endDate7Plus;
+        console.log('end moment:', endMoment.format(), 'converted to date with +7:', endDate7Plus);
+      }
     }
 
     // Filter untuk DO yang masih memiliki barang dengan pendingQuantity > 0
@@ -84,6 +104,17 @@ export default {
         {
           doNumber: {
             contains: search,
+          },
+        },
+        {
+          items: {
+            some: {
+              product: {
+                name: {
+                  contains: search,
+                },
+              },
+            },
           },
         },
       ];
@@ -988,6 +1019,7 @@ export default {
             code: spmbCode,
             documentPath: null, // Will be updated after PDF generation
             updatedAt: jakartaTime,
+            generatedById: performedById,
           },
           include: {
             deliveryOrder: {
@@ -1003,6 +1035,7 @@ export default {
             shipment: {
               include: {
                 armada: true,
+                driver: true,
                 shipmentItems: {
                   include: {
                     product: true,
@@ -1010,6 +1043,7 @@ export default {
                 },
               },
             },
+            generatedBy: true,
           },
         });
 
@@ -1020,6 +1054,7 @@ export default {
           },
           include: {
             armada: true,
+            driver: true,
             shipmentItems: {
               include: {
                 product: true,
@@ -1515,6 +1550,7 @@ export default {
             code: spmbCode,
             documentPath: null, // Will be updated after PDF generation
             updatedAt: jakartaTime,
+            generatedById: performedById,
           },
           include: {
             deliveryOrder: {
@@ -1530,6 +1566,7 @@ export default {
             shipment: {
               include: {
                 armada: true,
+                driver: true,
                 shipmentItems: {
                   include: {
                     product: true,
@@ -1537,6 +1574,7 @@ export default {
                 },
               },
             },
+            generatedBy: true,
           },
         });
 
@@ -1547,6 +1585,7 @@ export default {
           },
           include: {
             armada: true,
+            driver: true,
             shipmentItems: {
               include: {
                 product: true,
