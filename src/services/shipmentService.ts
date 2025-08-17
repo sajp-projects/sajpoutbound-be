@@ -3609,6 +3609,15 @@ export default {
               shipment: {
                 include: {
                   armada: true,
+                  shipmentItems: {
+                    include: {
+                      deliveryOrder: {
+                        include: {
+                          customer: true,
+                        },
+                      },
+                    },
+                  },
                 },
               },
             },
