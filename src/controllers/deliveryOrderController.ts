@@ -141,7 +141,7 @@ export default {
 
       if (!deliveryOrder) {
         throw new CustomError({
-          message: 'Pesanan pengiriman tidak ditemukan',
+          message: 'DO tidak ditemukan',
           errorCode: 'PESANAN_PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
@@ -288,7 +288,7 @@ export default {
 
       if (!existingDeliveryOrder) {
         throw new CustomError({
-          message: 'Pesanan pengiriman tidak ditemukan',
+          message: 'DO tidak ditemukan',
           errorCode: 'PESANAN_PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
@@ -296,7 +296,7 @@ export default {
 
       if (existingDeliveryOrder.status === STATUS.SELESAI) {
         throw new CustomError({
-          message: 'Pesanan pengiriman sudah selesai, tidak dapat diubah.',
+          message: 'DO sudah selesai, tidak dapat diubah.',
           errorCode: 'PESANAN_PENGIRIMAN_SUDAH_SELESAI',
           status: 400,
         });
@@ -428,7 +428,7 @@ export default {
 
       if (!existingDeliveryOrder) {
         throw new CustomError({
-          message: 'Pesanan pengiriman tidak ditemukan',
+          message: 'DO tidak ditemukan',
           errorCode: 'PESANAN_PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
@@ -436,7 +436,7 @@ export default {
 
       if (existingDeliveryOrder.deletedAt) {
         throw new CustomError({
-          message: 'Pesanan pengiriman sudah diarsipkan',
+          message: 'DO sudah diarsipkan',
           errorCode: 'PESANAN_PENGIRIMAN_SUDAH_DIARSIPKAN',
           status: 400,
         });
@@ -447,7 +447,7 @@ export default {
         existingDeliveryOrder.status === STATUS.SELESAI
       ) {
         throw new CustomError({
-          message: 'Pesanan pengiriman dengan status PROSES atau SELESAI tidak dapat diarsipkan',
+          message: 'DO dengan status PROSES atau SELESAI tidak dapat diarsipkan',
           errorCode: 'TIDAK_BISA_ARSIPKAN_STATUS_PROSES_SELESAI',
           status: 400,
         });
@@ -489,7 +489,7 @@ export default {
 
       if (!existingDeliveryOrder) {
         throw new CustomError({
-          message: 'Pesanan pengiriman tidak ditemukan',
+          message: 'DO tidak ditemukan',
           errorCode: 'PESANAN_PENGIRIMAN_TIDAK_DITEMUKAN',
           status: 404,
         });
@@ -497,7 +497,7 @@ export default {
 
       if (!existingDeliveryOrder.deletedAt) {
         throw new CustomError({
-          message: 'Pesanan pengiriman belum diarsipkan',
+          message: 'DO belum diarsipkan',
           errorCode: 'PESANAN_PENGIRIMAN_BELUM_DIARSIPKAN',
           status: 400,
         });
@@ -520,7 +520,7 @@ export default {
 
       res.status(200).json(
         success({
-          message: 'Pesanan pengiriman berhasil dipulihkan',
+          message: 'DO berhasil dipulihkan',
           deliveryOrder: restoredDeliveryOrder,
         }),
       );

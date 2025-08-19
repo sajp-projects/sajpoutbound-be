@@ -56,6 +56,14 @@ router.post(
   shipmentController.chooseProductForShipment,
 );
 
+router.post(
+  '/:shipmentId/choosen-product-selective',
+  checkPermission('shipment', PERMISSION_ACTION.UPDATE),
+  checkWarehouseAccess(),
+  checkShipmentNotArchived,
+  shipmentController.chooseProductSelectiveForShipment,
+);
+
 router.delete(
   '/:shipmentId/choosen-product/:productId',
   checkPermission('shipment', PERMISSION_ACTION.UPDATE),
@@ -144,6 +152,12 @@ router.patch(
   '/:id/update-tally',
   checkPermission('shipment', PERMISSION_ACTION.UPDATE_TALLY),
   shipmentController.updateTally,
+);
+
+router.patch(
+  '/:id/update-kenek',
+  checkPermission('shipment', PERMISSION_ACTION.UPDATE_TALLY),
+  shipmentController.updateKenek,
 );
 
 export default router;

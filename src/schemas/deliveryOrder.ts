@@ -5,6 +5,7 @@ export type DeliveryOrderCreateInput = {
   customerId: string;
   address?: string;
   internalNote?: string;
+  deliverySchedule?: Date;
   items: {
     productId: string;
     quantity: number;
@@ -15,6 +16,7 @@ export type DeliveryOrderUpdateInput = {
   customerId?: string;
   address?: string;
   internalNote?: string;
+  deliverySchedule?: Date;
   items?: {
     id?: string;
     productId: string;
@@ -33,6 +35,9 @@ export const createDeliveryOrderSchema = Joi.object<DeliveryOrderCreateInput>({
   }),
   internalNote: Joi.string().optional().allow('').max(1000).messages({
     'string.max': 'Internal note cannot exceed {#limit} characters',
+  }),
+  deliverySchedule: Joi.date().optional().messages({
+    'date.base': 'Delivery schedule must be a valid date',
   }),
   items: Joi.array()
     .items(
@@ -67,6 +72,9 @@ export const updateDeliveryOrderSchema = Joi.object<DeliveryOrderUpdateInput>({
   }),
   internalNote: Joi.string().allow('').max(1000).messages({
     'string.max': 'Internal note cannot exceed {#limit} characters',
+  }),
+  deliverySchedule: Joi.date().optional().messages({
+    'date.base': 'Delivery schedule must be a valid date',
   }),
   items: Joi.array()
     .items(

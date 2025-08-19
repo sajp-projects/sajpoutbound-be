@@ -91,6 +91,7 @@ model RolePermission {
 
 model Warehouse {
   id            String         @id @default(uuid())
+  code          String         @unique
   name          String
   description   String?
   createdAt     DateTime       @default(now())
@@ -99,6 +100,7 @@ model Warehouse {
   shipmentItems ShipmentItem[]
   users         User[]
   warehouseLogs WarehouseLog[]
+  spmbs         SPMB[]
 }
 
 model WarehouseLog {
@@ -224,20 +226,21 @@ model ArmadaLog {
 }
 
 model DeliveryOrder {
-  id            String              @id @default(uuid())
-  doNumber      String?             @unique
-  customerId    String
-  address       String?
-  internalNote  String?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  deletedAt     DateTime?
-  status        STATUS              @default(PENDING)
-  customer      Customer            @relation(fields: [customerId], references: [id])
-  items         DeliveryOrderItem[]
-  doLogs        DeliveryOrderLog[]
-  spmbs         SPMB[]
-  shipmentItems ShipmentItem[]
+  id              String              @id @default(uuid())
+  doNumber        String?             @unique
+  customerId      String
+  address         String?
+  internalNote    String?
+  deliverySchedule DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  deletedAt       DateTime?
+  status          STATUS              @default(PENDING)
+  customer        Customer            @relation(fields: [customerId], references: [id])
+  items           DeliveryOrderItem[]
+  doLogs          DeliveryOrderLog[]
+  spmbs           SPMB[]
+  shipmentItems   ShipmentItem[]
 
   @@index([customerId], map: "DeliveryOrder_customerId_fkey")
 }
@@ -285,6 +288,7 @@ model Shipment {
   armadaId       String?
   driverId       String
   tally          String?
+  kenek          String?
   internalNote   String?
   plateNumber    String?
   platePhoto     String?
@@ -333,6 +337,7 @@ model SPMB {
   id              String        @id @default(uuid())
   shipmentId      String
   deliveryOrderId String
+  warehouseId     String
   code            String        @unique
   documentPath    String?
   generatedById   String?
@@ -340,10 +345,13 @@ model SPMB {
   updatedAt       DateTime      @updatedAt
   deliveryOrder   DeliveryOrder @relation(fields: [deliveryOrderId], references: [id])
   shipment        Shipment      @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  warehouse       Warehouse     @relation(fields: [warehouseId], references: [id])
   generatedBy     User?         @relation("GeneratedSPMBs", fields: [generatedById], references: [id])
 
+  @@unique([shipmentId, deliveryOrderId, warehouseId], name: "spmb_shipment_do_warehouse_unique")
   @@index([shipmentId], map: "SPMB_shipmentId_fkey")
   @@index([deliveryOrderId], map: "SPMB_deliveryOrderId_fkey")
+  @@index([warehouseId], map: "SPMB_warehouseId_fkey")
   @@index([generatedById], map: "SPMB_generatedById_fkey")
 }
 
@@ -445,6 +453,7 @@ enum PERMISSION_ACTION {
   READ_ARCHIVED
   CHOSE_PRODUCT
   UPDATE_TALLY
+  UPDATE_KENEK
 }
 
 enum STATUS {

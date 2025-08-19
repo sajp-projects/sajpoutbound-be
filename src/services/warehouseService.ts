@@ -22,6 +22,11 @@ export default {
     if (search) {
       whereConditions.OR = [
         {
+          code: {
+            contains: search,
+          },
+        },
+        {
           name: {
             contains: search,
           },
@@ -251,6 +256,7 @@ export default {
 
       const warehouseDataToLog = {
         id: warehouse.id,
+        code: warehouse.code,
         name: warehouse.name,
         description: warehouse.description,
       };
@@ -308,6 +314,7 @@ export default {
 
       if (Object.keys(changedFields).length > 0) {
         const oldDataForLog = {
+          code: existingWarehouse.code,
           name: existingWarehouse.name,
           description: existingWarehouse.description,
           users: existingWarehouse.users,

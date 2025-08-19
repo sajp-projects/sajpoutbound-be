@@ -71,6 +71,14 @@ export default {
     });
   },
 
+  async getArmadaByPlateNumber(plateNumber: string): Promise<Armada | null> {
+    return prisma.armada.findUnique({
+      where: {
+        plateNumber,
+      },
+    });
+  },
+
   /**
    * Create a new armada
    *

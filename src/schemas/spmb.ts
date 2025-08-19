@@ -4,6 +4,7 @@ import { createResourceIdSchema } from './base';
 export type SPMBCreateInput = {
   shipmentId: string;
   deliveryOrderId: string;
+  warehouseId: string;
   code: string;
   documentPath?: string;
   generatedById?: string;
@@ -23,6 +24,11 @@ export const createSPMBSchema = Joi.object<SPMBCreateInput>({
     'string.empty': 'Delivery Order ID is required',
     'string.guid': 'Delivery Order ID must be a valid UUID',
     'any.required': 'Delivery Order ID is required',
+  }),
+  warehouseId: Joi.string().required().uuid().messages({
+    'string.empty': 'Warehouse ID is required',
+    'string.guid': 'Warehouse ID must be a valid UUID',
+    'any.required': 'Warehouse ID is required',
   }),
   code: Joi.string().required().max(50).messages({
     'string.empty': 'SPMB Code is required',

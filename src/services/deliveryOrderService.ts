@@ -229,12 +229,20 @@ export default {
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
+      // Convert deliverySchedule to Jakarta time if provided
+      let jakartaDeliverySchedule = null;
+      if (data.deliverySchedule) {
+        jakartaDeliverySchedule = new Date(data.deliverySchedule);
+        jakartaDeliverySchedule.setHours(jakartaDeliverySchedule.getHours() + 7);
+      }
+
       // Create the delivery order
       const deliveryOrder = await tx.deliveryOrder.create({
         data: {
           customerId: data.customerId,
           address: data.address,
           internalNote: data.internalNote,
+          deliverySchedule: jakartaDeliverySchedule,
           doNumber,
           createdAt: jakartaTime,
           updatedAt: jakartaTime,
@@ -279,6 +287,7 @@ export default {
         address: deliveryOrder.address,
         doNumber: deliveryOrder.doNumber,
         internalNote: deliveryOrder.internalNote,
+        deliverySchedule: deliveryOrder.deliverySchedule,
         items: deliveryOrder.items.map((item) => ({
           id: item.id,
           productId: item.productId,
@@ -323,7 +332,9 @@ export default {
 
       // Update simple fields if provided
       if (data.customerId) {
-        updateData.customerId = data.customerId;
+        updateData.customer = {
+          connect: { id: data.customerId },
+        };
         oldDataChanges.customerId = oldDeliveryOrder.customerId;
         oldDataChanges.customerName = oldDeliveryOrder.customer.name;
         newDataChanges.customerId = data.customerId;
@@ -339,6 +350,16 @@ export default {
         updateData.internalNote = data.internalNote;
         oldDataChanges.internalNote = oldDeliveryOrder.internalNote;
         newDataChanges.internalNote = data.internalNote;
+      }
+
+      if (data.deliverySchedule) {
+        // Convert deliverySchedule to Jakarta time
+        const jakartaDeliverySchedule = new Date(data.deliverySchedule);
+        jakartaDeliverySchedule.setHours(jakartaDeliverySchedule.getHours() + 7);
+
+        updateData.deliverySchedule = jakartaDeliverySchedule;
+        oldDataChanges.deliverySchedule = oldDeliveryOrder.deliverySchedule;
+        newDataChanges.deliverySchedule = jakartaDeliverySchedule;
       }
 
       // Handle items update if provided
@@ -493,6 +514,7 @@ export default {
         customerName: existingDeliveryOrder.customer.name,
         address: existingDeliveryOrder.address,
         internalNote: existingDeliveryOrder.internalNote,
+        deliverySchedule: existingDeliveryOrder.deliverySchedule,
         items: existingDeliveryOrder.items.map((item: any) => ({
           id: item.id,
           productId: item.productId,
@@ -619,6 +641,7 @@ export default {
         address: existingDeliveryOrder.address,
         doNumber: existingDeliveryOrder.doNumber,
         internalNote: existingDeliveryOrder.internalNote,
+        deliverySchedule: existingDeliveryOrder.deliverySchedule,
         items: existingDeliveryOrder.items.map((item: any) => ({
           id: item.id,
           productId: item.productId,
@@ -663,6 +686,7 @@ export default {
         customerName: existingDeliveryOrder.customer.name,
         address: existingDeliveryOrder.address,
         internalNote: existingDeliveryOrder.internalNote,
+        deliverySchedule: existingDeliveryOrder.deliverySchedule,
         items: existingDeliveryOrder.items.map((item: any) => ({
           id: item.id,
           productId: item.productId,
@@ -946,7 +970,9 @@ export default {
           id: deliveryOrderId,
         },
         data: {
-          customerId,
+          customer: {
+            connect: { id: customerId },
+          },
           updatedAt: jakartaTime,
         },
         include: {
@@ -1043,6 +1069,7 @@ export default {
                 },
               },
             },
+            warehouse: true,
             generatedBy: true,
           },
         });
@@ -1574,6 +1601,7 @@ export default {
                 },
               },
             },
+            warehouse: true,
             generatedBy: true,
           },
         });

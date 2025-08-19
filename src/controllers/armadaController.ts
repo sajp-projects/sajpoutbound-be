@@ -76,6 +76,16 @@ export default {
       const data = req.body;
       const performedById = req.user?.id;
 
+      const checkArmada = await armadaService.getArmadaByPlateNumber(data.plateNumber);
+
+      if (checkArmada) {
+        throw new CustomError({
+          message: 'Armada dengan plat nomor ini sudah ada',
+          errorCode: 'ARMADA_PLAT_NOMOR_SUDAH_ADA',
+          status: 400,
+        });
+      }
+
       if (!performedById) {
         throw new CustomError({
           message: 'Autentikasi diperlukan untuk aksi ini',

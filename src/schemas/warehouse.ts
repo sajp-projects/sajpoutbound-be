@@ -2,11 +2,17 @@ import { Warehouse as WarehouseModel } from '@prisma/client';
 import Joi from 'joi';
 import { createResourceIdSchema } from './base';
 
-export type WarehouseCreateInput = Pick<WarehouseModel, 'name' | 'description'>;
+export type WarehouseCreateInput = Pick<WarehouseModel, 'code' | 'name' | 'description'>;
 
-export type WarehouseUpdateInput = Partial<Pick<WarehouseModel, 'name' | 'description'>>;
+export type WarehouseUpdateInput = Partial<Pick<WarehouseModel, 'code' | 'name' | 'description'>>;
 
 export const createWarehouseSchema = Joi.object<WarehouseCreateInput>({
+  code: Joi.string().required().min(2).max(20).messages({
+    'string.empty': 'Code is required',
+    'string.min': 'Code must be at least {#limit} characters long',
+    'string.max': 'Code cannot exceed {#limit} characters',
+    'any.required': 'Code is required',
+  }),
   name: Joi.string().required().min(3).max(100).messages({
     'string.empty': 'Name is required',
     'string.min': 'Name must be at least {#limit} characters long',
@@ -19,6 +25,10 @@ export const createWarehouseSchema = Joi.object<WarehouseCreateInput>({
 });
 
 export const updateWarehouseSchema = Joi.object<WarehouseUpdateInput>({
+  code: Joi.string().min(2).max(20).messages({
+    'string.min': 'Code must be at least {#limit} characters long',
+    'string.max': 'Code cannot exceed {#limit} characters',
+  }),
   name: Joi.string().min(3).max(100).messages({
     'string.min': 'Name must be at least {#limit} characters long',
     'string.max': 'Name cannot exceed {#limit} characters',

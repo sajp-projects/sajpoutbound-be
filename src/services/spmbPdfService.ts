@@ -76,6 +76,7 @@ type SPMBWithIncludes = Prisma.SPMBGetPayload<{
         };
       };
     };
+    warehouse: true;
     generatedBy: true;
   };
 }>;

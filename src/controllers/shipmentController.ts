@@ -15,6 +15,8 @@ import {
   ShipmentFullUpdateInput,
   shipmentFullUpdateSchema,
   shipmentIdSchema,
+  ShipmentSelectiveChosenProductInput,
+  shipmentSelectiveChosenProductSchema,
   ShipmentUpdateInput,
   ShipmentWeighInput,
   shipmentWeighSchema,
@@ -828,6 +830,101 @@ export default {
         code,
         userId,
       );
+
+      res.status(200).json(success(chosenProduct));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Choose specific delivery orders for a product in a shipment (selective loading)
+   */
+  async chooseProductSelectiveForShipment(
+    req: Request<
+      { shipmentId: string },
+      unknown,
+      Omit<ShipmentSelectiveChosenProductInput, 'shipmentId'>
+    >,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { shipmentId } = req.params;
+      const { productId, weighingMethod, deliveryOrderIds } = req.body;
+
+      // Validate shipment ID
+      await shipmentIdSchema.validateAsync({
+        id: shipmentId,
+      });
+
+      // Validate selective product input
+      await shipmentSelectiveChosenProductSchema.validateAsync({
+        shipmentId,
+        productId,
+        weighingMethod,
+        deliveryOrderIds,
+      });
+
+      const performedById = req.user?.id;
+      if (!performedById) {
+        throw new CustomError({
+          message: 'User ID diperlukan untuk aksi ini',
+          errorCode: 'USER_ID_DIPERLUKAN',
+          status: 400,
+        });
+      }
+
+      // Verify product exists
+      const product = await productService.getProductById(productId);
+      if (!product) {
+        throw new CustomError({
+          message: 'Produk tidak ditemukan',
+          errorCode: 'PRODUK_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      // Generate unique code for chosen product
+      const nanoid = customAlphabet('ABCDEFGHIJKLMNPQRSTUVWXYZ0123456789', 8);
+      let code = '';
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      while (attempts < maxAttempts) {
+        code = nanoid();
+        const existing = await shipmentService.getShipmentChosenProductByCode(code);
+        if (!existing) break;
+        attempts++;
+
+        if (attempts >= maxAttempts) {
+          throw new CustomError({
+            message: 'Terjadi kesalahan saat membuat kode produk, harap coba lagi.',
+            errorCode: 'DUPLIKASI_KODE_PRODUK',
+            status: 500,
+          });
+        }
+      }
+
+      const chosenProduct = await shipmentService.chooseProductSelectiveForShipment(
+        {
+          shipmentId,
+          productId,
+          weighingMethod,
+          deliveryOrderIds,
+        },
+        product,
+        code,
+        performedById,
+      );
+
+      if (!chosenProduct) {
+        throw new CustomError({
+          message: 'Produk tidak ditemukan untuk dimuat',
+          errorCode: 'PRODUK_TIDAK_DITEMUKAN_UNTUK_DIMUAT',
+          status: 404,
+        });
+      }
 
       res.status(200).json(success(chosenProduct));
     } catch (error) {
@@ -1674,6 +1771,14 @@ export default {
         id,
       });
 
+      if (!tally || typeof tally !== 'string') {
+        throw new CustomError({
+          message: 'Tally harus diisi',
+          errorCode: 'TALLY_REQUIRED',
+          status: 400,
+        });
+      }
+
       const performedById = req.user?.id;
       if (!performedById) {
         throw new CustomError({
@@ -1694,6 +1799,54 @@ export default {
       }
 
       const updatedShipment = await shipmentService.updateTally(id, tally, performedById, shipment);
+
+      res.status(200).json(success(updatedShipment));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateKenek(
+    req: Request<{ id: string }, unknown, { kenek: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { id } = req.params;
+      const { kenek } = req.body;
+
+      await shipmentIdSchema.validateAsync({
+        id,
+      });
+
+      if (!kenek || typeof kenek !== 'string') {
+        throw new CustomError({
+          message: 'Kenek harus diisi',
+          errorCode: 'KENEK_REQUIRED',
+          status: 400,
+        });
+      }
+
+      const performedById = req.user?.id;
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
+          status: 401,
+        });
+      }
+
+      const shipment = await shipmentService.getShipmentById(id);
+
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'PENGIRIMAN_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      const updatedShipment = await shipmentService.updateKenek(id, kenek, performedById, shipment);
 
       res.status(200).json(success(updatedShipment));
     } catch (error) {

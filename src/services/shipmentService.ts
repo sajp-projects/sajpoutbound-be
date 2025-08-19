@@ -10,6 +10,7 @@ import {
   ShipmentChosenProductInput,
   ShipmentCreateInput,
   ShipmentItemUpdateInput,
+  ShipmentSelectiveChosenProductInput,
   ShipmentUpdateInput,
   ShipmentWeighInput,
   WeighingType,
@@ -618,6 +619,8 @@ export default {
         },
       });
 
+      const touchedDOs = new Set<string>();
+
       // Create shipment items
       const shipmentItems = [];
       for (const item of data.items) {
@@ -696,39 +699,59 @@ export default {
             },
           });
 
-          // Check if the update was successful (affected exactly 1 row)
-          if (updatedItem.count === 0) {
+          if (updatedItem.count > 0) {
+            // ✅ Only mark DO as "touched" if item quantities really updated
+            touchedDOs.add(item.deliveryOrderId);
+          } else {
             throw new CustomError({
               message: 'Insufficient pending quantity or concurrent modification detected',
               errorCode: 'INSUFFICIENT_PENDING_QUANTITY',
               status: 409,
             });
           }
+        }
+      }
 
-          await tx.deliveryOrder.update({
-            where: {
-              id: item.deliveryOrderId,
-            },
-            data: {
-              status: STATUS.PROSES,
-            },
+      // ✅ After all items processed, update statuses in batch
+      for (const doId of touchedDOs) {
+        await tx.deliveryOrder.update({
+          where: { id: doId },
+          data: { status: STATUS.PROSES },
+        });
+      }
+
+      // Generate SPMB for each unique delivery order and warehouse combination
+      const doWarehouseCombinations = new Map();
+
+      // Group shipment items by DO-Warehouse combination
+      for (const shipmentItem of shipmentItems) {
+        const key = `${shipmentItem.deliveryOrderId}-${shipmentItem.warehouseId}`;
+        if (!doWarehouseCombinations.has(key)) {
+          doWarehouseCombinations.set(key, {
+            deliveryOrderId: shipmentItem.deliveryOrderId,
+            warehouseId: shipmentItem.warehouseId,
           });
         }
       }
 
-      // Generate SPMB for each unique delivery order
-      const uniqueDeliveryOrderIds = [...new Set(data.items.map((item) => item.deliveryOrderId))];
       const spmbs = [];
 
-      for (const doId of uniqueDeliveryOrderIds) {
-        // Generate a unique SPMB code
+      for (const combination of doWarehouseCombinations.values()) {
+        // Get warehouse code for SPMB numbering
+        const warehouse = await tx.warehouse.findUnique({
+          where: { id: combination.warehouseId },
+          select: { code: true },
+        });
+
+        // Generate a unique SPMB code with warehouse prefix
         const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
-        const spmbCode = `SPMB-${nanoid()}`;
+        const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
 
         const spmb = await tx.sPMB.create({
           data: {
             shipmentId: shipment.id,
-            deliveryOrderId: doId,
+            deliveryOrderId: combination.deliveryOrderId,
+            warehouseId: combination.warehouseId,
             code: spmbCode,
             createdAt: jakartaTime,
             generatedById: performedById,
@@ -756,6 +779,7 @@ export default {
                 },
               },
             },
+            warehouse: true,
             generatedBy: true,
           },
         });
@@ -1197,6 +1221,58 @@ export default {
             });
           }
         }
+
+        // Update DO status to PROSES for newly added DOs
+        const newlyAddedDOs = new Set<string>();
+        for (const addedItem of itemDiff.added) {
+          newlyAddedDOs.add(addedItem.deliveryOrderId);
+        }
+
+        // Update status for each newly added DO
+        for (const deliveryOrderId of newlyAddedDOs) {
+          await tx.deliveryOrder.update({
+            where: { id: deliveryOrderId },
+            data: {
+              status: STATUS.PROSES,
+              updatedAt: jakartaTime,
+            },
+          });
+        }
+
+        // Check and update DO status to PENDING for DOs that were removed or no longer processing
+        const removedDOs = new Set<string>();
+        for (const removedItem of itemDiff.removed) {
+          removedDOs.add(removedItem.deliveryOrderId);
+        }
+
+        // For each potentially affected DO (both removed and existing), check if all items are pending
+        const affectedDOs = new Set([...removedDOs]);
+
+        // Also check existing DOs in case quantities were reduced to zero
+        for (const item of itemsFromPayload) {
+          affectedDOs.add(item.deliveryOrderId);
+        }
+
+        for (const deliveryOrderId of affectedDOs) {
+          // Get all delivery order items for this DO
+          const deliveryOrderItems = await tx.deliveryOrderItem.findMany({
+            where: { deliveryOrderId },
+          });
+
+          // Check if all items have processingQuantity = 0
+          const allItemsPending = deliveryOrderItems.every((item) => item.processingQuantity === 0);
+
+          if (allItemsPending) {
+            // Update DO status back to PENDING
+            await tx.deliveryOrder.update({
+              where: { id: deliveryOrderId },
+              data: {
+                status: STATUS.PENDING,
+                updatedAt: jakartaTime,
+              },
+            });
+          }
+        }
       }
 
       // Update the shipment
@@ -1281,21 +1357,38 @@ export default {
           },
         });
 
-        // Generate new SPMBs for each unique delivery order
-        const uniqueDeliveryOrderIds = [
-          ...new Set(updatedShipmentItems.map((item) => item.deliveryOrderId)),
-        ];
+        // Generate new SPMBs for each unique delivery order and warehouse combination
+        const doWarehouseCombinations = new Map();
+
+        // Group shipment items by DO-Warehouse combination
+        for (const shipmentItem of updatedShipmentItems) {
+          const key = `${shipmentItem.deliveryOrderId}-${shipmentItem.warehouseId}`;
+          if (!doWarehouseCombinations.has(key)) {
+            doWarehouseCombinations.set(key, {
+              deliveryOrderId: shipmentItem.deliveryOrderId,
+              warehouseId: shipmentItem.warehouseId,
+            });
+          }
+        }
+
         const newSpmbs = [];
 
-        for (const doId of uniqueDeliveryOrderIds) {
-          // Generate a unique SPMB code
+        for (const combination of doWarehouseCombinations.values()) {
+          // Get warehouse code for SPMB numbering
+          const warehouse = await tx.warehouse.findUnique({
+            where: { id: combination.warehouseId },
+            select: { code: true },
+          });
+
+          // Generate a unique SPMB code with warehouse prefix
           const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
-          const spmbCode = `SPMB-${nanoid()}`;
+          const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
 
           const spmb = await tx.sPMB.create({
             data: {
               shipmentId: id,
-              deliveryOrderId: doId,
+              deliveryOrderId: combination.deliveryOrderId,
+              warehouseId: combination.warehouseId,
               code: spmbCode,
               generatedById: performedById,
               createdAt: jakartaTime,
@@ -1323,6 +1416,7 @@ export default {
                   },
                 },
               },
+              warehouse: true,
               generatedBy: true,
             },
           });
@@ -2026,6 +2120,7 @@ export default {
         data: {
           shipmentId: data.shipmentId,
           deliveryOrderId: data.deliveryOrderId,
+          warehouseId: data.warehouseId,
           code: data.code,
           documentPath: data.documentPath,
           generatedById: data.generatedById,
@@ -2204,6 +2299,153 @@ export default {
         deliveryOrders,
         customers: deliveryOrders.map((d) => d.customer).filter(Boolean),
         weighings: chosenProduct.weighings,
+        createdAt: chosenProduct.createdAt,
+        updatedAt: chosenProduct.updatedAt,
+      };
+
+      return result;
+    });
+  },
+
+  /**
+   * Choose specific delivery orders for a product (selective loading)
+   */
+  async chooseProductSelectiveForShipment(
+    data: ShipmentSelectiveChosenProductInput,
+    product: any,
+    code: string,
+    performedById: string,
+  ) {
+    return prisma.$transaction(async (tx) => {
+      // Create a Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Find only the specified shipment items for this product and specific delivery orders
+      // FIXED: Removed status filter to ensure we only select items from the specified DOs
+      // Previously, status: PENDING was causing items from other DOs to be included incorrectly
+      const shipmentItems = await tx.shipmentItem.findMany({
+        where: {
+          shipmentId: data.shipmentId,
+          productId: data.productId,
+          deliveryOrderId: {
+            in: data.deliveryOrderIds,
+          },
+          // Status filter removed - we want to select items based on DO selection, not status
+          // Status will be updated to CHOSEN anyway
+        },
+        include: {
+          deliveryOrder: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+              satuan: true,
+              warehouseId: true,
+              warehouse: true,
+            },
+          },
+        },
+      });
+
+      if (shipmentItems.length === 0) {
+        return null;
+      }
+
+      // Filter out items that are already chosen to avoid double-selection
+      const unchosenItems = shipmentItems.filter((item) => !item.chosenProduct);
+
+      if (unchosenItems.length === 0) {
+        throw new Error('Semua item untuk DO yang dipilih sudah dimuat sebelumnya');
+      }
+
+      // Update each selected shipment item to mark it as chosen
+      for (const item of unchosenItems) {
+        await tx.shipmentItem.update({
+          where: {
+            id: item.id,
+          },
+          data: {
+            status: SHIPMENT_ITEM_STATUS.CHOSEN,
+            chosenProduct: true,
+            updatedAt: jakartaTime,
+          },
+        });
+      }
+
+      // Check if a chosen product record already exists for this product
+      let chosenProduct = await tx.shipmentChosenProduct.findFirst({
+        where: {
+          shipmentId: data.shipmentId,
+          productId: data.productId,
+        },
+      });
+
+      // Create or update the chosen product record
+      if (!chosenProduct) {
+        chosenProduct = await tx.shipmentChosenProduct.create({
+          data: {
+            code,
+            shipmentId: data.shipmentId,
+            productId: data.productId,
+            weighingMethod: data.weighingMethod,
+            createdAt: jakartaTime,
+            updatedAt: jakartaTime,
+          },
+        });
+      } else {
+        // Update the weighing method if it's different
+        chosenProduct = await tx.shipmentChosenProduct.update({
+          where: { id: chosenProduct.id },
+          data: {
+            weighingMethod: data.weighingMethod,
+            updatedAt: jakartaTime,
+          },
+        });
+      }
+
+      // Log the selective loading for each chosen item
+      for (const item of unchosenItems) {
+        await shipmentLogService.logShipmentUpdate(
+          data.shipmentId,
+          performedById,
+          {},
+          { chosenProduct: true },
+          tx,
+          `Barang "${product.name}" dari DO ${item.deliveryOrder.doNumber} dimuat secara selektif`,
+        );
+      }
+
+      // Get unique delivery orders from the selected items
+      const uniqueDOIds = [...new Set(unchosenItems.map((item) => item.deliveryOrderId))];
+      const deliveryOrders = await tx.deliveryOrder.findMany({
+        where: {
+          id: {
+            in: uniqueDOIds,
+          },
+        },
+        include: {
+          customer: true,
+        },
+      });
+
+      // Build response
+      const result = {
+        id: chosenProduct.id,
+        shipmentId: data.shipmentId,
+        productId: data.productId,
+        product: {
+          id: product.id,
+          name: product.name,
+          satuan: product.satuan,
+          warehouseId: product.warehouseId,
+          warehouse: product.warehouse,
+        },
+        deliveryOrders,
+        customers: deliveryOrders.map((d) => d.customer).filter(Boolean),
+        weighings: [],
+        selectedItems: unchosenItems.length,
+        selectedDeliveryOrders: deliveryOrders.length,
         createdAt: chosenProduct.createdAt,
         updatedAt: chosenProduct.updatedAt,
       };
@@ -3411,6 +3653,7 @@ export default {
               },
             },
           },
+          warehouse: true,
           generatedBy: true,
         },
       });
@@ -3476,6 +3719,121 @@ export default {
         { tally: updatedShipment.tally },
         tx,
         `Tally diubah dari "${shipment.tally || ''}" menjadi "${updatedShipment.tally || ''}"`,
+      );
+
+      return updatedShipment;
+    });
+  },
+
+  async updateKenek(
+    id: string,
+    kenek: string,
+    performedById: string,
+    shipment: NonNullable<Awaited<ReturnType<typeof this.getShipmentById>>>,
+  ) {
+    return prisma.$transaction(async (tx) => {
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      const updatedShipment = await tx.shipment.update({
+        where: { id },
+        data: {
+          kenek,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // Regenerate SPMBs
+      const existingSpmbs = await tx.sPMB.findMany({
+        where: { shipmentId: id },
+        include: {
+          deliveryOrder: {
+            include: {
+              customer: true,
+              items: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          },
+          shipment: {
+            include: {
+              armada: true,
+              driver: true,
+              shipmentItems: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          },
+          warehouse: true,
+          generatedBy: true,
+        },
+      });
+
+      if (existingSpmbs.length > 0) {
+        const shipmentForPdf = await tx.shipment.findUnique({
+          where: { id },
+          include: {
+            armada: true,
+            driver: true,
+            shipmentItems: {
+              include: {
+                product: true,
+                deliveryOrder: {
+                  include: {
+                    customer: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (shipmentForPdf) {
+          const isProd = process.env.NODE_ENV === 'production';
+          const PUBLIC_DIR = isProd
+            ? '/var/www/sajpoutbound.com/public'
+            : path.join(process.cwd(), 'src', 'public');
+
+          for (const spmb of existingSpmbs) {
+            // Delete old PDF file
+            if (spmb.documentPath) {
+              const filePath = path.join(PUBLIC_DIR, spmb.documentPath);
+              try {
+                if (fs.existsSync(filePath)) {
+                  fs.unlinkSync(filePath);
+                }
+              } catch (error) {
+                console.error(`Failed to delete old SPMB file ${filePath}:`, error);
+              }
+            }
+
+            // Regenerate PDF with updated shipment data (which includes new kenek)
+            const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
+
+            // Update SPMB with new path
+            await tx.sPMB.update({
+              where: { id: spmb.id },
+              data: {
+                documentPath: pdfPath,
+                updatedAt: jakartaTime,
+              },
+            });
+          }
+        }
+      }
+
+      // Log the update
+      await shipmentLogService.logShipmentUpdate(
+        id,
+        performedById,
+        { kenek: shipment.kenek },
+        { kenek: updatedShipment.kenek },
+        tx,
+        `Kenek diubah dari "${shipment.kenek || ''}" menjadi "${updatedShipment.kenek || ''}"`,
       );
 
       return updatedShipment;

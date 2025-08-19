@@ -791,7 +791,7 @@ export default {
           id: null,
           name: '',
           type: groupBy,
-          satuan: undefined,
+          satuan: undefined, // will be set after grouping
           totalQuantity: 0,
           totalWeight: 0,
           shipmentCount: 0,
@@ -1633,13 +1633,57 @@ export default {
   async getDashboardSummary(filters: DashboardSummaryFilter = {}): Promise<DashboardSummaryResult> {
     const { startDate, endDate } = filters;
 
-    // Determine date range - default to today if not specified
-    const startOfRange = startDate
-      ? moment.tz(startDate, 'Asia/Jakarta').startOf('day')
-      : moment.tz('Asia/Jakarta').startOf('day');
-    const endOfRange = endDate
-      ? moment.tz(endDate, 'Asia/Jakarta').endOf('day')
-      : moment.tz('Asia/Jakarta').endOf('day');
+    console.log('Dashboard Summary - Received filters:', { startDate, endDate });
+
+    // Determine date range - use same pattern as shipment service
+    let startOfRange: Date;
+    let endOfRange: Date;
+
+    if (startDate) {
+      const startMoment = moment.tz(startDate, 'Asia/Jakarta').startOf('day');
+      const startDate7Plus = new Date(startMoment.toDate());
+      startDate7Plus.setHours(startDate7Plus.getHours() + 7);
+      startOfRange = startDate7Plus;
+      console.log('Dashboard Summary - Processed startDate:', {
+        original: startDate,
+        moment: startMoment.format(),
+        withOffset: startDate7Plus,
+        final: startOfRange,
+      });
+    } else {
+      const todayStart = moment.tz('Asia/Jakarta').startOf('day');
+      const todayStart7Plus = new Date(todayStart.toDate());
+      todayStart7Plus.setHours(todayStart7Plus.getHours() + 7);
+      startOfRange = todayStart7Plus;
+      console.log('Dashboard Summary - Default startDate:', {
+        todayStart: todayStart.format(),
+        withOffset: todayStart7Plus,
+        final: startOfRange,
+      });
+    }
+
+    if (endDate) {
+      const endMoment = moment.tz(endDate, 'Asia/Jakarta').endOf('day');
+      const endDate7Plus = new Date(endMoment.toDate());
+      endDate7Plus.setHours(endDate7Plus.getHours() + 7);
+      endOfRange = endDate7Plus;
+      console.log('Dashboard Summary - Processed endDate:', {
+        original: endDate,
+        moment: endMoment.format(),
+        withOffset: endDate7Plus,
+        final: endOfRange,
+      });
+    } else {
+      const todayEnd = moment.tz('Asia/Jakarta').endOf('day');
+      const todayEnd7Plus = new Date(todayEnd.toDate());
+      todayEnd7Plus.setHours(todayEnd7Plus.getHours() + 7);
+      endOfRange = todayEnd7Plus;
+      console.log('Dashboard Summary - Default endDate:', {
+        todayEnd: todayEnd.format(),
+        withOffset: todayEnd7Plus,
+        final: endOfRange,
+      });
+    }
 
     try {
       // Get all shipments in date range with related data
@@ -1647,8 +1691,8 @@ export default {
         where: {
           deletedAt: null,
           createdAt: {
-            gte: startOfRange.toDate(),
-            lte: endOfRange.toDate(),
+            gte: startOfRange,
+            lte: endOfRange,
           },
         },
         include: {
@@ -1694,6 +1738,16 @@ export default {
         },
       });
 
+      console.log('Dashboard Summary - Shipments found:', {
+        count: shipments.length,
+        dateRange: { start: startOfRange, end: endOfRange },
+        sampleShipments: shipments.slice(0, 3).map((s) => ({
+          id: s.id,
+          createdAt: s.createdAt,
+          status: s.status,
+        })),
+      });
+
       // Get basic counts and unprocessed DOs
       const [totalDOs, allArmadas, unprocessedDOs] = await Promise.all([
         // Total active delivery orders
@@ -1711,12 +1765,12 @@ export default {
             id_sl: true,
           },
         }),
-        // Unprocessed DOs (PENDING or PROSES status - not yet SELESAI)
+        // Unprocessed DOs (PENDING only)
         prisma.deliveryOrder.findMany({
           where: {
             deletedAt: null,
             status: {
-              in: [STATUS.PENDING, STATUS.PROSES],
+              in: [STATUS.PENDING],
             },
             items: {
               some: {
@@ -1779,11 +1833,32 @@ export default {
         },
       };
 
-      // Count shipments by type and status
+      // Count unique DOs by shipment armada usage and DO status
+      const uniqueDOs = new Set<string>();
+      const doStatusMap = new Map<string, { status: string; hasArmada: boolean }>();
+
       shipments.forEach((shipment) => {
-        doSummary[shipment.type][shipment.status]++;
-        doSummary[shipment.type].total++;
-        doSummary.overall[shipment.status]++;
+        shipment.shipmentItems.forEach((item) => {
+          const doId = item.deliveryOrder.id;
+          if (!uniqueDOs.has(doId)) {
+            uniqueDOs.add(doId);
+            const hasArmada = !!shipment.armada;
+            doStatusMap.set(doId, {
+              status: item.deliveryOrder.status,
+              hasArmada: hasArmada,
+            });
+          }
+        });
+      });
+
+      // Count DOs by armada usage and status
+      doStatusMap.forEach((doInfo) => {
+        const type = doInfo.hasArmada ? 'ANTAR' : 'JEMPUT';
+        const status = doInfo.status as 'PENDING' | 'PROSES' | 'SELESAI';
+
+        doSummary[type][status]++;
+        doSummary[type].total++;
+        doSummary.overall[status]++;
         doSummary.overall.total++;
       });
 
@@ -1926,8 +2001,8 @@ export default {
         },
         generatedAt: moment().toISOString(),
         dateRange: {
-          start: startOfRange.format('YYYY-MM-DD'),
-          end: endOfRange.format('YYYY-MM-DD'),
+          start: moment(startOfRange).format('YYYY-MM-DD'),
+          end: moment(endOfRange).format('YYYY-MM-DD'),
         },
       };
     } catch (error) {

@@ -75,6 +75,13 @@ export type ShipmentChosenProductInput = {
   weighingMethod: WEIGHING_METHOD;
 };
 
+export type ShipmentSelectiveChosenProductInput = {
+  shipmentId: string;
+  productId: string;
+  weighingMethod: WEIGHING_METHOD;
+  deliveryOrderIds: string[]; // Specific DOs to choose
+};
+
 export const createShipmentSchema = Joi.object<ShipmentCreateInput>({
   type: Joi.string()
     .valid(...Object.values(SHIPMENT_TYPE))
@@ -283,6 +290,41 @@ export const shipmentChosenProductSchema = Joi.object<ShipmentChosenProductInput
       'any.required': 'Weighing method is required',
     }),
 });
+
+export const shipmentSelectiveChosenProductSchema = Joi.object<ShipmentSelectiveChosenProductInput>(
+  {
+    shipmentId: Joi.string().required().uuid().messages({
+      'string.empty': 'Shipment ID is required',
+      'string.guid': 'Shipment ID must be a valid UUID',
+      'any.required': 'Shipment ID is required',
+    }),
+    productId: Joi.string().required().uuid().messages({
+      'string.empty': 'Product ID is required',
+      'string.guid': 'Product ID must be a valid UUID',
+      'any.required': 'Product ID is required',
+    }),
+    weighingMethod: Joi.string()
+      .valid(...Object.values(WEIGHING_METHOD))
+      .required()
+      .messages({
+        'string.empty': 'Weighing method is required',
+        'any.only': 'Invalid weighing method. Must be MANUAL or VENDOR',
+        'any.required': 'Weighing method is required',
+      }),
+    deliveryOrderIds: Joi.array()
+      .items(
+        Joi.string().uuid().messages({
+          'string.guid': 'Delivery Order ID must be a valid UUID',
+        }),
+      )
+      .min(1)
+      .required()
+      .messages({
+        'array.min': 'At least one delivery order must be selected',
+        'any.required': 'Delivery order IDs are required',
+      }),
+  },
+);
 
 // Using createResourceIdSchema for shipment ID validation
 export const shipmentIdSchema = createResourceIdSchema('Shipment');
