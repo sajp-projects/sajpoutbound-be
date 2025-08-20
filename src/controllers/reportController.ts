@@ -207,7 +207,11 @@ export default {
         warehouseId,
       });
 
-      const fullPath = path.join(process.cwd(), 'src', 'public', filePath);
+      const isProd = process.env.NODE_ENV === 'production';
+      const PUBLIC_DIR = isProd
+        ? '/var/www/sajpoutbound.com/public'
+        : path.join(process.cwd(), 'src', 'public');
+      const fullPath = path.join(PUBLIC_DIR, filePath);
 
       // Set headers for file download
       res.setHeader(

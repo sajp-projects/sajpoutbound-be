@@ -698,21 +698,30 @@ export default {
       deletedAt: null,
     };
 
+    // Since DB stores Jakarta time with +7 offset, create date with same offset
+    const startDate7Plus = new Date(start.toDate());
+    startDate7Plus.setHours(startDate7Plus.getHours() + 7);
+    const endDate7Plus = new Date(end.toDate());
+    endDate7Plus.setHours(endDate7Plus.getHours() + 7);
+
+    console.log('startDate7Plus', startDate7Plus);
+    console.log('endDate7Plus', endDate7Plus);
+
     if (status === STATUS.SELESAI) {
       whereConditions.verifiedAt = {
-        gte: start.toDate(),
-        lte: end.toDate(),
+        gte: startDate7Plus,
+        lte: endDate7Plus,
       };
     } else if (status === STATUS.PENDING || status === STATUS.PROSES) {
       whereConditions.createdAt = {
-        gte: start.toDate(),
-        lte: end.toDate(),
+        gte: startDate7Plus,
+        lte: endDate7Plus,
       };
     } else if (!status || status === 'ALL') {
       // For "ALL" status, use createdAt to include all shipments in the date range
       whereConditions.createdAt = {
-        gte: start.toDate(),
-        lte: end.toDate(),
+        gte: startDate7Plus,
+        lte: endDate7Plus,
       };
     }
 
@@ -1081,21 +1090,27 @@ export default {
       deletedAt: null,
     };
 
+    // Since DB stores Jakarta time with +7 offset, create date with same offset
+    const startDate7Plus = new Date(start.toDate());
+    startDate7Plus.setHours(startDate7Plus.getHours() + 7);
+    const endDate7Plus = new Date(end.toDate());
+    endDate7Plus.setHours(endDate7Plus.getHours() + 7);
+
     if (status === STATUS.SELESAI) {
       whereConditions.verifiedAt = {
-        gte: start.toDate(),
-        lte: end.toDate(),
+        gte: startDate7Plus,
+        lte: endDate7Plus,
       };
     } else if (status === STATUS.PENDING || status === STATUS.PROSES) {
       whereConditions.createdAt = {
-        gte: start.toDate(),
-        lte: end.toDate(),
+        gte: startDate7Plus,
+        lte: endDate7Plus,
       };
     } else if (!status || status === 'ALL') {
       // For "ALL" status, use createdAt to include all shipments in the date range
       whereConditions.createdAt = {
-        gte: start.toDate(),
-        lte: end.toDate(),
+        gte: startDate7Plus,
+        lte: endDate7Plus,
       };
     }
 
