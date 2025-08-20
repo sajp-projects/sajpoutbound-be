@@ -39,4 +39,11 @@ router.get(
   reportController.getShipmentAssignmentReport,
 );
 
+// Expenditure Excel Report route
+router.get(
+  '/expenditure/excel',
+  checkPermission('report', PERMISSION_ACTION.READ),
+  reportController.downloadExpenditureExcel,
+);
+
 export default router;

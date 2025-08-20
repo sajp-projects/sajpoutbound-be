@@ -1,4 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
 import { CustomError } from '../middlewares/error';
 import {
   dailyOutputReportQuerySchema,
@@ -8,6 +10,7 @@ import {
   operationalReportTableQuerySchema,
   shipmentAssignmentReportQuerySchema,
 } from '../schemas/report';
+import expenditureExcelService from '../services/expenditureExcelService';
 import reportService from '../services/reportService';
 import {
   DailyOutputReportQuery,
@@ -176,6 +179,51 @@ export default {
           report,
         }),
       );
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Generate and download expenditure Excel report
+   */
+  async downloadExpenditureExcel(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { period, startDate, endDate, year, month, warehouseId } = req.query as {
+        period?: string;
+        startDate?: string;
+        endDate?: string;
+        year?: string;
+        month?: string;
+        warehouseId?: string;
+      };
+
+      const filePath = await expenditureExcelService.generateExpenditureExcel({
+        period: period as 'daily' | 'monthly' | 'yearly',
+        startDate,
+        endDate,
+        year: year ? parseInt(year) : undefined,
+        month: month ? parseInt(month) : undefined,
+        warehouseId,
+      });
+
+      const fullPath = path.join(process.cwd(), 'src', 'public', filePath);
+
+      // Set headers for file download
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
+
+      // Stream the file
+      const fileStream = fs.createReadStream(fullPath);
+      fileStream.pipe(res);
+
+      fileStream.on('error', (error) => {
+        console.error('Error streaming file:', error);
+        res.status(500).json({ error: 'Error downloading file' });
+      });
     } catch (error) {
       next(error);
     }

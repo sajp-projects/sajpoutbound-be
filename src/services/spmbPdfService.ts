@@ -195,7 +195,11 @@ export default {
       // Add signature area aligned with Keterangan text
       const pageHeight = doc.page.height;
       const bottomMargin = 20;
-      const signatureY = pageHeight - bottomMargin - 60; // Move up a bit more
+      const signatureY = pageHeight - bottomMargin - 20; // Move much closer to bottom
+
+      // Add "Dibuat Oleh" text above the signature line
+      const dibuatOlehY = y + 30; // Position closer to table with some spacing
+      doc.fontSize(10).text('Dibuat Oleh', 350, dibuatOlehY);
 
       // Draw signature line aligned with "Keterangan" text (x=350)
       const lineLength = 200;

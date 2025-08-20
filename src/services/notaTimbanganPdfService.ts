@@ -71,7 +71,7 @@ export default {
 
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
-        size: [240, 400], // Custom size for receipt
+        size: [240, 320], // Shorter height for receipt
         margins: {
           top: 10,
           bottom: 10,
@@ -148,7 +148,6 @@ export default {
       doc.moveDown(0.5);
 
       addInfoRow('No. Kendaraan', shipment.armada?.plateNumber || shipment.plateNumber || 'N/A');
-      addInfoRow('Nama Customer', customer);
       addInfoRow('Nama Barang', product.name);
       addInfoRow('No. Referensi', shipmentChosenProduct.code);
       doc.moveDown(0.5);
@@ -176,6 +175,15 @@ export default {
       addWeightRow('Berat Tarra', `${formatWeight(weighing.tareWeight)} kg`);
       addWeightRow('Berat Netto', `${formatWeight(weighing.netWeight)} kg`);
       doc.moveDown(1);
+
+      // Manual customer name field
+      doc.moveDown(4); // Move even closer to bottom
+      const currentY = doc.y;
+      const pageWidth = 240 - 30; // Total width minus margins
+      const leftX = infoX;
+      const rightX = infoX + pageWidth - 90; // Adjust positioning to fit both brackets
+      doc.font(fontName).fontSize(fontSize).text('(                    )', leftX, currentY);
+      doc.font(fontName).fontSize(fontSize).text('(                    )', rightX, currentY);
 
       doc.end();
 
