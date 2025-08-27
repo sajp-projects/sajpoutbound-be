@@ -161,7 +161,8 @@ export default {
       const rowHeight = 20;
       const totalRows = 5;
       const shipmentItemsForDO = shipment.shipmentItems.filter(
-        (item) => item.deliveryOrderId === spmb.deliveryOrderId,
+        (item) =>
+          item.deliveryOrderId === spmb.deliveryOrderId && item.warehouseId === spmb.warehouseId,
       );
 
       shipmentItemsForDO.forEach((item) => {

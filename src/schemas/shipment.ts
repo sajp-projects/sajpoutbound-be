@@ -6,6 +6,7 @@ export type ShipmentCreateInput = {
   type: SHIPMENT_TYPE;
   armadaId?: string;
   driverId: string;
+  kenek: string;
   internalNote?: string;
   plateNumber?: string;
 
@@ -21,6 +22,7 @@ export type ShipmentUpdateInput = {
   type?: SHIPMENT_TYPE;
   armadaId?: string;
   driverId?: string;
+  kenek?: string;
   internalNote?: string;
   plateNumber?: string;
   platePhoto?: string;
@@ -99,6 +101,12 @@ export const createShipmentSchema = Joi.object<ShipmentCreateInput>({
     'string.empty': 'Driver ID is required',
     'any.required': 'Driver ID is required',
   }),
+  kenek: Joi.string().required().min(1).max(255).messages({
+    'string.empty': 'Kenek is required',
+    'string.min': 'Kenek cannot be empty',
+    'string.max': 'Kenek cannot exceed {#limit} characters',
+    'any.required': 'Kenek is required',
+  }),
   internalNote: Joi.string().allow('', null).max(1000).messages({
     'string.max': 'Internal note cannot exceed {#limit} characters',
   }),
@@ -147,6 +155,11 @@ export const updateShipmentSchema = Joi.object<ShipmentUpdateInput>({
   }),
   driverId: Joi.string().uuid().messages({
     'string.guid': 'Driver ID must be a valid UUID',
+  }),
+  kenek: Joi.string().min(1).max(255).messages({
+    'string.empty': 'Kenek cannot be empty when provided',
+    'string.min': 'Kenek cannot be empty when provided',
+    'string.max': 'Kenek cannot exceed {#limit} characters',
   }),
   internalNote: Joi.string().allow('', null).max(1000).messages({
     'string.max': 'Internal note cannot exceed {#limit} characters',
@@ -227,6 +240,11 @@ export const shipmentFullUpdateSchema = Joi.object<ShipmentFullUpdateInput>({
   }),
   driverId: Joi.string().uuid().messages({
     'string.guid': 'Driver ID must be a valid UUID',
+  }),
+  kenek: Joi.string().min(1).max(255).messages({
+    'string.empty': 'Kenek cannot be empty when provided',
+    'string.min': 'Kenek cannot be empty when provided',
+    'string.max': 'Kenek cannot exceed {#limit} characters',
   }),
   internalNote: Joi.string().allow('', null).max(1000).messages({
     'string.max': 'Internal note cannot exceed {#limit} characters',

@@ -86,7 +86,6 @@ export default {
 
       const { shipmentChosenProduct } = weighing;
       const { shipment, product } = shipmentChosenProduct;
-      const customer = shipment.shipmentItems[0]?.deliveryOrder?.customer?.name || 'N/A';
 
       const fontName = 'Helvetica';
       const boldFontName = 'Helvetica-Bold';
@@ -96,15 +95,11 @@ export default {
         if (!date) return 'N/A';
 
         // Handle timezone based on environment
-        // VPS (UTC+0): dates stored correctly as UTC+7, format directly
-        // Local (UTC+7): dates stored as UTC+14, need to subtract 7 hours
         const isProductionVPS = process.env.NODE_ENV === 'production';
 
         if (isProductionVPS) {
-          // Production VPS: dates are stored correctly as UTC+7
           return moment(date).format('DD/MM/YY - HH:mm:ss');
         } else {
-          // Local development: dates are stored as UTC+14, subtract 7 hours
           return moment(date).subtract(7, 'hours').format('DD/MM/YY - HH:mm:ss');
         }
       };
@@ -139,7 +134,7 @@ export default {
           width: labelWidth,
         });
         doc.font(fontName).fontSize(fontSize).text(`: ${value}`, valueX, currentY);
-        doc.y = currentY + 12; // Move to next line with consistent spacing
+        doc.y = currentY + 12;
       };
 
       addInfoRow('No. Tiket', ticketNumber);
@@ -168,7 +163,7 @@ export default {
         const currentY = doc.y;
         doc.font(boldFontName).fontSize(fontSize).text(label, infoX, currentY);
         doc.font(boldFontName).fontSize(fontSize).text(`: ${value}`, valueX, currentY);
-        doc.y = currentY + 12; // Move to next line with consistent spacing
+        doc.y = currentY + 12;
       };
 
       addWeightRow('Berat Bruto', `${formatWeight(weighing.grossWeight)} kg`);
@@ -176,12 +171,43 @@ export default {
       addWeightRow('Berat Netto', `${formatWeight(weighing.netWeight)} kg`);
       doc.moveDown(1);
 
+      // 🔹 Average Weight Section (fixed)
+      const averageWeight =
+        weighing.netWeight && totalQuantity > 0 ? weighing.netWeight / totalQuantity : 0;
+
+      const labelText = 'Ditimbang: ';
+      const valueText = `${formatWeight(averageWeight)} kg`;
+
+      const availableWidth = 240 - 30;
+      const centerX = availableWidth / 2 + 15;
+
+      // measure widths properly
+      doc.font(boldFontName).fontSize(fontSize);
+      const valueWidth = doc.widthOfString(valueText);
+
+      doc.font(fontName).fontSize(fontSize);
+      const labelWidth2 = doc.widthOfString(labelText);
+
+      const averageWeightXValue = centerX - valueWidth / 2;
+      const averageWeightLabelX = averageWeightXValue - labelWidth2 - 2;
+
+      doc.moveDown(2);
+      const avgY = doc.y;
+
+      // label
+      doc.font(fontName).fontSize(fontSize).text(labelText, averageWeightLabelX, avgY);
+
+      // value
+      doc.font(boldFontName).fontSize(fontSize).text(valueText, averageWeightXValue, avgY);
+
+      doc.moveDown(1.5);
+
       // Manual customer name field
-      doc.moveDown(4); // Move even closer to bottom
+      doc.moveDown(4);
       const currentY = doc.y;
-      const pageWidth = 240 - 30; // Total width minus margins
+      const pageWidth = 240 - 30;
       const leftX = infoX;
-      const rightX = infoX + pageWidth - 90; // Adjust positioning to fit both brackets
+      const rightX = infoX + pageWidth - 90;
       doc.font(fontName).fontSize(fontSize).text('(                    )', leftX, currentY);
       doc.font(fontName).fontSize(fontSize).text('(                    )', rightX, currentY);
 

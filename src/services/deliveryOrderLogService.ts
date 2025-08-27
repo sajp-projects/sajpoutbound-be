@@ -260,4 +260,50 @@ export default {
       },
     });
   },
+
+  /**
+   * Create a log entry for delivery order items transfer
+   */
+  async logTransferItems(
+    newDeliveryOrderId: string,
+    performedById: string,
+    sourceShipmentId: string,
+    targetCustomerId: string,
+    validatedTransfers: any[],
+    tx?: any,
+  ) {
+    const client = tx || prisma;
+
+    // Create Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+    const transferredItems = validatedTransfers.map((transfer) => ({
+      originalDO: transfer.deliveryOrder.doNumber,
+      productName: transfer.doItem.product.name,
+      quantity: transfer.transferQuantity,
+      originalCustomer: transfer.deliveryOrder.customer.name,
+    }));
+
+    const description = `DO dibuat dari transfer item pengiriman selesai. Items: ${transferredItems
+      .map((item) => `${item.productName} (${item.quantity}) dari DO ${item.originalDO}`)
+      .join(', ')}`;
+
+    return client.deliveryOrderLog.create({
+      data: {
+        deliveryOrderId: newDeliveryOrderId,
+        performedById,
+        action: ACTION.CREATE,
+        entityType: ENTITY_TYPE.DELIVERY_ORDER,
+        newData: {
+          sourceShipmentId,
+          targetCustomerId,
+          transferredItems,
+        },
+        description,
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
+      },
+    });
+  },
 };

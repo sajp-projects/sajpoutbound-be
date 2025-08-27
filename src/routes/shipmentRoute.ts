@@ -154,10 +154,4 @@ router.patch(
   shipmentController.updateTally,
 );
 
-router.patch(
-  '/:id/update-kenek',
-  checkPermission('shipment', PERMISSION_ACTION.UPDATE_TALLY),
-  shipmentController.updateKenek,
-);
-
 export default router;

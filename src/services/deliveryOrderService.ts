@@ -1,4 +1,4 @@
-import { ACTION, ENTITY_TYPE, STATUS } from '@prisma/client';
+import { ACTION, DeliveryOrderItem, ENTITY_TYPE, STATUS } from '@prisma/client';
 import fs from 'fs';
 import moment from 'moment-timezone';
 import { customAlphabet } from 'nanoid';
@@ -1787,6 +1787,627 @@ export default {
       }
 
       return updatedDeliveryOrder;
+    });
+  },
+
+  /**
+   * Transfer items from completed shipment DOs to a new customer
+   *
+   * @param targetCustomerId The customer to receive the transferred items
+   * @param sourceShipmentId The completed shipment ID
+   * @param transferItems Array of items to transfer with quantities
+   * @param performedById User performing the action
+   * @returns Object with new DO and updated original DOs
+   */
+  async transferItemsToNewCustomer(
+    targetCustomerId: string,
+    sourceShipmentId: string,
+    transferItems: { deliveryOrderId: string; productId: string; quantity: number }[],
+    performedById: string,
+  ) {
+    const result = await prisma.$transaction(async (tx) => {
+      // Create Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // 1. Validate shipment exists and is completed
+      const shipment = await tx.shipment.findFirst({
+        where: {
+          id: sourceShipmentId,
+          status: STATUS.SELESAI,
+          deletedAt: null,
+        },
+        include: {
+          shipmentItems: {
+            include: {
+              deliveryOrder: {
+                include: {
+                  items: {
+                    include: {
+                      product: true,
+                    },
+                  },
+                  customer: true,
+                },
+              },
+              product: true,
+            },
+          },
+        },
+      });
+
+      if (!shipment) {
+        throw new Error('Shipment not found or not completed');
+      }
+
+      // 2. Validate target customer exists
+      const targetCustomer = await tx.customer.findFirst({
+        where: { id: targetCustomerId },
+      });
+
+      if (!targetCustomer) {
+        throw new Error('Target customer not found');
+      }
+
+      // 3. Group transfer items by delivery order
+      const transfersByDO = new Map<string, { productId: string; quantity: number }[]>();
+      for (const item of transferItems) {
+        if (!transfersByDO.has(item.deliveryOrderId)) {
+          transfersByDO.set(item.deliveryOrderId, []);
+        }
+        transfersByDO.get(item.deliveryOrderId)!.push({
+          productId: item.productId,
+          quantity: item.quantity,
+        });
+      }
+
+      // 4. Validate each transfer item and collect data
+      const validatedTransfers: {
+        deliveryOrder: any;
+        doItem: any;
+        transferQuantity: number;
+        productId: string;
+      }[] = [];
+
+      for (const [doId, items] of transfersByDO) {
+        // Find delivery order in shipment
+        const shipmentItem = shipment.shipmentItems.find((si) => si.deliveryOrderId === doId);
+
+        if (!shipmentItem) {
+          throw new Error(`Delivery order ${doId} not found in shipment`);
+        }
+
+        const deliveryOrder = shipmentItem.deliveryOrder;
+
+        for (const transferItem of items) {
+          // Find the specific DO item
+          const doItem = deliveryOrder.items.find(
+            (item: any) => item.productId === transferItem.productId,
+          );
+
+          if (!doItem) {
+            throw new Error(
+              `Product ${transferItem.productId} not found in delivery order ${doId}`,
+            );
+          }
+
+          // Validate transfer quantity doesn't exceed completed quantity
+          if (transferItem.quantity > doItem.completedQuantity) {
+            throw new Error(
+              `Cannot transfer ${transferItem.quantity} of ${doItem.product.name} from DO ${deliveryOrder.doNumber}. Only ${doItem.completedQuantity} completed.`,
+            );
+          }
+
+          validatedTransfers.push({
+            deliveryOrder,
+            doItem,
+            transferQuantity: transferItem.quantity,
+            productId: transferItem.productId,
+          });
+        }
+      }
+
+      // 5. Generate new DO number
+      const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+      let newDoNumber;
+      let attempts = 0;
+      const maxAttempts = 1000;
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        newDoNumber = nanoid();
+        const existing = await tx.deliveryOrder.findFirst({
+          where: { doNumber: newDoNumber },
+        });
+        if (!existing) break;
+
+        attempts++;
+        if (attempts >= maxAttempts) {
+          throw new Error('Failed to generate unique DO number after maximum attempts');
+        }
+      }
+
+      // 6. Create new delivery order
+      const newDeliveryOrder = await tx.deliveryOrder.create({
+        data: {
+          doNumber: newDoNumber,
+          customerId: targetCustomerId,
+          address: targetCustomer.address,
+          internalNote: `Transfer from shipment ${shipment.shipmentNumber} - Created via revision`,
+          deliverySchedule: null,
+          status: STATUS.SELESAI, // New DO is immediately completed as items are already processed
+          createdAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // 7. Create items for new DO and update original DO items
+      const newDoItems = [];
+      const updatedOriginalDOs: any[] = [];
+
+      for (const transfer of validatedTransfers) {
+        // Create item in new DO
+        const newDoItem = await tx.deliveryOrderItem.create({
+          data: {
+            deliveryOrderId: newDeliveryOrder.id,
+            productId: transfer.productId,
+            quantity: transfer.transferQuantity,
+            completedQuantity: transfer.transferQuantity, // Already completed
+            pendingQuantity: 0,
+            processingQuantity: 0,
+            createdAt: jakartaTime,
+            updatedAt: jakartaTime,
+          },
+          include: {
+            product: true,
+          },
+        });
+
+        newDoItems.push(newDoItem);
+
+        // Update original DO item quantities - reduce both quantity and completedQuantity
+        await tx.deliveryOrderItem.update({
+          where: { id: transfer.doItem.id },
+          data: {
+            quantity: transfer.doItem.quantity - transfer.transferQuantity,
+            completedQuantity: transfer.doItem.completedQuantity - transfer.transferQuantity,
+            updatedAt: jakartaTime,
+          },
+        });
+
+        // Check if we need to update DO status
+        const doItems: DeliveryOrderItem[] = await tx.deliveryOrderItem.findMany({
+          where: { deliveryOrderId: transfer.deliveryOrder.id },
+        });
+
+        const hasCompletedItems = doItems.some((item) => item.completedQuantity > 0);
+        const hasPendingItems = doItems.some(
+          (item) => item.pendingQuantity > 0 || item.processingQuantity > 0,
+        );
+
+        let newStatus = STATUS.PENDING as STATUS;
+        if (hasCompletedItems && hasPendingItems) {
+          newStatus = STATUS.PROSES;
+        } else if (hasCompletedItems && !hasPendingItems) {
+          newStatus = STATUS.SELESAI;
+        }
+
+        // Update original DO status if needed
+        if (transfer.deliveryOrder.status !== newStatus) {
+          await tx.deliveryOrder.update({
+            where: { id: transfer.deliveryOrder.id },
+            data: {
+              status: newStatus,
+              updatedAt: jakartaTime,
+            },
+          });
+        }
+
+        if (!updatedOriginalDOs.find((do_) => do_.id === transfer.deliveryOrder.id)) {
+          updatedOriginalDOs.push({
+            ...transfer.deliveryOrder,
+            status: newStatus,
+          });
+        }
+      }
+
+      // 8. Log the transfer action
+      await deliveryOrderLogService.logTransferItems(
+        newDeliveryOrder.id,
+        performedById,
+        sourceShipmentId,
+        targetCustomerId,
+        validatedTransfers,
+        tx,
+      );
+
+      // Return complete new DO with items
+      const completeNewDO = await tx.deliveryOrder.findFirst({
+        where: { id: newDeliveryOrder.id },
+        include: {
+          customer: true,
+          items: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      });
+
+      return {
+        newDeliveryOrder: completeNewDO,
+        updatedOriginalDOs,
+        transferSummary: {
+          sourceShipmentId,
+          sourceShipmentNumber: shipment.shipmentNumber,
+          targetCustomer: targetCustomer.name,
+          totalItemsTransferred: transferItems.length,
+          newDoNumber,
+        },
+        // Return data needed for adding to shipment
+        shipmentData: {
+          shipmentItems: shipment.shipmentItems,
+        },
+      };
+    });
+
+    // 9. Manual shipment integration process (replaces updateShipment)
+    if (result.newDeliveryOrder?.items && result.newDeliveryOrder.items.length > 0) {
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Step 1: Create shipmentItems for the new DO
+      const newShipmentItems = [];
+
+      for (const item of result.newDeliveryOrder.items) {
+        const shipmentItem = await prisma.shipmentItem.create({
+          data: {
+            shipmentId: sourceShipmentId,
+            deliveryOrderId: result.newDeliveryOrder.id,
+            productId: item.productId,
+            requestedQuantity: item.quantity,
+            locationType: 'GUDANG', // Default location type
+            status: 'PENDING',
+            warehouseId: item.product.warehouseId,
+            createdAt: jakartaTime,
+            updatedAt: jakartaTime,
+          },
+          include: {
+            product: {
+              include: {
+                warehouse: true,
+              },
+            },
+          },
+        });
+
+        newShipmentItems.push(shipmentItem);
+      }
+
+      // Step 2: Create SPMBs grouped by warehouse
+      // Group the new shipment items by warehouseId (since all items belong to same DO, we group by warehouse only)
+      const warehouseGroups = new Map<string, typeof newShipmentItems>();
+      for (const shipmentItem of newShipmentItems) {
+        const warehouseId = shipmentItem.warehouseId;
+        if (!warehouseGroups.has(warehouseId)) {
+          warehouseGroups.set(warehouseId, []);
+        }
+        warehouseGroups.get(warehouseId)!.push(shipmentItem);
+      }
+
+      const spmbs = [];
+      for (const [warehouseId, _items] of warehouseGroups) {
+        // Get warehouse code for SPMB numbering
+        const warehouse = await prisma.warehouse.findUnique({
+          where: { id: warehouseId },
+          select: { code: true },
+        });
+
+        // Generate a unique SPMB code with warehouse prefix
+        const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+        const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
+
+        const spmb = await prisma.sPMB.create({
+          data: {
+            shipmentId: sourceShipmentId,
+            deliveryOrderId: result.newDeliveryOrder.id,
+            warehouseId,
+            code: spmbCode,
+            generatedById: performedById,
+            createdAt: jakartaTime,
+            updatedAt: jakartaTime,
+          },
+          include: {
+            deliveryOrder: {
+              include: {
+                customer: true,
+                items: {
+                  include: {
+                    product: true,
+                  },
+                },
+              },
+            },
+            warehouse: true,
+            shipment: {
+              include: {
+                armada: true,
+                driver: true,
+                shipmentItems: {
+                  include: {
+                    product: true,
+                    deliveryOrder: {
+                      include: {
+                        customer: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            generatedBy: true,
+          },
+        });
+
+        spmbs.push(spmb);
+
+        // Generate PDF for this SPMB
+        const pdfPath = await spmbPdfService.generateSPMB(spmb, spmb.shipment);
+
+        // Update SPMB record with the PDF path
+        await prisma.sPMB.update({
+          where: { id: spmb.id },
+          data: {
+            documentPath: pdfPath,
+            updatedAt: jakartaTime,
+          },
+        });
+      }
+
+      // Step 3: Update shipment items to mark them as completed
+      // Since the items are being transferred from a completed shipment,
+      // they should be marked as COMPLETED (already weighed)
+      for (const item of newShipmentItems) {
+        await prisma.shipmentItem.update({
+          where: { id: item.id },
+          data: {
+            status: 'COMPLETED',
+            chosenProduct: true,
+            weightedQuantity: item.requestedQuantity, // Set weighted quantity equal to requested
+            weighedAt: jakartaTime, // Set weighed timestamp
+            updatedAt: jakartaTime,
+          },
+        });
+      }
+
+      // Get existing chosenProducts for the transferred products
+      const productIds = [...new Set(newShipmentItems.map((item) => item.productId))];
+      const chosenProducts = await prisma.shipmentChosenProduct.findMany({
+        where: {
+          shipmentId: sourceShipmentId,
+          productId: { in: productIds },
+        },
+        include: {
+          product: {
+            include: {
+              warehouse: true,
+            },
+          },
+        },
+      });
+
+      // Step 4: Create weighings and nota timbangan
+      // For each chosen product, create weighings equal to the transferred quantities
+      for (const chosenProduct of chosenProducts) {
+        // Calculate total transferred quantity for this product
+        const productItems = result.newDeliveryOrder.items.filter(
+          (item) => item.productId === chosenProduct.productId,
+        );
+
+        const totalTransferredQuantity = productItems.reduce((sum, item) => sum + item.quantity, 0);
+
+        // Create weighing record with netWeight = transferred quantity, others = 0
+        const weighing = await prisma.shipmentChosenProductWeighing.create({
+          data: {
+            shipmentChosenProductId: chosenProduct.id,
+            grossWeight: 0, // Set to 0 as requested
+            netWeight: totalTransferredQuantity, // Net weight = transferred quantity
+            tareWeight: 0, // Set to 0 as requested
+            timeIn: chosenProduct.createdAt,
+            timeOut: jakartaTime,
+            createdAt: jakartaTime,
+            updatedAt: jakartaTime,
+          },
+        });
+
+        // Generate Nota Timbangan PDF
+        const nanoidTicket = customAlphabet('1234567890', 6);
+        const ticketNumber = nanoidTicket();
+
+        // Fetch weighing with all necessary includes for PDF generation
+        const weighingWithIncludes = await prisma.shipmentChosenProductWeighing.findUnique({
+          where: { id: weighing.id },
+          include: {
+            shipmentChosenProduct: {
+              include: {
+                product: true,
+                shipment: {
+                  include: {
+                    armada: true,
+                    shipmentItems: {
+                      include: {
+                        deliveryOrder: {
+                          include: {
+                            customer: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        if (weighingWithIncludes) {
+          // Generate the Nota Timbangan PDF
+          try {
+            const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
+              {
+                ...weighingWithIncludes,
+                timeOut: jakartaTime,
+              },
+              ticketNumber,
+              totalTransferredQuantity, // Use total transferred quantity for PDF
+            );
+
+            // Create NotaTimbangan record in database
+            await prisma.notaTimbangan.create({
+              data: {
+                shipmentChosenProductWeighingId: weighing.id,
+                ticketNumber,
+                documentPath: pdfPath,
+                createdAt: jakartaTime,
+                updatedAt: jakartaTime,
+              },
+            });
+
+            // Log successful PDF generation
+            console.log(`Nota Timbangan PDF generated at: ${pdfPath}`);
+          } catch (error) {
+            console.error('Error generating Nota Timbangan PDF:', error);
+            // Don't throw error, just log it to not break the transfer process
+          }
+        }
+      }
+    }
+
+    // Return the result without shipmentData (internal use only)
+    const { shipmentData: _shipmentData, ...finalResult } = result;
+    return finalResult;
+  },
+
+  async reduceShipmentItemQuantity(
+    shipmentItemId: string,
+    newQuantity: number,
+    performedById: string,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    data?: {
+      updatedShipmentItem: any;
+      updatedDeliveryOrderItem: any;
+    };
+  }> {
+    return prisma.$transaction(async (tx) => {
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Get the shipment item with related data
+      const shipmentItem = await tx.shipmentItem.findUnique({
+        where: { id: shipmentItemId },
+        include: {
+          deliveryOrder: true,
+          product: true,
+          shipment: true,
+        },
+      });
+
+      if (!shipmentItem) {
+        return {
+          success: false,
+          message: 'Shipment item not found',
+        };
+      }
+
+      // Get the correct delivery order item
+      const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+        where: {
+          deliveryOrderId: shipmentItem.deliveryOrderId,
+          productId: shipmentItem.productId,
+        },
+      });
+
+      if (!deliveryOrderItem) {
+        return {
+          success: false,
+          message: 'Delivery order item not found',
+        };
+      }
+
+      // Validate that new quantity is less than current quantity (reduction only)
+      if (newQuantity >= shipmentItem.requestedQuantity) {
+        return {
+          success: false,
+          message: `New quantity (${newQuantity}) must be less than current quantity (${shipmentItem.requestedQuantity})`,
+        };
+      }
+
+      // Validate that new quantity is positive
+      if (newQuantity <= 0) {
+        return {
+          success: false,
+          message: 'New quantity must be greater than 0',
+        };
+      }
+
+      // Calculate the reduction amount
+      const reductionAmount = shipmentItem.requestedQuantity - newQuantity;
+
+      // Update shipment item
+      const updatedShipmentItem = await tx.shipmentItem.update({
+        where: { id: shipmentItemId },
+        data: {
+          requestedQuantity: newQuantity,
+          weightedQuantity: newQuantity, // Assuming 1:1 ratio for completed items
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // Update delivery order item - move reduced quantity back to pending
+      const updatedDeliveryOrderItem = await tx.deliveryOrderItem.update({
+        where: { id: deliveryOrderItem.id },
+        data: {
+          completedQuantity: deliveryOrderItem.completedQuantity - reductionAmount,
+          pendingQuantity: deliveryOrderItem.pendingQuantity + reductionAmount,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // Log the action
+      await tx.deliveryOrderLog.create({
+        data: {
+          deliveryOrderId: shipmentItem.deliveryOrderId,
+          performedById,
+          action: 'UPDATE',
+          entityType: ENTITY_TYPE.DELIVERY_ORDER,
+          description: `Reduced shipment item quantity from ${shipmentItem.requestedQuantity} to ${newQuantity} (${reductionAmount} moved back to pending)`,
+          oldData: {
+            shipmentItemId: shipmentItem.id,
+            requestedQuantity: shipmentItem.requestedQuantity,
+            weightedQuantity: shipmentItem.weightedQuantity,
+            completedQuantity: deliveryOrderItem.completedQuantity,
+            pendingQuantity: deliveryOrderItem.pendingQuantity,
+          },
+          newData: {
+            shipmentItemId: updatedShipmentItem.id,
+            requestedQuantity: updatedShipmentItem.requestedQuantity,
+            weightedQuantity: updatedShipmentItem.weightedQuantity,
+            completedQuantity: updatedDeliveryOrderItem.completedQuantity,
+            pendingQuantity: updatedDeliveryOrderItem.pendingQuantity,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: `Successfully reduced quantity by ${reductionAmount}. ${reductionAmount} units moved back to pending.`,
+        data: {
+          updatedShipmentItem,
+          updatedDeliveryOrderItem,
+        },
+      };
     });
   },
 };

@@ -569,6 +569,7 @@ export default {
       // Prepare shipment creation data
       const shipmentData: any = {
         type: data.type,
+        kenek: data.kenek,
         internalNote: data.internalNote,
         plateNumber: plateNumberToUse,
         status: STATUS.PENDING,
@@ -3719,121 +3720,6 @@ export default {
         { tally: updatedShipment.tally },
         tx,
         `Tally diubah dari "${shipment.tally || ''}" menjadi "${updatedShipment.tally || ''}"`,
-      );
-
-      return updatedShipment;
-    });
-  },
-
-  async updateKenek(
-    id: string,
-    kenek: string,
-    performedById: string,
-    shipment: NonNullable<Awaited<ReturnType<typeof this.getShipmentById>>>,
-  ) {
-    return prisma.$transaction(async (tx) => {
-      const jakartaTime = new Date();
-      jakartaTime.setHours(jakartaTime.getHours() + 7);
-
-      const updatedShipment = await tx.shipment.update({
-        where: { id },
-        data: {
-          kenek,
-          updatedAt: jakartaTime,
-        },
-      });
-
-      // Regenerate SPMBs
-      const existingSpmbs = await tx.sPMB.findMany({
-        where: { shipmentId: id },
-        include: {
-          deliveryOrder: {
-            include: {
-              customer: true,
-              items: {
-                include: {
-                  product: true,
-                },
-              },
-            },
-          },
-          shipment: {
-            include: {
-              armada: true,
-              driver: true,
-              shipmentItems: {
-                include: {
-                  product: true,
-                },
-              },
-            },
-          },
-          warehouse: true,
-          generatedBy: true,
-        },
-      });
-
-      if (existingSpmbs.length > 0) {
-        const shipmentForPdf = await tx.shipment.findUnique({
-          where: { id },
-          include: {
-            armada: true,
-            driver: true,
-            shipmentItems: {
-              include: {
-                product: true,
-                deliveryOrder: {
-                  include: {
-                    customer: true,
-                  },
-                },
-              },
-            },
-          },
-        });
-
-        if (shipmentForPdf) {
-          const isProd = process.env.NODE_ENV === 'production';
-          const PUBLIC_DIR = isProd
-            ? '/var/www/sajpoutbound.com/public'
-            : path.join(process.cwd(), 'src', 'public');
-
-          for (const spmb of existingSpmbs) {
-            // Delete old PDF file
-            if (spmb.documentPath) {
-              const filePath = path.join(PUBLIC_DIR, spmb.documentPath);
-              try {
-                if (fs.existsSync(filePath)) {
-                  fs.unlinkSync(filePath);
-                }
-              } catch (error) {
-                console.error(`Failed to delete old SPMB file ${filePath}:`, error);
-              }
-            }
-
-            // Regenerate PDF with updated shipment data (which includes new kenek)
-            const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
-
-            // Update SPMB with new path
-            await tx.sPMB.update({
-              where: { id: spmb.id },
-              data: {
-                documentPath: pdfPath,
-                updatedAt: jakartaTime,
-              },
-            });
-          }
-        }
-      }
-
-      // Log the update
-      await shipmentLogService.logShipmentUpdate(
-        id,
-        performedById,
-        { kenek: shipment.kenek },
-        { kenek: updatedShipment.kenek },
-        tx,
-        `Kenek diubah dari "${shipment.kenek || ''}" menjadi "${updatedShipment.kenek || ''}"`,
       );
 
       return updatedShipment;

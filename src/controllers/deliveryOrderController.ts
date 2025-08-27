@@ -6,7 +6,10 @@ import {
   createDeliveryOrderSchema,
   DeliveryOrderCreateInput,
   deliveryOrderIdSchema,
+  DeliveryOrderTransferItemsInput,
   DeliveryOrderUpdateInput,
+  reduceShipmentItemQuantitySchema,
+  transferItemsSchema,
   updateDeliveryOrderSchema,
 } from '../schemas/deliveryOrder';
 import customerService from '../services/customerService';
@@ -728,6 +731,132 @@ export default {
         }),
       );
     } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Transfer items from completed shipment DOs to a new customer
+   */
+  async transferItemsToNewCustomer(
+    req: Request<Record<string, never>, unknown, DeliveryOrderTransferItemsInput>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const validated = await transferItemsSchema.validateAsync(req.body);
+
+      const performedById = req.user?.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
+          status: 401,
+        });
+      }
+
+      // Validate target customer exists
+      const customer = await customerService.getCustomerById(validated.targetCustomerId);
+      if (!customer) {
+        throw new CustomError({
+          message: 'Customer tujuan tidak ditemukan',
+          errorCode: 'CUSTOMER_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      for (const item of validated.transferItems) {
+        if (item.quantity <= 0) {
+          throw new CustomError({
+            message: 'Kuantitas harus lebih dari 0',
+            errorCode: 'KUANTITAS_HARUS_LEBIH_DARI_0',
+            status: 400,
+          });
+        }
+      }
+
+      const result = await deliveryOrderService.transferItemsToNewCustomer(
+        validated.targetCustomerId,
+        validated.sourceShipmentId,
+        validated.transferItems,
+        performedById,
+      );
+
+      res.status(201).json(
+        success({
+          message: 'Item berhasil ditransfer ke customer baru',
+          newDeliveryOrder: result.newDeliveryOrder,
+          updatedOriginalDOs: result.updatedOriginalDOs,
+          transferSummary: result.transferSummary,
+        }),
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new CustomError({
+          message: error.message,
+          errorCode: 'TRANSFER_ITEM_ERROR',
+          status: 400,
+        });
+      }
+      next(error);
+    }
+  },
+
+  /**
+   * Reduce quantity of a shipment item (post-shipment correction)
+   */
+  async reduceShipmentItemQuantity(
+    req: Request<{}, any, { shipmentItemId: string; newQuantity: number }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { shipmentItemId, newQuantity } = req.body;
+      const performedById = (req as any).user?.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
+          status: 401,
+        });
+      }
+
+      // Validate input
+      await reduceShipmentItemQuantitySchema.validateAsync({
+        shipmentItemId,
+        newQuantity,
+      });
+
+      const result = await deliveryOrderService.reduceShipmentItemQuantity(
+        shipmentItemId,
+        newQuantity,
+        performedById,
+      );
+
+      if (!result.success) {
+        throw new CustomError({
+          message: result.message,
+          errorCode: 'REDUCE_QUANTITY_FAILED',
+          status: 400,
+        });
+      }
+
+      res.status(200).json(
+        success({
+          message: result.message,
+          data: result.data,
+        }),
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new CustomError({
+          message: error.message,
+          errorCode: 'REDUCE_QUANTITY_ERROR',
+          status: 400,
+        });
+      }
       next(error);
     }
   },
