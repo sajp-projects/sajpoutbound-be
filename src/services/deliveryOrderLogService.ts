@@ -306,4 +306,37 @@ export default {
       },
     });
   },
+
+  /**
+   * Create a log entry for delivery order archiving
+   */
+  async logDOArchive(
+    deliveryOrderId: string,
+    performedById: string,
+    reason: string,
+    tx?: any,
+  ) {
+    const client = tx || prisma;
+
+    // Create Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+    return client.deliveryOrderLog.create({
+      data: {
+        deliveryOrderId,
+        performedById,
+        action: ACTION.DELETE,
+        entityType: ENTITY_TYPE.DELIVERY_ORDER,
+        description: `DO diarsipkan: ${reason}`,
+        newData: {
+          reason,
+          archivedAt: jakartaTime,
+        },
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
+      },
+    });
+  },
+
 };

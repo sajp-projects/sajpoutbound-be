@@ -1843,6 +1843,13 @@ export default {
       // 2. Validate target customer exists
       const targetCustomer = await tx.customer.findFirst({
         where: { id: targetCustomerId },
+        include: {
+          deliveryOrders: {
+            select: {
+              address: true
+            }
+          }
+        }
       });
 
       if (!targetCustomer) {
@@ -1928,11 +1935,19 @@ export default {
       }
 
       // 6. Create new delivery order
+      // Use address from original delivery orders if target customer has no address
+      let addressToUse = targetCustomer.address;
+      if (!addressToUse) {
+        // Get address from one of the original delivery orders
+        const originalDOWithAddress = validatedTransfers.find(t => t.deliveryOrder.address);
+        addressToUse = originalDOWithAddress?.deliveryOrder.address || "TBD";
+      }
+
       const newDeliveryOrder = await tx.deliveryOrder.create({
         data: {
           doNumber: newDoNumber,
           customerId: targetCustomerId,
-          address: targetCustomer.address || "TBD",
+          address: addressToUse,
           internalNote: `Transfer from shipment ${shipment.shipmentNumber || 'UNKNOWN'} - Created via revision`,
           deliverySchedule: null,
           status: STATUS.SELESAI, // New DO is immediately completed as items are already processed
@@ -1944,6 +1959,8 @@ export default {
       // 7. Create items for new DO and update original DO items
       const newDoItems = [];
       const updatedOriginalDOs: any[] = [];
+      const shipmentItemUpdates: any[] = [];
+      const spmbChanges: any[] = [];
 
       for (const transfer of validatedTransfers) {
         // Create item in new DO
@@ -1975,6 +1992,39 @@ export default {
           },
         });
 
+        // Also update the corresponding shipment item quantities
+        const relatedShipmentItem = await tx.shipmentItem.findFirst({
+          where: {
+            deliveryOrderId: transfer.deliveryOrder.id,
+            productId: transfer.productId,
+          },
+        });
+
+        if (relatedShipmentItem) {
+          const oldQuantity = relatedShipmentItem.requestedQuantity;
+          const newQuantity = oldQuantity - transfer.transferQuantity;
+
+          await tx.shipmentItem.update({
+            where: { id: relatedShipmentItem.id },
+            data: {
+              requestedQuantity: newQuantity,
+              weightedQuantity: relatedShipmentItem.weightedQuantity 
+                ? relatedShipmentItem.weightedQuantity - transfer.transferQuantity
+                : relatedShipmentItem.weightedQuantity,
+              updatedAt: jakartaTime,
+            },
+          });
+
+          // Collect data for logging
+          shipmentItemUpdates.push({
+            shipmentItemId: relatedShipmentItem.id,
+            productName: transfer.doItem.product.name,
+            oldQuantity,
+            newQuantity,
+            reason: 'Item transferred to new customer',
+          });
+        }
+
         // Check if we need to update DO status
         const doItems: DeliveryOrderItem[] = await tx.deliveryOrderItem.findMany({
           where: { deliveryOrderId: transfer.deliveryOrder.id },
@@ -2003,10 +2053,38 @@ export default {
           });
         }
 
+        // Check if DO should be archived (all quantities are 0)
+        const hasAnyQuantity = doItems.some(
+          (item) => 
+            item.pendingQuantity > 0 || 
+            item.processingQuantity > 0 || 
+            item.completedQuantity > 0
+        );
+
+        if (!hasAnyQuantity) {
+          // Archive the DO by setting deletedAt timestamp
+          await tx.deliveryOrder.update({
+            where: { id: transfer.deliveryOrder.id },
+            data: {
+              deletedAt: jakartaTime,
+              updatedAt: jakartaTime,
+            },
+          });
+
+          // Log the archiving action
+          await deliveryOrderLogService.logDOArchive(
+            transfer.deliveryOrder.id,
+            performedById,
+            'Automatically archived due to all items being transferred to other customers',
+            tx,
+          );
+        }
+
         if (!updatedOriginalDOs.find((do_) => do_.id === transfer.deliveryOrder.id)) {
           updatedOriginalDOs.push({
             ...transfer.deliveryOrder,
-            status: newStatus,
+            status: hasAnyQuantity ? newStatus : transfer.deliveryOrder.status,
+            deletedAt: hasAnyQuantity ? transfer.deliveryOrder.deletedAt : jakartaTime,
           });
         }
       }
@@ -2020,6 +2098,117 @@ export default {
         validatedTransfers,
         tx,
       );
+
+      // 9. Update existing SPMBs to reflect reduced quantities
+      const affectedDeliveryOrderIds = [...new Set(validatedTransfers.map(t => t.deliveryOrder.id))];
+      
+      for (const deliveryOrderId of affectedDeliveryOrderIds) {
+        const existingSpmbs = await tx.sPMB.findMany({
+          where: {
+            deliveryOrderId,
+            shipmentId: sourceShipmentId,
+          },
+          include: {
+            deliveryOrder: {
+              include: {
+                items: {
+                  include: {
+                    product: true,
+                  },
+                },
+                customer: true,
+              },
+            },
+            shipment: {
+              include: {
+                armada: true,
+                driver: true,
+                shipmentItems: {
+                  include: {
+                    product: true,
+                    deliveryOrder: {
+                      include: {
+                        customer: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            warehouse: true,
+            generatedBy: true,
+          },
+        });
+
+        // Regenerate SPMBs for affected delivery orders
+        for (const spmb of existingSpmbs) {
+          // Check if this SPMB's specific warehouse still has items after transfers
+          const remainingItems = await tx.deliveryOrderItem.findMany({
+            where: { 
+              deliveryOrderId,
+              quantity: { gt: 0 },
+              product: {
+                warehouseId: spmb.warehouseId // Only check items from this SPMB's warehouse
+              }
+            },
+          });
+
+          if (remainingItems.length === 0) {
+            // Delete SPMB if no items remain
+            const isProd = process.env.NODE_ENV === 'production';
+            const PUBLIC_DIR = isProd
+              ? '/var/www/sajpoutbound.com/public'
+              : path.join(process.cwd(), 'src', 'public');
+            
+            if (spmb.documentPath) {
+              const filePath = path.join(PUBLIC_DIR, spmb.documentPath);
+              try {
+                if (fs.existsSync(filePath)) {
+                  fs.unlinkSync(filePath);
+                  console.log(`Deleted SPMB file: ${filePath}`);
+                }
+              } catch (error) {
+                console.error(`Failed to delete SPMB file ${filePath}:`, error);
+              }
+            }
+
+            await tx.sPMB.delete({
+              where: { id: spmb.id },
+            });
+
+            // Collect data for logging
+            spmbChanges.push({
+              spmbId: spmb.id,
+              spmbCode: spmb.code,
+              action: 'DELETED' as const,
+              reason: 'No remaining items after transfer',
+            });
+          } else {
+            // Regenerate SPMB with updated quantities
+            try {
+              const pdfPath = await spmbPdfService.generateSPMB(spmb, spmb.shipment);
+
+              await tx.sPMB.update({
+                where: { id: spmb.id },
+                data: {
+                  documentPath: pdfPath,
+                  updatedAt: jakartaTime,
+                },
+              });
+
+              // Collect data for logging
+              spmbChanges.push({
+                spmbId: spmb.id,
+                spmbCode: spmb.code,
+                action: 'UPDATED' as const,
+                reason: 'Updated quantities after transfer',
+              });
+            } catch (error) {
+              console.error('Error regenerating SPMB after transfer:', error);
+            }
+          }
+        }
+      }
 
       // Return complete new DO with items
       const completeNewDO = await tx.deliveryOrder.findFirst({
@@ -2297,6 +2486,26 @@ export default {
         }
       }
 
+      // Log shipment item quantity updates to shipment logs
+      if (shipmentItemUpdates.length > 0) {
+        await shipmentLogService.logShipmentItemQuantityUpdate(
+          sourceShipmentId,
+          performedById,
+          shipmentItemUpdates,
+          tx,
+        );
+      }
+
+      if (spmbChanges.length > 0) {
+        // Log SPMB changes to shipment log since SPMBs are shipment-related
+        await shipmentLogService.logSPMBChanges(
+          sourceShipmentId,
+          performedById,
+          spmbChanges,
+          tx,
+        );
+      }
+
       return {
         newDeliveryOrder: completeNewDO,
         updatedOriginalDOs,
@@ -2340,7 +2549,12 @@ export default {
       const shipmentItem = await tx.shipmentItem.findUnique({
         where: { id: shipmentItemId },
         include: {
-          deliveryOrder: true,
+          deliveryOrder: {
+            select: {
+              doNumber: true,
+              customer: true
+            }
+          },
           product: true,
           shipment: true,
         },
@@ -2407,30 +2621,22 @@ export default {
         },
       });
 
-      // Log the action
-      await tx.deliveryOrderLog.create({
-        data: {
-          deliveryOrderId: shipmentItem.deliveryOrderId,
-          performedById,
-          action: 'UPDATE',
-          entityType: ENTITY_TYPE.DELIVERY_ORDER,
-          description: `Reduced shipment item quantity from ${shipmentItem.requestedQuantity} to ${newQuantity} (${reductionAmount} moved back to pending)`,
-          oldData: {
-            shipmentItemId: shipmentItem.id,
-            requestedQuantity: shipmentItem.requestedQuantity,
-            weightedQuantity: shipmentItem.weightedQuantity,
-            completedQuantity: deliveryOrderItem.completedQuantity,
-            pendingQuantity: deliveryOrderItem.pendingQuantity,
-          },
-          newData: {
-            shipmentItemId: updatedShipmentItem.id,
-            requestedQuantity: updatedShipmentItem.requestedQuantity,
-            weightedQuantity: updatedShipmentItem.weightedQuantity,
-            completedQuantity: updatedDeliveryOrderItem.completedQuantity,
-            pendingQuantity: updatedDeliveryOrderItem.pendingQuantity,
-          },
+      // Log to shipment logs since this affects shipment operations
+      await shipmentLogService.logQuantityReduction(
+        shipmentItem.shipmentId,
+        performedById,
+        {
+          shipmentItemId: shipmentItem.id,
+          deliveryOrderNumber: shipmentItem.deliveryOrder.doNumber!,
+          productName: shipmentItem.product.name,
+          customerName: shipmentItem.deliveryOrder.customer?.name || 'Unknown',
+          oldQuantity: shipmentItem.requestedQuantity,
+          newQuantity: newQuantity,
+          reductionAmount: reductionAmount,
+          reason: 'Pengurangan kuantitas manual'
         },
-      });
+        tx,
+      );
 
       return {
         success: true,

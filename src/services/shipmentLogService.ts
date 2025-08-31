@@ -555,4 +555,145 @@ export default {
       total,
     };
   },
+
+    /**
+   * Create a log entry for SPMB updates/deletions
+   */
+    async logSPMBChanges(
+      shipmentId: string,
+      performedById: string,
+      spmbChanges: Array<{
+        spmbId: string;
+        spmbCode: string;
+        action: 'UPDATED' | 'DELETED';
+        reason: string;
+      }>,
+      tx?: any,
+    ) {
+      const client = tx || prisma;
+  
+      // Create Jakarta timezone date (UTC+7)
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+  
+      const description = `SPMB changes: ${spmbChanges
+        .map((change) => `${change.spmbCode} (${change.action})`)
+        .join(', ')}`;
+  
+      return client.shipmentLog.create({
+        data: {
+          shipmentId,
+          performedById,
+          action: ACTION.UPDATE,
+          entityType: ENTITY_TYPE.SHIPMENT,
+          description,
+          newData: {
+            spmbChanges,
+          },
+          createdAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+      });
+    },
+
+  /**
+   * Log quantity reduction for shipment items
+   */
+  async logQuantityReduction(
+    shipmentId: string,
+    performedById: string,
+    reductionData: {
+      shipmentItemId: string;
+      deliveryOrderNumber: string;
+      productName: string;
+      customerName: string;
+      oldQuantity: number;
+      newQuantity: number;
+      reductionAmount: number;
+      reason: string;
+    },
+    tx?: any,
+  ) {
+    const db = tx || prisma;
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+    return db.shipmentLog.create({
+      data: {
+        shipmentId,
+        performedById,
+        action: ACTION.UPDATE,
+        entityType: ENTITY_TYPE.SHIPMENT,
+        oldData: {
+          shipmentItemId: reductionData.shipmentItemId,
+          deliveryOrderNumber: reductionData.deliveryOrderNumber,
+          productName: reductionData.productName,
+          customerName: reductionData.customerName,
+          quantity: reductionData.oldQuantity,
+        },
+        newData: {
+          shipmentItemId: reductionData.shipmentItemId,
+          deliveryOrderNumber: reductionData.deliveryOrderNumber,
+          productName: reductionData.productName,
+          customerName: reductionData.customerName,
+          quantity: reductionData.newQuantity,
+          reductionAmount: reductionData.reductionAmount,
+        },
+        description: `${reductionData.reason}: ${reductionData.productName} untuk ${reductionData.customerName} (DO: ${reductionData.deliveryOrderNumber}) dikurangi dari ${reductionData.oldQuantity} ke ${reductionData.newQuantity} (-${reductionData.reductionAmount})`,
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
+      },
+    });
+  },
+
+  /**
+   * Log shipment item quantity updates (used during transfers)
+   */
+  async logShipmentItemQuantityUpdate(
+    shipmentId: string,
+    performedById: string,
+    updates: Array<{
+      shipmentItemId: string;
+      productName: string;
+      oldQuantity: number;
+      newQuantity: number;
+      reason: string;
+    }>,
+    tx?: any,
+  ) {
+    const db = tx || prisma;
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+    const description = `Shipment item quantity updates: ${updates
+      .map(update => `${update.productName} (${update.oldQuantity} → ${update.newQuantity})`)
+      .join(', ')}`;
+
+    return db.shipmentLog.create({
+      data: {
+        shipmentId,
+        performedById,
+        action: ACTION.UPDATE,
+        entityType: ENTITY_TYPE.SHIPMENT,
+        oldData: {
+          updates: updates.map(u => ({
+            shipmentItemId: u.shipmentItemId,
+            productName: u.productName,
+            quantity: u.oldQuantity,
+          })),
+        },
+        newData: {
+          updates: updates.map(u => ({
+            shipmentItemId: u.shipmentItemId,
+            productName: u.productName,
+            quantity: u.newQuantity,
+            reason: u.reason,
+          })),
+        },
+        description,
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
+      },
+    });
+  },
 };
