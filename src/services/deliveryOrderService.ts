@@ -1871,7 +1871,7 @@ export default {
 
       for (const [doId, items] of transfersByDO) {
         // Find delivery order in shipment
-        const shipmentItem = shipment.shipmentItems.find((si) => si.deliveryOrderId === doId);
+        const shipmentItem = shipment.shipmentItems?.find((si) => si.deliveryOrderId === doId);
 
         if (!shipmentItem) {
           throw new Error(`Delivery order ${doId} not found in shipment`);
@@ -1932,8 +1932,8 @@ export default {
         data: {
           doNumber: newDoNumber,
           customerId: targetCustomerId,
-          address: targetCustomer.address,
-          internalNote: `Transfer from shipment ${shipment.shipmentNumber} - Created via revision`,
+          address: targetCustomer.address || "TBD",
+          internalNote: `Transfer from shipment ${shipment.shipmentNumber || 'UNKNOWN'} - Created via revision`,
           deliverySchedule: null,
           status: STATUS.SELESAI, // New DO is immediately completed as items are already processed
           createdAt: jakartaTime,
@@ -2034,155 +2034,9 @@ export default {
         },
       });
 
-      return {
-        newDeliveryOrder: completeNewDO,
-        updatedOriginalDOs,
-        transferSummary: {
-          sourceShipmentId,
-          sourceShipmentNumber: shipment.shipmentNumber,
-          targetCustomer: targetCustomer.name,
-          totalItemsTransferred: transferItems.length,
-          newDoNumber,
-        },
-        // Return data needed for adding to shipment
-        shipmentData: {
-          shipmentItems: shipment.shipmentItems,
-        },
-      };
-    });
-
-    // 9. Manual shipment integration process (replaces updateShipment)
-    if (result.newDeliveryOrder?.items && result.newDeliveryOrder.items.length > 0) {
-      const jakartaTime = new Date();
-      jakartaTime.setHours(jakartaTime.getHours() + 7);
-
-      // Step 1: Create shipmentItems for the new DO
-      const newShipmentItems = [];
-
-      for (const item of result.newDeliveryOrder.items) {
-        const shipmentItem = await prisma.shipmentItem.create({
-          data: {
-            shipmentId: sourceShipmentId,
-            deliveryOrderId: result.newDeliveryOrder.id,
-            productId: item.productId,
-            requestedQuantity: item.quantity,
-            locationType: 'GUDANG', // Default location type
-            status: 'PENDING',
-            warehouseId: item.product.warehouseId,
-            createdAt: jakartaTime,
-            updatedAt: jakartaTime,
-          },
-          include: {
-            product: {
-              include: {
-                warehouse: true,
-              },
-            },
-          },
-        });
-
-        newShipmentItems.push(shipmentItem);
-      }
-
-      // Step 2: Create SPMBs grouped by warehouse
-      // Group the new shipment items by warehouseId (since all items belong to same DO, we group by warehouse only)
-      const warehouseGroups = new Map<string, typeof newShipmentItems>();
-      for (const shipmentItem of newShipmentItems) {
-        const warehouseId = shipmentItem.warehouseId;
-        if (!warehouseGroups.has(warehouseId)) {
-          warehouseGroups.set(warehouseId, []);
-        }
-        warehouseGroups.get(warehouseId)!.push(shipmentItem);
-      }
-
-      const spmbs = [];
-      for (const [warehouseId, _items] of warehouseGroups) {
-        // Get warehouse code for SPMB numbering
-        const warehouse = await prisma.warehouse.findUnique({
-          where: { id: warehouseId },
-          select: { code: true },
-        });
-
-        // Generate a unique SPMB code with warehouse prefix
-        const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
-        const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
-
-        const spmb = await prisma.sPMB.create({
-          data: {
-            shipmentId: sourceShipmentId,
-            deliveryOrderId: result.newDeliveryOrder.id,
-            warehouseId,
-            code: spmbCode,
-            generatedById: performedById,
-            createdAt: jakartaTime,
-            updatedAt: jakartaTime,
-          },
-          include: {
-            deliveryOrder: {
-              include: {
-                customer: true,
-                items: {
-                  include: {
-                    product: true,
-                  },
-                },
-              },
-            },
-            warehouse: true,
-            shipment: {
-              include: {
-                armada: true,
-                driver: true,
-                shipmentItems: {
-                  include: {
-                    product: true,
-                    deliveryOrder: {
-                      include: {
-                        customer: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-            generatedBy: true,
-          },
-        });
-
-        spmbs.push(spmb);
-
-        // Generate PDF for this SPMB
-        const pdfPath = await spmbPdfService.generateSPMB(spmb, spmb.shipment);
-
-        // Update SPMB record with the PDF path
-        await prisma.sPMB.update({
-          where: { id: spmb.id },
-          data: {
-            documentPath: pdfPath,
-            updatedAt: jakartaTime,
-          },
-        });
-      }
-
-      // Step 3: Update shipment items to mark them as completed
-      // Since the items are being transferred from a completed shipment,
-      // they should be marked as COMPLETED (already weighed)
-      for (const item of newShipmentItems) {
-        await prisma.shipmentItem.update({
-          where: { id: item.id },
-          data: {
-            status: 'COMPLETED',
-            chosenProduct: true,
-            weightedQuantity: item.requestedQuantity, // Set weighted quantity equal to requested
-            weighedAt: jakartaTime, // Set weighed timestamp
-            updatedAt: jakartaTime,
-          },
-        });
-      }
-
       // Get existing chosenProducts for the transferred products
-      const productIds = [...new Set(newShipmentItems.map((item) => item.productId))];
-      const chosenProducts = await prisma.shipmentChosenProduct.findMany({
+      const productIds = [...new Set(completeNewDO?.items.map((item) => item.productId))];
+      const chosenProducts = await tx.shipmentChosenProduct.findMany({
         where: {
           shipmentId: sourceShipmentId,
           productId: { in: productIds },
@@ -2193,26 +2047,49 @@ export default {
               warehouse: true,
             },
           },
+          weighings: true,
         },
       });
 
-      // Step 4: Create weighings and nota timbangan
-      // For each chosen product, create weighings equal to the transferred quantities
+      // Create weighings and nota timbangan for transferred products
       for (const chosenProduct of chosenProducts) {
         // Calculate total transferred quantity for this product
-        const productItems = result.newDeliveryOrder.items.filter(
+        const productItems = completeNewDO?.items.filter(
           (item) => item.productId === chosenProduct.productId,
         );
 
-        const totalTransferredQuantity = productItems.reduce((sum, item) => sum + item.quantity, 0);
+        const totalTransferredQuantity = productItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
-        // Create weighing record with netWeight = transferred quantity, others = 0
-        const weighing = await prisma.shipmentChosenProductWeighing.create({
+        // Get original total quantity for this product from shipment items
+        const originalShipmentItems = shipment.shipmentItems?.filter(
+          (item) => item.productId === chosenProduct.productId,
+        ) || [];
+        
+        const originalTotalQuantity = originalShipmentItems.reduce(
+          (sum, item) => sum + item.requestedQuantity, 0
+        );
+
+        // Get existing weighing data for proportional calculation
+        let proportionalGrossWeight = 0;
+        let proportionalNetWeight = totalTransferredQuantity || 0; // Default to transferred quantity
+        let proportionalTareWeight = 0;
+
+        if (chosenProduct.weighings && chosenProduct.weighings.length > 0 && originalTotalQuantity > 0) {
+          const originalWeighing = chosenProduct.weighings[0];
+          const ratio = (totalTransferredQuantity || 0) / originalTotalQuantity;
+
+          proportionalGrossWeight = (originalWeighing.grossWeight || 0) * ratio;
+          proportionalNetWeight = (originalWeighing.netWeight || totalTransferredQuantity || 0) * ratio;
+          proportionalTareWeight = (originalWeighing.tareWeight || 0) * ratio;
+        }
+
+        // Create weighing record with proportional values
+        const weighing = await tx.shipmentChosenProductWeighing.create({
           data: {
             shipmentChosenProductId: chosenProduct.id,
-            grossWeight: 0, // Set to 0 as requested
-            netWeight: totalTransferredQuantity, // Net weight = transferred quantity
-            tareWeight: 0, // Set to 0 as requested
+            grossWeight: proportionalGrossWeight,
+            netWeight: proportionalNetWeight,
+            tareWeight: proportionalTareWeight,
             timeIn: chosenProduct.createdAt,
             timeOut: jakartaTime,
             createdAt: jakartaTime,
@@ -2225,7 +2102,7 @@ export default {
         const ticketNumber = nanoidTicket();
 
         // Fetch weighing with all necessary includes for PDF generation
-        const weighingWithIncludes = await prisma.shipmentChosenProductWeighing.findUnique({
+        const weighingWithIncludes = await tx.shipmentChosenProductWeighing.findUnique({
           where: { id: weighing.id },
           include: {
             shipmentChosenProduct: {
@@ -2263,7 +2140,7 @@ export default {
             );
 
             // Create NotaTimbangan record in database
-            await prisma.notaTimbangan.create({
+            await tx.notaTimbangan.create({
               data: {
                 shipmentChosenProductWeighingId: weighing.id,
                 ticketNumber,
@@ -2281,7 +2158,162 @@ export default {
           }
         }
       }
-    }
+
+      // Manual shipment integration process (replaces updateShipment)
+      if (completeNewDO?.items && completeNewDO.items.length > 0) {
+        // Step 1: Create shipmentItems for the new DO
+        const newShipmentItems = [];
+
+        for (const item of completeNewDO.items) {
+          const shipmentItem = await tx.shipmentItem.create({
+            data: {
+              shipmentId: sourceShipmentId,
+              deliveryOrderId: completeNewDO.id,
+              productId: item.productId,
+              requestedQuantity: item.quantity,
+              locationType: 'GUDANG', // Default location type
+              status: 'PENDING',
+              warehouseId: item.product.warehouseId,
+              createdAt: jakartaTime,
+              updatedAt: jakartaTime,
+            },
+            include: {
+              product: {
+                include: {
+                  warehouse: true,
+                },
+              },
+            },
+          });
+
+          newShipmentItems.push(shipmentItem);
+        }
+
+        // Step 2: Create SPMBs grouped by warehouse
+        // Group the new shipment items by warehouseId (since all items belong to same DO, we group by warehouse only)
+        const warehouseGroups = new Map<string, typeof newShipmentItems>();
+        for (const shipmentItem of newShipmentItems) {
+          const warehouseId = shipmentItem.warehouseId;
+          if (!warehouseGroups.has(warehouseId)) {
+            warehouseGroups.set(warehouseId, []);
+          }
+          warehouseGroups.get(warehouseId)!.push(shipmentItem);
+        }
+
+        const spmbs = [];
+        for (const [warehouseId, _items] of warehouseGroups) {
+          // Get warehouse code for SPMB numbering
+          const warehouse = await tx.warehouse.findUnique({
+            where: { id: warehouseId },
+            select: { code: true },
+          });
+
+          // Generate a unique SPMB code with warehouse prefix
+          const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
+          const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
+
+          const spmb = await tx.sPMB.create({
+            data: {
+              shipmentId: sourceShipmentId,
+              deliveryOrderId: completeNewDO.id,
+              warehouseId,
+              code: spmbCode,
+              generatedById: performedById,
+              createdAt: jakartaTime,
+              updatedAt: jakartaTime,
+            },
+            include: {
+              deliveryOrder: {
+                include: {
+                  customer: true,
+                  items: {
+                    include: {
+                      product: true,
+                    },
+                  },
+                },
+              },
+              warehouse: true,
+              shipment: {
+                include: {
+                  armada: true,
+                  driver: true,
+                  shipmentItems: {
+                    include: {
+                      product: true,
+                      deliveryOrder: {
+                        include: {
+                          customer: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              generatedBy: true,
+            },
+          });
+
+          spmbs.push(spmb);
+
+          // Generate PDF for this SPMB
+          if (!spmb.shipment) {
+            throw new Error(`Shipment data not found for SPMB ${spmb.id}`);
+          }
+          
+          console.log('Debug: About to generate SPMB PDF with shipment:', {
+            shipmentId: spmb.shipment.id,
+            shipmentNumber: spmb.shipment.shipmentNumber,
+            hasShipmentItems: !!spmb.shipment.shipmentItems,
+            shipmentItemsCount: spmb.shipment.shipmentItems?.length || 0
+          });
+          
+          const pdfPath = await spmbPdfService.generateSPMB(spmb, spmb.shipment);
+
+          // Update SPMB record with the PDF path
+          await tx.sPMB.update({
+            where: { id: spmb.id },
+            data: {
+              documentPath: pdfPath,
+              updatedAt: jakartaTime,
+            },
+          });
+        }
+
+        // Step 3: Update shipment items to mark them as completed
+        // Since the items are being transferred from a completed shipment,
+        // they should be marked as COMPLETED (already weighed)
+        for (const item of newShipmentItems) {
+          await tx.shipmentItem.update({
+            where: { id: item.id },
+            data: {
+              status: 'COMPLETED',
+              chosenProduct: true,
+              weightedQuantity: item.requestedQuantity, // Set weighted quantity equal to requested
+              weighedAt: jakartaTime, // Set weighed timestamp
+              updatedAt: jakartaTime,
+            },
+          });
+        }
+      }
+
+      return {
+        newDeliveryOrder: completeNewDO,
+        updatedOriginalDOs,
+        transferSummary: {
+          sourceShipmentId,
+          sourceShipmentNumber: shipment.shipmentNumber || '',
+          targetCustomer: targetCustomer.name,
+          totalItemsTransferred: transferItems.length,
+          newDoNumber,
+        },
+        // Return data needed for adding to shipment
+        shipmentData: {
+          shipmentItems: shipment.shipmentItems || [],
+        },
+      };
+    });
+
 
     // Return the result without shipmentData (internal use only)
     const { shipmentData: _shipmentData, ...finalResult } = result;

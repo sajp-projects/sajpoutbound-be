@@ -150,14 +150,14 @@ router.post(
  *       401:
  *         description: Unauthorized - token tidak valid
  *       403:
- *         description: Forbidden - tidak memiliki permission REVISE_DO
+ *         description: Forbidden - tidak memiliki permission TRANSFER_ITEMS pada resource shipment
  *       404:
  *         description: Not found - shipment/customer/DO/produk tidak ditemukan
  */
 // Transfer items from completed shipment to new customer
 router.post(
   '/transfer-items',
-  checkPermission('delivery_order', PERMISSION_ACTION.UPDATE),
+  checkPermission('shipment', PERMISSION_ACTION.TRANSFER_ITEMS),
   deliveryOrderController.transferItemsToNewCustomer,
 );
 
@@ -224,14 +224,14 @@ router.post(
  *       401:
  *         description: Unauthorized - token tidak valid
  *       403:
- *         description: Forbidden - tidak memiliki permission UPDATE
+ *         description: Forbidden - tidak memiliki permission REDUCE_ITEMS pada resource shipment
  *       404:
  *         description: Not found - shipment item tidak ditemukan
  */
 // Reduce quantity of completed shipment item
 router.post(
   '/reduce-quantity',
-  checkPermission('delivery_order', PERMISSION_ACTION.UPDATE),
+  checkPermission('shipment', PERMISSION_ACTION.REDUCE_ITEMS),
   deliveryOrderController.reduceShipmentItemQuantity,
 );
 

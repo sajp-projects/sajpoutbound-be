@@ -72,6 +72,8 @@ async function main() {
       PERMISSION_ACTION.CHOSE_PRODUCT,
       PERMISSION_ACTION.UPDATE_TALLY,
       PERMISSION_ACTION.UPDATE_KENEK,
+      PERMISSION_ACTION.TRANSFER_ITEMS,
+      PERMISSION_ACTION.REDUCE_ITEMS,
     ]);
 
     // Resources that support soft deletion (unarchiving)
@@ -97,6 +99,8 @@ async function main() {
       [PERMISSION_ACTION.READ_ARCHIVED, 'Mengizinkan untuk melihat data yang telah diarsipkan'],
       [PERMISSION_ACTION.UPDATE_TALLY, 'Mengizinkan untuk mengubah tally pengiriman'],
       [PERMISSION_ACTION.UPDATE_KENEK, 'Mengizinkan untuk mengubah kenek pengiriman'],
+      [PERMISSION_ACTION.TRANSFER_ITEMS, 'Mengizinkan untuk transfer item antar customer pada pengiriman'],
+      [PERMISSION_ACTION.REDUCE_ITEMS, 'Mengizinkan untuk mengurangi jumlah item pada pengiriman'],
     ]);
 
     // Indonesian translations for actions
@@ -113,6 +117,8 @@ async function main() {
       [PERMISSION_ACTION.CHOSE_PRODUCT, 'memilih produk'],
       [PERMISSION_ACTION.UNARCHIVE, 'mengembalikan arsip'],
       [PERMISSION_ACTION.READ_ARCHIVED, 'melihat arsip'],
+      [PERMISSION_ACTION.TRANSFER_ITEMS, 'transfer item'],
+      [PERMISSION_ACTION.REDUCE_ITEMS, 'mengurangi item'],
     ]);
 
     // Indonesian translations for resources
