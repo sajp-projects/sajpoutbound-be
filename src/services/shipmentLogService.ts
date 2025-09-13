@@ -556,45 +556,45 @@ export default {
     };
   },
 
-    /**
+  /**
    * Create a log entry for SPMB updates/deletions
    */
-    async logSPMBChanges(
-      shipmentId: string,
-      performedById: string,
-      spmbChanges: Array<{
-        spmbId: string;
-        spmbCode: string;
-        action: 'UPDATED' | 'DELETED';
-        reason: string;
-      }>,
-      tx?: any,
-    ) {
-      const client = tx || prisma;
-  
-      // Create Jakarta timezone date (UTC+7)
-      const jakartaTime = new Date();
-      jakartaTime.setHours(jakartaTime.getHours() + 7);
-  
-      const description = `SPMB changes: ${spmbChanges
-        .map((change) => `${change.spmbCode} (${change.action})`)
-        .join(', ')}`;
-  
-      return client.shipmentLog.create({
-        data: {
-          shipmentId,
-          performedById,
-          action: ACTION.UPDATE,
-          entityType: ENTITY_TYPE.SHIPMENT,
-          description,
-          newData: {
-            spmbChanges,
-          },
-          createdAt: jakartaTime,
-          updatedAt: jakartaTime,
+  async logSPMBChanges(
+    shipmentId: string,
+    performedById: string,
+    spmbChanges: Array<{
+      spmbId: string;
+      spmbCode: string;
+      action: 'UPDATED' | 'DELETED';
+      reason: string;
+    }>,
+    tx?: any,
+  ) {
+    const client = tx || prisma;
+
+    // Create Jakarta timezone date (UTC+7)
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+    const description = `SPMB changes: ${spmbChanges
+      .map((change) => `${change.spmbCode} (${change.action})`)
+      .join(', ')}`;
+
+    return client.shipmentLog.create({
+      data: {
+        shipmentId,
+        performedById,
+        action: ACTION.UPDATE,
+        entityType: ENTITY_TYPE.SHIPMENT,
+        description,
+        newData: {
+          spmbChanges,
         },
-      });
-    },
+        createdAt: jakartaTime,
+        updatedAt: jakartaTime,
+      },
+    });
+  },
 
   /**
    * Log quantity reduction for shipment items
@@ -666,7 +666,7 @@ export default {
     jakartaTime.setHours(jakartaTime.getHours() + 7);
 
     const description = `Shipment item quantity updates: ${updates
-      .map(update => `${update.productName} (${update.oldQuantity} → ${update.newQuantity})`)
+      .map((update) => `${update.productName} (${update.oldQuantity} → ${update.newQuantity})`)
       .join(', ')}`;
 
     return db.shipmentLog.create({
@@ -676,14 +676,14 @@ export default {
         action: ACTION.UPDATE,
         entityType: ENTITY_TYPE.SHIPMENT,
         oldData: {
-          updates: updates.map(u => ({
+          updates: updates.map((u) => ({
             shipmentItemId: u.shipmentItemId,
             productName: u.productName,
             quantity: u.oldQuantity,
           })),
         },
         newData: {
-          updates: updates.map(u => ({
+          updates: updates.map((u) => ({
             shipmentItemId: u.shipmentItemId,
             productName: u.productName,
             quantity: u.newQuantity,

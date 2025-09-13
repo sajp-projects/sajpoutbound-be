@@ -310,12 +310,7 @@ export default {
   /**
    * Create a log entry for delivery order archiving
    */
-  async logDOArchive(
-    deliveryOrderId: string,
-    performedById: string,
-    reason: string,
-    tx?: any,
-  ) {
+  async logDOArchive(deliveryOrderId: string, performedById: string, reason: string, tx?: any) {
     const client = tx || prisma;
 
     // Create Jakarta timezone date (UTC+7)
@@ -338,5 +333,4 @@ export default {
       },
     });
   },
-
 };

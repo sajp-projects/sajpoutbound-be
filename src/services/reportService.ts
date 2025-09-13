@@ -265,7 +265,7 @@ export default {
       string,
       { id: string; name: string; satuan: string; totalQuantity: number }
     >();
-    filteredShipments.forEach((s) =>
+    filteredShipments.forEach((s) => {
       s.shipmentItems.forEach((i) => {
         if (!productQtyMap.has(i.product.id)) {
           productQtyMap.set(i.product.id, {
@@ -275,9 +275,9 @@ export default {
             totalQuantity: 0,
           });
         }
-        productQtyMap.get(i.product.id)!.totalQuantity += i.weightedQuantity || 0;
-      }),
-    );
+        productQtyMap.get(i.product.id)!.totalQuantity += i.requestedQuantity || 0;
+      });
+    });
     const topShippedProducts = Array.from(productQtyMap.values())
       .sort((a, b) => b.totalQuantity - a.totalQuantity)
       .slice(0, 3);
@@ -1784,9 +1784,6 @@ export default {
         prisma.deliveryOrder.findMany({
           where: {
             deletedAt: null,
-            status: {
-              in: [STATUS.PENDING],
-            },
             items: {
               some: {
                 pendingQuantity: {

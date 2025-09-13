@@ -1846,10 +1846,10 @@ export default {
         include: {
           deliveryOrders: {
             select: {
-              address: true
-            }
-          }
-        }
+              address: true,
+            },
+          },
+        },
       });
 
       if (!targetCustomer) {
@@ -1939,8 +1939,8 @@ export default {
       let addressToUse = targetCustomer.address;
       if (!addressToUse) {
         // Get address from one of the original delivery orders
-        const originalDOWithAddress = validatedTransfers.find(t => t.deliveryOrder.address);
-        addressToUse = originalDOWithAddress?.deliveryOrder.address || "TBD";
+        const originalDOWithAddress = validatedTransfers.find((t) => t.deliveryOrder.address);
+        addressToUse = originalDOWithAddress?.deliveryOrder.address || 'TBD';
       }
 
       const newDeliveryOrder = await tx.deliveryOrder.create({
@@ -2008,7 +2008,7 @@ export default {
             where: { id: relatedShipmentItem.id },
             data: {
               requestedQuantity: newQuantity,
-              weightedQuantity: relatedShipmentItem.weightedQuantity 
+              weightedQuantity: relatedShipmentItem.weightedQuantity
                 ? relatedShipmentItem.weightedQuantity - transfer.transferQuantity
                 : relatedShipmentItem.weightedQuantity,
               updatedAt: jakartaTime,
@@ -2055,10 +2055,8 @@ export default {
 
         // Check if DO should be archived (all quantities are 0)
         const hasAnyQuantity = doItems.some(
-          (item) => 
-            item.pendingQuantity > 0 || 
-            item.processingQuantity > 0 || 
-            item.completedQuantity > 0
+          (item) =>
+            item.pendingQuantity > 0 || item.processingQuantity > 0 || item.completedQuantity > 0,
         );
 
         if (!hasAnyQuantity) {
@@ -2100,8 +2098,10 @@ export default {
       );
 
       // 9. Update existing SPMBs to reflect reduced quantities
-      const affectedDeliveryOrderIds = [...new Set(validatedTransfers.map(t => t.deliveryOrder.id))];
-      
+      const affectedDeliveryOrderIds = [
+        ...new Set(validatedTransfers.map((t) => t.deliveryOrder.id)),
+      ];
+
       for (const deliveryOrderId of affectedDeliveryOrderIds) {
         const existingSpmbs = await tx.sPMB.findMany({
           where: {
@@ -2144,12 +2144,12 @@ export default {
         for (const spmb of existingSpmbs) {
           // Check if this SPMB's specific warehouse still has items after transfers
           const remainingItems = await tx.deliveryOrderItem.findMany({
-            where: { 
+            where: {
               deliveryOrderId,
               quantity: { gt: 0 },
               product: {
-                warehouseId: spmb.warehouseId // Only check items from this SPMB's warehouse
-              }
+                warehouseId: spmb.warehouseId, // Only check items from this SPMB's warehouse
+              },
             },
           });
 
@@ -2159,7 +2159,7 @@ export default {
             const PUBLIC_DIR = isProd
               ? '/var/www/sajpoutbound.com/public'
               : path.join(process.cwd(), 'src', 'public');
-            
+
             if (spmb.documentPath) {
               const filePath = path.join(PUBLIC_DIR, spmb.documentPath);
               try {
@@ -2247,15 +2247,17 @@ export default {
           (item) => item.productId === chosenProduct.productId,
         );
 
-        const totalTransferredQuantity = productItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+        const totalTransferredQuantity =
+          productItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
         // Get original total quantity for this product from shipment items
-        const originalShipmentItems = shipment.shipmentItems?.filter(
-          (item) => item.productId === chosenProduct.productId,
-        ) || [];
-        
+        const originalShipmentItems =
+          shipment.shipmentItems?.filter((item) => item.productId === chosenProduct.productId) ||
+          [];
+
         const originalTotalQuantity = originalShipmentItems.reduce(
-          (sum, item) => sum + item.requestedQuantity, 0
+          (sum, item) => sum + item.requestedQuantity,
+          0,
         );
 
         // Get existing weighing data for proportional calculation
@@ -2263,12 +2265,17 @@ export default {
         let proportionalNetWeight = totalTransferredQuantity || 0; // Default to transferred quantity
         let proportionalTareWeight = 0;
 
-        if (chosenProduct.weighings && chosenProduct.weighings.length > 0 && originalTotalQuantity > 0) {
+        if (
+          chosenProduct.weighings &&
+          chosenProduct.weighings.length > 0 &&
+          originalTotalQuantity > 0
+        ) {
           const originalWeighing = chosenProduct.weighings[0];
           const ratio = (totalTransferredQuantity || 0) / originalTotalQuantity;
 
           proportionalGrossWeight = (originalWeighing.grossWeight || 0) * ratio;
-          proportionalNetWeight = (originalWeighing.netWeight || totalTransferredQuantity || 0) * ratio;
+          proportionalNetWeight =
+            (originalWeighing.netWeight || totalTransferredQuantity || 0) * ratio;
           proportionalTareWeight = (originalWeighing.tareWeight || 0) * ratio;
         }
 
@@ -2449,14 +2456,14 @@ export default {
           if (!spmb.shipment) {
             throw new Error(`Shipment data not found for SPMB ${spmb.id}`);
           }
-          
+
           console.log('Debug: About to generate SPMB PDF with shipment:', {
             shipmentId: spmb.shipment.id,
             shipmentNumber: spmb.shipment.shipmentNumber,
             hasShipmentItems: !!spmb.shipment.shipmentItems,
-            shipmentItemsCount: spmb.shipment.shipmentItems?.length || 0
+            shipmentItemsCount: spmb.shipment.shipmentItems?.length || 0,
           });
-          
+
           const pdfPath = await spmbPdfService.generateSPMB(spmb, spmb.shipment);
 
           // Update SPMB record with the PDF path
@@ -2498,12 +2505,7 @@ export default {
 
       if (spmbChanges.length > 0) {
         // Log SPMB changes to shipment log since SPMBs are shipment-related
-        await shipmentLogService.logSPMBChanges(
-          sourceShipmentId,
-          performedById,
-          spmbChanges,
-          tx,
-        );
+        await shipmentLogService.logSPMBChanges(sourceShipmentId, performedById, spmbChanges, tx);
       }
 
       return {
@@ -2522,7 +2524,6 @@ export default {
         },
       };
     });
-
 
     // Return the result without shipmentData (internal use only)
     const { shipmentData: _shipmentData, ...finalResult } = result;
@@ -2552,8 +2553,8 @@ export default {
           deliveryOrder: {
             select: {
               doNumber: true,
-              customer: true
-            }
+              customer: true,
+            },
           },
           product: true,
           shipment: true,
@@ -2564,6 +2565,14 @@ export default {
         return {
           success: false,
           message: 'Shipment item not found',
+        };
+      }
+
+      // Only allow reduction if item is chosen but not yet weighted
+      if (shipmentItem.status !== 'CHOSEN') {
+        return {
+          success: false,
+          message: 'Reduction only allowed for items that have been chosen but not yet weighted.',
         };
       }
 
@@ -2606,17 +2615,26 @@ export default {
         where: { id: shipmentItemId },
         data: {
           requestedQuantity: newQuantity,
-          weightedQuantity: newQuantity, // Assuming 1:1 ratio for completed items
           updatedAt: jakartaTime,
         },
       });
 
-      // Update delivery order item - move reduced quantity back to pending
+      // Recalculate processingQuantity: sum of all shipment items for this DO item that are CHOSEN and not yet weighted
+      const processingSum = await tx.shipmentItem.aggregate({
+        _sum: { requestedQuantity: true },
+        where: {
+          deliveryOrderId: shipmentItem.deliveryOrderId,
+          productId: shipmentItem.productId,
+          status: 'CHOSEN',
+          weightedQuantity: null,
+        },
+      });
+
       const updatedDeliveryOrderItem = await tx.deliveryOrderItem.update({
         where: { id: deliveryOrderItem.id },
         data: {
-          completedQuantity: deliveryOrderItem.completedQuantity - reductionAmount,
           pendingQuantity: deliveryOrderItem.pendingQuantity + reductionAmount,
+          processingQuantity: processingSum._sum.requestedQuantity || 0,
           updatedAt: jakartaTime,
         },
       });
@@ -2633,7 +2651,7 @@ export default {
           oldQuantity: shipmentItem.requestedQuantity,
           newQuantity: newQuantity,
           reductionAmount: reductionAmount,
-          reason: 'Pengurangan kuantitas manual'
+          reason: 'Pengurangan kuantitas manual',
         },
         tx,
       );
