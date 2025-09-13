@@ -892,9 +892,9 @@ export default {
           group.totalQuantity += item.requestedQuantity;
           group.totalWeight += item.weightedQuantity || 0;
 
-          // Only add shipment if it's not already in the group's shipments
-          const shipmentExists = group.shipments.some((s) => s.shipmentId === shipment.id);
-          if (!shipmentExists) {
+          // Only add shipment-item combination if it's not already in the group's shipments
+          const shipmentItemExists = group.shipments.some((s) => s.shipmentId === shipment.id && s.item.id === item.id);
+          if (!shipmentItemExists) {
             // Find SPMB for this delivery order and warehouse
             const spmbForDO = item.deliveryOrder.spmbs.find(
               (spmb) => spmb.warehouseId === item.warehouse.id,
