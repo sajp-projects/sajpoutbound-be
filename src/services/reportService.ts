@@ -94,6 +94,13 @@ export default {
                     address: true,
                   },
                 },
+                spmbs: {
+                  select: {
+                    id: true,
+                    code: true,
+                    warehouseId: true,
+                  },
+                },
               },
             },
             product: {
@@ -504,6 +511,13 @@ export default {
                     address: true,
                   },
                 },
+                spmbs: {
+                  select: {
+                    id: true,
+                    code: true,
+                    warehouseId: true,
+                  },
+                },
               },
             },
             product: {
@@ -762,6 +776,13 @@ export default {
                     address: true,
                   },
                 },
+                spmbs: {
+                  select: {
+                    id: true,
+                    code: true,
+                    warehouseId: true,
+                  },
+                },
               },
             },
             product: {
@@ -874,11 +895,17 @@ export default {
           // Only add shipment if it's not already in the group's shipments
           const shipmentExists = group.shipments.some((s) => s.shipmentId === shipment.id);
           if (!shipmentExists) {
+            // Find SPMB for this delivery order and warehouse
+            const spmbForDO = item.deliveryOrder.spmbs.find(
+              (spmb) => spmb.warehouseId === item.warehouse.id,
+            );
+
             group.shipments.push({
               shipmentId: shipment.id || '',
               shipmentNumber: shipment.shipmentNumber || '',
               type: shipment.type,
               verifiedAt: shipment.verifiedAt,
+              createdAt: shipment.createdAt,
               item: {
                 id: item.id || '',
                 product: item.product,
@@ -887,6 +914,19 @@ export default {
                 weightedQuantity: item.weightedQuantity,
                 status: item.status,
                 locationType: item.locationType,
+                deliveryOrder: {
+                  id: item.deliveryOrder.id,
+                  customer: {
+                    id: item.deliveryOrder.customer.id,
+                    name: item.deliveryOrder.customer.name,
+                  },
+                  spmb: spmbForDO
+                    ? {
+                        id: spmbForDO.id,
+                        code: spmbForDO.code,
+                      }
+                    : null,
+                },
               },
               armada: shipment.armada
                 ? {
@@ -1151,6 +1191,13 @@ export default {
                     address: true,
                   },
                 },
+                spmbs: {
+                  select: {
+                    id: true,
+                    code: true,
+                    warehouseId: true,
+                  },
+                },
               },
             },
             product: {
@@ -1257,11 +1304,18 @@ export default {
         if (group) {
           group.totalQuantity += item.requestedQuantity;
           group.totalWeight += item.weightedQuantity || 0;
+
+          // Find SPMB for this delivery order and warehouse
+          const spmbForDO = item.deliveryOrder.spmbs.find(
+            (spmb) => spmb.warehouseId === item.warehouse.id,
+          );
+
           group.shipments.push({
             shipmentId: shipment.id || '',
             shipmentNumber: shipment.shipmentNumber || '',
             type: shipment.type,
             verifiedAt: shipment.verifiedAt,
+            createdAt: shipment.createdAt,
             item: {
               id: item.id || '',
               product: item.product,
@@ -1270,6 +1324,19 @@ export default {
               weightedQuantity: item.weightedQuantity,
               status: item.status,
               locationType: item.locationType,
+              deliveryOrder: {
+                id: item.deliveryOrder.id,
+                customer: {
+                  id: item.deliveryOrder.customer.id,
+                  name: item.deliveryOrder.customer.name,
+                },
+                spmb: spmbForDO
+                  ? {
+                      id: spmbForDO.id,
+                      code: spmbForDO.code,
+                    }
+                  : null,
+              },
             },
             armada: shipment.armada
               ? {
@@ -1400,6 +1467,13 @@ export default {
                     id: true,
                     name: true,
                     address: true,
+                  },
+                },
+                spmbs: {
+                  select: {
+                    id: true,
+                    code: true,
+                    warehouseId: true,
                   },
                 },
               },

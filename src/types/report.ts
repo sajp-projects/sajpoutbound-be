@@ -204,7 +204,20 @@ export interface DailyOutputShipment {
   shipmentNumber: string;
   type: SHIPMENT_TYPE;
   verifiedAt: Date | null;
-  item: ReportShipmentItemSimple;
+  createdAt: Date;
+  item: ReportShipmentItemSimple & {
+    deliveryOrder: {
+      id: string;
+      customer: {
+        id: string;
+        name: string;
+      };
+      spmb?: {
+        id: string;
+        code: string;
+      } | null;
+    };
+  };
   armada: ReportArmada | null;
   plateNumber: string;
 }

@@ -185,7 +185,7 @@ export default {
   },
 
   /**
-   * Generate and download expenditure Excel report
+   * Download expenditure Excel report
    */
   async downloadExpenditureExcel(req: Request, res: Response, next: NextFunction) {
     try {
