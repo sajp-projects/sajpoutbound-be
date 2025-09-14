@@ -1006,6 +1006,7 @@ export default {
           id: true,
           documentPath: true,
           shipmentId: true,
+          warehouseId: true,
         },
       });
 
@@ -1032,9 +1033,15 @@ export default {
 
       // Regenerate SPMBs with new customer information
       for (const existingSpmb of existingSpmbs) {
-        // Generate a unique SPMB code
+        // Get warehouse code for SPMB numbering
+        const warehouse = await tx.warehouse.findUnique({
+          where: { id: existingSpmb.warehouseId },
+          select: { code: true },
+        });
+
+        // Generate a unique SPMB code with warehouse prefix
         const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
-        const spmbCode = `SPMB-${nanoid()}`;
+        const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
 
         // Update the SPMB with new code
         const spmb = await tx.sPMB.update({
