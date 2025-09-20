@@ -2984,11 +2984,15 @@ export default {
       }
       // If newQuantity is 0, item is deleted, so don't add it to any totals
 
-      // Calculate pending quantity: original DO quantity minus processing and completed quantities
-      // (DO total quantity never changes - it stays at the original 500)
+      // Calculate the new total DO quantity (reduced by the amount we removed)
+      const originalItemQuantity = itemBeingRevised?.requestedQuantity || 0;
+      const quantityReduction = originalItemQuantity - newQuantity;
+      const newTotalDOQuantity = originalDOItem.quantity - quantityReduction;
+
+      // Calculate pending quantity: new total DO quantity minus processing and completed quantities
       const pendingQuantity = Math.max(
         0,
-        originalDOItem.quantity - processingQuantity - completedQuantity,
+        newTotalDOQuantity - processingQuantity - completedQuantity,
       );
 
       // Debug logging final results
@@ -2999,6 +3003,8 @@ export default {
       console.log('final completedQuantity:', completedQuantity);
       console.log('final pendingQuantity:', pendingQuantity);
       console.log('originalDOItem.quantity:', originalDOItem.quantity);
+      console.log('quantityReduction:', quantityReduction);
+      console.log('newTotalDOQuantity:', newTotalDOQuantity);
       console.log('========================');
 
       // Get the delivery order item ID first
@@ -3016,13 +3022,13 @@ export default {
       }
 
       // Update the delivery order item with recalculated totals
-      // Keep the original quantity unchanged, only update the distribution
+      // Update the total quantity to reflect the reduction
       await tx.deliveryOrderItem.update({
         where: {
           id: doItem.id,
         },
         data: {
-          // quantity stays the original value (e.g., 500) - never changes
+          quantity: newTotalDOQuantity, // Update total quantity (reduced amount)
           completedQuantity: completedQuantity,
           processingQuantity: processingQuantity,
           pendingQuantity: pendingQuantity,
@@ -3333,7 +3339,8 @@ export default {
           },
           deliveryOrderRecalculated: {
             id: shipmentItem.deliveryOrderId,
-            originalQuantity: originalDOItem.quantity, // This stays constant
+            originalQuantity: originalDOItem.quantity, // Original quantity before any changes
+            newTotalQuantity: newTotalDOQuantity, // New reduced total quantity
             completedQuantity: completedQuantity,
             processingQuantity: processingQuantity,
             pendingQuantity: pendingQuantity,
