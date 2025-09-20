@@ -39,6 +39,12 @@ export type ReduceShipmentItemQuantityInput = {
   newQuantity: number;
 };
 
+export type ReviseShipmentItemInput = {
+  shipmentId: string;
+  shipmentItemId: string;
+  newQuantity: number;
+};
+
 export const createDeliveryOrderSchema = Joi.object<DeliveryOrderCreateInput>({
   customerId: Joi.string().required().uuid().messages({
     'string.empty': 'Customer ID is required',
@@ -159,6 +165,24 @@ export const transferItemsSchema = Joi.object<DeliveryOrderTransferItemsInput>({
 });
 
 export const reduceShipmentItemQuantitySchema = Joi.object<ReduceShipmentItemQuantityInput>({
+  shipmentItemId: Joi.string().required().uuid().messages({
+    'string.empty': 'Shipment item ID is required',
+    'string.guid': 'Shipment item ID must be a valid UUID',
+    'any.required': 'Shipment item ID is required',
+  }),
+  newQuantity: Joi.number().required().positive().messages({
+    'number.base': 'New quantity must be a number',
+    'number.positive': 'New quantity must be greater than 0',
+    'any.required': 'New quantity is required',
+  }),
+});
+
+export const reviseShipmentItemSchema = Joi.object<ReviseShipmentItemInput>({
+  shipmentId: Joi.string().required().uuid().messages({
+    'string.empty': 'Shipment ID is required',
+    'string.guid': 'Shipment ID must be a valid UUID',
+    'any.required': 'Shipment ID is required',
+  }),
   shipmentItemId: Joi.string().required().uuid().messages({
     'string.empty': 'Shipment item ID is required',
     'string.guid': 'Shipment item ID must be a valid UUID',

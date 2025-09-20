@@ -65,6 +65,13 @@ router.post(
   deliveryOrderController.reduceShipmentItemQuantity,
 );
 
+// Revise shipment item quantity after weighing (new corrected logic)
+router.post(
+  '/revise-shipment-item',
+  checkPermission('shipment', PERMISSION_ACTION.REVISE_DO),
+  deliveryOrderController.reviseShipmentItemAfterWeighing,
+);
+
 // Update delivery order
 router.put(
   '/:id',

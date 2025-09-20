@@ -9,6 +9,8 @@ import {
   DeliveryOrderTransferItemsInput,
   DeliveryOrderUpdateInput,
   reduceShipmentItemQuantitySchema,
+  ReviseShipmentItemInput,
+  reviseShipmentItemSchema,
   transferItemsSchema,
   updateDeliveryOrderSchema,
 } from '../schemas/deliveryOrder';
@@ -854,6 +856,65 @@ export default {
         throw new CustomError({
           message: error.message,
           errorCode: 'REDUCE_QUANTITY_ERROR',
+          status: 400,
+        });
+      }
+      next(error);
+    }
+  },
+
+  /**
+   * Revise a specific shipment item quantity after weighing
+   * This is the corrected version that only affects the specific shipment item
+   */
+  async reviseShipmentItemAfterWeighing(
+    req: Request<{}, any, ReviseShipmentItemInput>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const validated = await reviseShipmentItemSchema.validateAsync(req.body);
+
+      const performedById = (req as any).user?.id;
+
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
+          status: 401,
+        });
+      }
+
+      const result = await deliveryOrderService.reviseShipmentItemAfterWeighing(
+        validated.shipmentId,
+        validated.shipmentItemId,
+        validated.newQuantity,
+        performedById,
+      );
+
+      // Check if service returned an error
+      if ('error' in result) {
+        throw new CustomError({
+          message: result.error!,
+          errorCode: 'SHIPMENT_ITEM_REVISION_ERROR',
+          status: 400,
+        });
+      }
+
+      res.status(200).json(
+        success({
+          deliveryOrder: result.updatedDeliveryOrder,
+          summary: result.summary,
+          message: result.summary.shipmentItemChanged.deleted
+            ? 'Shipment item berhasil dihapus (quantity 0)'
+            : 'Shipment item berhasil direvisi',
+        }),
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new CustomError({
+          message: error.message,
+          errorCode: 'SHIPMENT_ITEM_REVISION_ERROR',
           status: 400,
         });
       }
