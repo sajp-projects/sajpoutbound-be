@@ -3057,25 +3057,97 @@ export default {
       });
 
       let weighingUpdated = false;
+
       if (chosenProduct && chosenProduct.weighings.length > 0 && weightPerUnit > 0) {
-        // Find the specific weighing that matches this shipment item's gross weight
-        const matchingWeighing = chosenProduct.weighings.find(
-          (weighing) => weighing.grossWeight === shipmentItem.weightedQuantity,
+        // Check if this is bulk weighing (multiple items share one weighing record)
+        const allItemsForThisProduct = await tx.shipmentItem.findMany({
+          where: {
+            shipmentId: shipmentId,
+            productId: shipmentItem.productId,
+            status: 'COMPLETED',
+          },
+        });
+
+        const isBulkWeighing = allItemsForThisProduct.length > 1;
+
+        console.log('Weighing scenario detection:');
+        console.log('- Items for this product:', allItemsForThisProduct.length);
+        console.log('- Is bulk weighing:', isBulkWeighing);
+        console.log('- shipmentItem.weightedQuantity:', shipmentItem.weightedQuantity);
+        console.log(
+          '- Available weighings:',
+          chosenProduct.weighings.map((w) => ({
+            id: w.id,
+            grossWeight: w.grossWeight,
+            netWeight: w.netWeight,
+          })),
         );
 
+        let matchingWeighing = null;
+
+        if (isBulkWeighing) {
+          // For bulk weighing, use the first (main) weighing record
+          matchingWeighing = chosenProduct.weighings[0];
+          console.log('Using bulk weighing logic - taking first weighing record');
+        } else {
+          // For individual weighing, match by exact gross weight
+          matchingWeighing = chosenProduct.weighings.find(
+            (weighing) => weighing.grossWeight === shipmentItem.weightedQuantity,
+          );
+          console.log('Using individual weighing logic - matching by exact weight');
+        }
+
+        console.log('matchingWeighing found:', matchingWeighing ? 'YES' : 'NO');
+
         if (matchingWeighing) {
-          // Calculate new gross weight based on new quantity (rounded to nearest whole number)
-          const newGrossWeight = Math.round(newQuantity * weightPerUnit);
+          let newGrossWeight, newNetWeight;
 
-          // Calculate ratio for this specific weighing
-          const ratio = oldQuantity > 0 ? newQuantity / oldQuantity : 1;
+          if (isBulkWeighing) {
+            // For bulk weighing, calculate total weight for all items sharing this weighing record
+            const totalNewGrossWeight = allItemsForThisProduct.reduce(
+              (sum, item) => sum + item.requestedQuantity * weightPerUnit,
+              0,
+            );
 
-          // Scale net weight proportionally if it exists (rounded to nearest whole number)
-          const newNetWeight = matchingWeighing.netWeight
-            ? Math.round(matchingWeighing.netWeight * ratio)
-            : newQuantity;
+            // Calculate ratio based on total original vs total new quantity
+            const totalOriginalQuantity = allItemsForThisProduct.reduce(
+              (sum, item) =>
+                sum + (item.id === shipmentItemId ? oldQuantity : item.requestedQuantity),
+              0,
+            );
+            const totalNewQuantity = allItemsForThisProduct.reduce(
+              (sum, item) => sum + item.requestedQuantity,
+              0,
+            );
+            const totalRatio =
+              totalOriginalQuantity > 0 ? totalNewQuantity / totalOriginalQuantity : 1;
 
-          // Update only the specific matching weighing
+            newGrossWeight = Math.round(totalNewGrossWeight);
+            newNetWeight = matchingWeighing.netWeight
+              ? Math.round(matchingWeighing.netWeight * totalRatio)
+              : totalNewQuantity;
+
+            console.log('Bulk weighing update calculations:');
+            console.log('- totalNewGrossWeight:', totalNewGrossWeight);
+            console.log('- totalOriginalQuantity:', totalOriginalQuantity);
+            console.log('- totalNewQuantity:', totalNewQuantity);
+            console.log('- totalRatio:', totalRatio);
+            console.log('- newNetWeight:', newNetWeight);
+          } else {
+            // For individual weighing, calculate weight for this item only
+            newGrossWeight = Math.round(newQuantity * weightPerUnit);
+            const ratio = oldQuantity > 0 ? newQuantity / oldQuantity : 1;
+            newNetWeight = matchingWeighing.netWeight
+              ? Math.round(matchingWeighing.netWeight * ratio)
+              : newQuantity;
+
+            console.log('Individual weighing update calculations:');
+            console.log('- newGrossWeight:', newGrossWeight);
+            console.log('- ratio:', ratio);
+            console.log('- newNetWeight:', newNetWeight);
+          }
+
+          // Update the weighing record
           await tx.shipmentChosenProductWeighing.update({
             where: {
               id: matchingWeighing.id,
@@ -3144,13 +3216,41 @@ export default {
           });
 
           if (updatedWeighing) {
+            // Calculate the correct quantity for PDF based on weighing type
+            let quantityForPdf;
+
+            if (isBulkWeighing) {
+              // For bulk weighing, use total quantity of all items sharing this weighing record
+              quantityForPdf = allItemsForThisProduct.reduce(
+                (sum, item) => sum + item.requestedQuantity,
+                0,
+              );
+              console.log('PDF quantity for bulk weighing:', quantityForPdf);
+            } else {
+              // For individual weighing, use just the revised item's quantity
+              quantityForPdf = newQuantity;
+              console.log('PDF quantity for individual weighing:', quantityForPdf);
+            }
+
+            console.log(`Shipment Item Revision Debug - Product ${shipmentItem.productId}:`);
+            console.log(`- All completed items count: ${allItemsForThisProduct.length}`);
+            console.log(
+              `- Individual quantities:`,
+              allItemsForThisProduct.map((item) => ({
+                id: item.id,
+                deliveryOrderId: item.deliveryOrderId,
+                requestedQuantity: item.requestedQuantity,
+              })),
+            );
+            console.log(`- Calculated PDF quantity: ${quantityForPdf}`);
+
             // Generate new nota timbangan PDF
             const nanoid = customAlphabet('1234567890', 6);
             const ticketNumber = nanoid();
             const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
               updatedWeighing,
               ticketNumber,
-              newQuantity, // Pass the revised quantity to the PDF generator
+              quantityForPdf, // Pass the correct quantity based on weighing type
             );
 
             // Update nota timbangan record

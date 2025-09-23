@@ -3015,7 +3015,6 @@ export default {
       const customers: Customer[] = [];
 
       for (const item of items) {
-        console.log('Processing shipment item:', item);
         // Calculate proportional weight based on requested quantity
         const proportion = item.requestedQuantity / totalRequestedQuantity;
         const itemGrossWeight = data.grossWeight * proportion;
