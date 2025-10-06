@@ -147,13 +147,27 @@ export default {
       addInfoRow('No. Referensi', shipmentChosenProduct.code);
       doc.moveDown(0.5);
 
-      // Use the specific weighing quantity if provided, otherwise calculate from all shipment items
+      // Use the specific weighing quantity if provided, otherwise calculate from items linked to this weighing
+      console.log('DEBUG PDF: weighedQuantity parameter:', weighedQuantity);
+      console.log('DEBUG PDF: weighing.id:', weighing.id);
+
+      const linkedItems = shipment.shipmentItems.filter(
+        (item) =>
+          item.productId === product.id && item.shipmentChosenProductWeighingId === weighing.id,
+      );
+
+      console.log('DEBUG PDF: Linked items count:', linkedItems.length);
+      console.log(
+        'DEBUG PDF: Linked items quantities:',
+        linkedItems.map((i) => i.requestedQuantity),
+      );
+
       const totalQuantity =
         weighedQuantity !== undefined
           ? weighedQuantity
-          : shipment.shipmentItems
-              .filter((item) => item.productId === product.id)
-              .reduce((sum, item) => sum + item.requestedQuantity, 0);
+          : linkedItems.reduce((sum, item) => sum + item.requestedQuantity, 0);
+
+      console.log('DEBUG PDF: Final totalQuantity:', totalQuantity);
 
       addInfoRow('Jumlah', `${formatNumber(totalQuantity)}`);
       doc.moveDown(1);

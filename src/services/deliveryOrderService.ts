@@ -1339,18 +1339,29 @@ export default {
 
         // Calculate weight per unit from original weighing if available
         let weightPerUnit = 0;
+        let currentWeighing = null;
         const relatedShipmentItem = shipmentItems.find(
           (si) => si.productId === existingItem.productId,
         );
 
-        if (relatedShipmentItem?.shipment?.chosenProducts) {
-          const chosenProduct = relatedShipmentItem.shipment.chosenProducts.find(
-            (cp) => cp.productId === existingItem.productId,
-          );
+        // Use direct weighing link if available
+        if (relatedShipmentItem?.shipmentChosenProductWeighingId) {
+          currentWeighing = await tx.shipmentChosenProductWeighing.findUnique({
+            where: {
+              id: relatedShipmentItem.shipmentChosenProductWeighingId,
+            },
+            include: {
+              notaTimbangan: {
+                select: {
+                  id: true,
+                  documentPath: true,
+                },
+              },
+            },
+          });
 
-          if (chosenProduct && chosenProduct.weighings.length > 0) {
-            const totalWeight = chosenProduct.weighings[0].grossWeight || 0;
-            // Use shipment requested quantity, not DO quantity for weight per unit calculation
+          if (currentWeighing) {
+            const totalWeight = currentWeighing.grossWeight || 0;
             const originalShipmentQuantity = relatedShipmentItem.requestedQuantity;
             weightPerUnit =
               originalShipmentQuantity > 0 ? totalWeight / originalShipmentQuantity : 0;
@@ -1385,8 +1396,17 @@ export default {
 
         // Update related shipment items with recalculated quantities if they exist
         if (relatedShipmentItem) {
+          console.log('=== SHIPMENT ITEM UPDATE ===');
+          console.log(
+            'relatedShipmentItem.requestedQuantity:',
+            relatedShipmentItem.requestedQuantity,
+          );
+          console.log('ratio:', ratio);
+
           // Recalculate the shipment item quantities proportionally (preserve decimal precision)
           const newRequestedQuantity = relatedShipmentItem.requestedQuantity * ratio;
+          console.log('newRequestedQuantity:', newRequestedQuantity);
+
           let newWeightedQuantity = relatedShipmentItem.weightedQuantity;
 
           // If item was previously weighed, recalculate based on weight per unit
@@ -1410,45 +1430,40 @@ export default {
             },
           });
 
-          // Update weighing records if they exist
-          if (relatedShipmentItem.shipment?.chosenProducts) {
-            const chosenProduct = relatedShipmentItem.shipment.chosenProducts.find(
-              (cp) => cp.productId === existingItem.productId,
-            );
+          // Update weighing records if they exist (using direct link)
+          if (currentWeighing && weightPerUnit > 0) {
+            // Update the weighing record with recalculated weight based on new requested quantity
+            const newGrossWeight = newRequestedQuantity * weightPerUnit;
 
-            if (chosenProduct && chosenProduct.weighings.length > 0 && weightPerUnit > 0) {
-              // Update the weighing record with recalculated weight based on new requested quantity
-              const newGrossWeight = newRequestedQuantity * weightPerUnit;
+            // Also scale net weight proportionally if it exists (preserve decimal precision)
+            const newNetWeight = currentWeighing.netWeight
+              ? currentWeighing.netWeight * ratio
+              : null;
 
-              // Also scale net weight proportionally if it exists (preserve decimal precision)
-              const currentWeighing = chosenProduct.weighings[0];
-              const newNetWeight = currentWeighing.netWeight
-                ? currentWeighing.netWeight * ratio
-                : null;
-
-              await tx.shipmentChosenProductWeighing.updateMany({
-                where: {
-                  shipmentChosenProductId: chosenProduct.id,
-                },
-                data: {
-                  grossWeight: newGrossWeight,
-                  netWeight: newNetWeight,
-                  updatedAt: jakartaTime,
-                },
-              });
-
-              // Track this weighing for nota timbangan regeneration
-              weighingsToUpdate.push({
-                weighingId: currentWeighing.id,
-                shipmentChosenProductId: chosenProduct.id,
+            // Update ONLY this specific weighing (not updateMany)
+            await tx.shipmentChosenProductWeighing.update({
+              where: {
+                id: currentWeighing.id,
+              },
+              data: {
                 grossWeight: newGrossWeight,
                 netWeight: newNetWeight,
-                tareWeight: currentWeighing.tareWeight || 0,
-                timeIn: currentWeighing.timeIn,
-                timeOut: currentWeighing.timeOut,
-                notaTimbangan: currentWeighing.notaTimbangan,
-              });
-            }
+                updatedAt: jakartaTime,
+              },
+            });
+
+            // Track this weighing for nota timbangan regeneration
+            weighingsToUpdate.push({
+              weighingId: currentWeighing.id,
+              shipmentChosenProductId: currentWeighing.shipmentChosenProductId,
+              grossWeight: newGrossWeight,
+              netWeight: newNetWeight,
+              tareWeight: currentWeighing.tareWeight || 0,
+              timeIn: currentWeighing.timeIn,
+              timeOut: currentWeighing.timeOut,
+              notaTimbangan: currentWeighing.notaTimbangan,
+              revisedQuantity: newRequestedQuantity,
+            });
           }
         }
       }
@@ -1506,12 +1521,21 @@ export default {
         });
 
         if (updatedWeighing) {
-          // Generate new nota timbangan PDF
+          // Generate new nota timbangan PDF with revised quantity
           const nanoid = customAlphabet('1234567890', 6);
           const ticketNumber = nanoid();
+
+          console.log(
+            'DEBUG: Regenerating nota timbangan with revisedQuantity:',
+            weighingUpdate.revisedQuantity,
+          );
+          console.log('DEBUG: Weighing ID:', weighingUpdate.weighingId);
+          console.log('DEBUG: New gross weight:', weighingUpdate.grossWeight);
+
           const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
             updatedWeighing,
             ticketNumber,
+            weighingUpdate.revisedQuantity,
           );
 
           // Update nota timbangan record
@@ -2368,15 +2392,33 @@ export default {
         const newShipmentItems = [];
 
         for (const item of completeNewDO.items) {
+          // Find the original shipment item to copy weighing link
+          const originalShipmentItem = await tx.shipmentItem.findFirst({
+            where: {
+              deliveryOrderId: {
+                in: validatedTransfers
+                  .filter((t) => t.productId === item.productId)
+                  .map((t) => t.deliveryOrder.id),
+              },
+              productId: item.productId,
+            },
+            select: {
+              shipmentChosenProductWeighingId: true,
+              locationType: true,
+            },
+          });
+
           const shipmentItem = await tx.shipmentItem.create({
             data: {
               shipmentId: sourceShipmentId,
               deliveryOrderId: completeNewDO.id,
               productId: item.productId,
               requestedQuantity: item.quantity,
-              locationType: 'GUDANG', // Default location type
+              locationType: originalShipmentItem?.locationType || 'GUDANG',
               status: 'PENDING',
               warehouseId: item.product.warehouseId,
+              shipmentChosenProductWeighingId:
+                originalShipmentItem?.shipmentChosenProductWeighingId,
               createdAt: jakartaTime,
               updatedAt: jakartaTime,
             },
@@ -3085,12 +3127,21 @@ export default {
 
         let matchingWeighing = null;
 
-        if (isBulkWeighing) {
-          // For bulk weighing, use the first (main) weighing record
+        // Use the direct weighing link from the shipment item
+        if (shipmentItem.shipmentChosenProductWeighingId) {
+          matchingWeighing = chosenProduct.weighings.find(
+            (w) => w.id === shipmentItem.shipmentChosenProductWeighingId,
+          );
+          console.log(
+            'Using direct weighing link from shipmentItem:',
+            matchingWeighing ? 'YES' : 'NO',
+          );
+        } else if (isBulkWeighing) {
+          // Fallback: For bulk weighing, use the first (main) weighing record
           matchingWeighing = chosenProduct.weighings[0];
           console.log('Using bulk weighing logic - taking first weighing record');
         } else {
-          // For individual weighing, match by exact gross weight
+          // Fallback: For individual weighing, match by exact gross weight
           matchingWeighing = chosenProduct.weighings.find(
             (weighing) => weighing.grossWeight === shipmentItem.weightedQuantity,
           );
@@ -3098,6 +3149,9 @@ export default {
         }
 
         console.log('matchingWeighing found:', matchingWeighing ? 'YES' : 'NO');
+        if (matchingWeighing) {
+          console.log('matchingWeighing ID:', matchingWeighing.id);
+        }
 
         if (matchingWeighing) {
           let newGrossWeight, newNetWeight;
@@ -3220,12 +3274,19 @@ export default {
             let quantityForPdf;
 
             if (isBulkWeighing) {
-              // For bulk weighing, use total quantity of all items sharing this weighing record
-              quantityForPdf = allItemsForThisProduct.reduce(
+              // For bulk weighing, use total quantity of items linked to THIS specific weighing
+              const itemsForThisWeighing = allItemsForThisProduct.filter(
+                (item) => item.shipmentChosenProductWeighingId === matchingWeighing.id,
+              );
+              quantityForPdf = itemsForThisWeighing.reduce(
                 (sum, item) => sum + item.requestedQuantity,
                 0,
               );
-              console.log('PDF quantity for bulk weighing:', quantityForPdf);
+              console.log(
+                'PDF quantity for bulk weighing (filtered by weighingId):',
+                quantityForPdf,
+              );
+              console.log('Items linked to this weighing:', itemsForThisWeighing.length);
             } else {
               // For individual weighing, use just the revised item's quantity
               quantityForPdf = newQuantity;

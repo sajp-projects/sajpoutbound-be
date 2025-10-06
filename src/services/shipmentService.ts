@@ -1808,6 +1808,20 @@ export default {
         );
       }
 
+      // Create shipment chosen product weighing record first
+      const weighing = await tx.shipmentChosenProductWeighing.create({
+        data: {
+          shipmentChosenProductId: shipmentChosenProduct.id,
+          grossWeight: data.grossWeight,
+          netWeight: data.netWeight || 0,
+          tareWeight: data.tareWeight || 0,
+          timeIn: shipmentChosenProduct.createdAt,
+          createdAt: jakartaTime,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // Then update shipment item with weighing link
       const completedItem = await tx.shipmentItem.update({
         where: {
           id: data.shipmentItemId,
@@ -1816,6 +1830,7 @@ export default {
           weightedQuantity: data.grossWeight,
           status: SHIPMENT_ITEM_STATUS.COMPLETED,
           weighedAt: jakartaTime,
+          shipmentChosenProductWeighingId: weighing.id,
           updatedAt: jakartaTime,
         },
         include: {
@@ -1828,19 +1843,6 @@ export default {
               satuan: true,
             },
           },
-        },
-      });
-
-      // Create shipment chosen product weighing record
-      const weighing = await tx.shipmentChosenProductWeighing.create({
-        data: {
-          shipmentChosenProductId: shipmentChosenProduct.id,
-          grossWeight: data.grossWeight,
-          netWeight: data.netWeight || 0,
-          tareWeight: data.tareWeight || 0,
-          timeIn: shipmentChosenProduct.createdAt,
-          createdAt: jakartaTime,
-          updatedAt: jakartaTime,
         },
       });
 
@@ -2694,6 +2696,7 @@ export default {
         data: {
           status: 'PENDING',
           chosenProduct: false,
+          shipmentChosenProductWeighingId: null,
           updatedAt: new Date(),
         },
       });
@@ -3014,52 +3017,6 @@ export default {
       const deliveryOrders: DeliveryOrder[] = [];
       const customers: Customer[] = [];
 
-      for (const item of items) {
-        // Calculate proportional weight based on requested quantity
-        const proportion = item.requestedQuantity / totalRequestedQuantity;
-        const itemGrossWeight = data.grossWeight * proportion;
-
-        // Update the item
-        const updatedItem = await tx.shipmentItem.update({
-          where: {
-            id: item.id,
-          },
-          data: {
-            weightedQuantity: itemGrossWeight, // Keep this proportional for inventory purposes
-            status: SHIPMENT_ITEM_STATUS.COMPLETED,
-            weighedAt: jakartaTime,
-            updatedAt: jakartaTime,
-          },
-          include: {
-            shipment: true,
-            deliveryOrder: {
-              include: {
-                customer: true,
-              },
-            },
-            product: {
-              select: {
-                id: true,
-                name: true,
-                satuan: true,
-              },
-            },
-            warehouse: true,
-          },
-        });
-
-        updatedItems.push(updatedItem);
-
-        // Add unique delivery orders and customers
-        if (!deliveryOrders.some((do1) => do1.id === item.deliveryOrder.id)) {
-          deliveryOrders.push(item.deliveryOrder);
-        }
-
-        if (!customers.some((c) => c.id === item.deliveryOrder.customer.id)) {
-          customers.push(item.deliveryOrder.customer);
-        }
-      }
-
       // Find or create ShipmentChosenProduct for this product in this shipment
       let shipmentChosenProduct = await tx.shipmentChosenProduct.findFirst({
         where: {
@@ -3084,7 +3041,7 @@ export default {
       // Note: We don't delete existing weighing records to preserve multiple weighing sessions
       // This allows for multiple weighings of the same product (e.g., when DOs are added via editing)
 
-      // Create a new weighing record with the total weight
+      // Create a new weighing record with the total weight FIRST
       const weighing = await tx.shipmentChosenProductWeighing.create({
         data: {
           shipmentChosenProductId: shipmentChosenProduct.id,
@@ -3117,6 +3074,54 @@ export default {
           },
         },
       });
+
+      // Now update all items with the weighing link
+      for (const item of items) {
+        // Calculate proportional weight based on requested quantity
+        const proportion = item.requestedQuantity / totalRequestedQuantity;
+        const itemGrossWeight = data.grossWeight * proportion;
+
+        // Update the item with weighing link
+        const updatedItem = await tx.shipmentItem.update({
+          where: {
+            id: item.id,
+          },
+          data: {
+            weightedQuantity: itemGrossWeight, // Keep this proportional for inventory purposes
+            status: SHIPMENT_ITEM_STATUS.COMPLETED,
+            weighedAt: jakartaTime,
+            shipmentChosenProductWeighingId: weighing.id,
+            updatedAt: jakartaTime,
+          },
+          include: {
+            shipment: true,
+            deliveryOrder: {
+              include: {
+                customer: true,
+              },
+            },
+            product: {
+              select: {
+                id: true,
+                name: true,
+                satuan: true,
+              },
+            },
+            warehouse: true,
+          },
+        });
+
+        updatedItems.push(updatedItem);
+
+        // Add unique delivery orders and customers
+        if (!deliveryOrders.some((do1) => do1.id === item.deliveryOrder.id)) {
+          deliveryOrders.push(item.deliveryOrder);
+        }
+
+        if (!customers.some((c) => c.id === item.deliveryOrder.customer.id)) {
+          customers.push(item.deliveryOrder.customer);
+        }
+      }
 
       // Set timeOut to weighing.createdAt
       await tx.shipmentChosenProductWeighing.update({
@@ -3783,35 +3788,6 @@ export default {
         });
       }
 
-      // Update the shipment item with weight data
-      const updatedItem = await tx.shipmentItem.update({
-        where: {
-          id: shipmentItemId,
-        },
-        data: {
-          weightedQuantity: weights.grossWeight,
-          status: SHIPMENT_ITEM_STATUS.COMPLETED,
-          weighedAt: jakartaTime,
-          updatedAt: jakartaTime,
-        },
-        include: {
-          shipment: true,
-          deliveryOrder: {
-            include: {
-              customer: true,
-            },
-          },
-          product: {
-            select: {
-              id: true,
-              name: true,
-              satuan: true,
-            },
-          },
-          warehouse: true,
-        },
-      });
-
       // Find or create ShipmentChosenProduct for this product in this shipment
       let shipmentChosenProduct = await tx.shipmentChosenProduct.findFirst({
         where: {
@@ -3833,7 +3809,7 @@ export default {
         });
       }
 
-      // Create a new weighing record
+      // Create a new weighing record FIRST
       const weighing = await tx.shipmentChosenProductWeighing.create({
         data: {
           shipmentChosenProductId: shipmentChosenProduct.id,
@@ -3865,6 +3841,36 @@ export default {
               },
             },
           },
+        },
+      });
+
+      // Then update the shipment item with weight data and weighing link
+      const updatedItem = await tx.shipmentItem.update({
+        where: {
+          id: shipmentItemId,
+        },
+        data: {
+          weightedQuantity: weights.grossWeight,
+          status: SHIPMENT_ITEM_STATUS.COMPLETED,
+          weighedAt: jakartaTime,
+          shipmentChosenProductWeighingId: weighing.id,
+          updatedAt: jakartaTime,
+        },
+        include: {
+          shipment: true,
+          deliveryOrder: {
+            include: {
+              customer: true,
+            },
+          },
+          product: {
+            select: {
+              id: true,
+              name: true,
+              satuan: true,
+            },
+          },
+          warehouse: true,
         },
       });
 

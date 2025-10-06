@@ -309,28 +309,31 @@ model Shipment {
 }
 
 model ShipmentItem {
-  id                String               @id @default(uuid())
-  shipmentId        String
-  deliveryOrderId   String
-  productId         String
-  requestedQuantity Float                @default(0)
-  weightedQuantity  Float?
-  status            SHIPMENT_ITEM_STATUS @default(PENDING)
-  warehouseId       String
-  weighedAt         DateTime?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  chosenProduct     Boolean              @default(false)
-  locationType      String?
-  deliveryOrder     DeliveryOrder        @relation(fields: [deliveryOrderId], references: [id])
-  product           Product              @relation(fields: [productId], references: [id])
-  shipment          Shipment             @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-  warehouse         Warehouse            @relation(fields: [warehouseId], references: [id])
+  id                              String                         @id @default(uuid())
+  shipmentId                      String
+  deliveryOrderId                 String
+  productId                       String
+  requestedQuantity               Float                          @default(0)
+  weightedQuantity                Float?
+  status                          SHIPMENT_ITEM_STATUS           @default(PENDING)
+  warehouseId                     String
+  weighedAt                       DateTime?
+  createdAt                       DateTime                       @default(now())
+  updatedAt                       DateTime                       @updatedAt
+  chosenProduct                   Boolean                        @default(false)
+  locationType                    String?
+  shipmentChosenProductWeighingId String?
+  deliveryOrder                   DeliveryOrder                  @relation(fields: [deliveryOrderId], references: [id])
+  product                         Product                        @relation(fields: [productId], references: [id])
+  shipment                        Shipment                       @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  warehouse                       Warehouse                      @relation(fields: [warehouseId], references: [id])
+  weighing                        ShipmentChosenProductWeighing? @relation(fields: [shipmentChosenProductWeighingId], references: [id])
 
   @@index([shipmentId], map: "ShipmentItem_shipmentId_fkey")
   @@index([deliveryOrderId], map: "ShipmentItem_deliveryOrderId_fkey")
   @@index([productId], map: "ShipmentItem_productId_fkey")
   @@index([warehouseId], map: "ShipmentItem_warehouseId_fkey")
+  @@index([shipmentChosenProductWeighingId], map: "ShipmentItem_shipmentChosenProductWeighingId_fkey")
 }
 
 model SPMB {
@@ -414,6 +417,7 @@ model ShipmentChosenProductWeighing {
   updatedAt               DateTime              @updatedAt
   shipmentChosenProduct   ShipmentChosenProduct @relation(fields: [shipmentChosenProductId], references: [id])
   notaTimbangan           NotaTimbangan?
+  shipmentItems           ShipmentItem[]
 
   @@index([shipmentChosenProductId], map: "ShipmentChosenProductWeighing_shipmentChosenProductId_fkey")
 }
