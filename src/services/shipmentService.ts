@@ -2397,11 +2397,17 @@ export default {
           },
         });
       } else {
-        // Update the weighing method if it's different
+        // Enforce that the weighing method must match the first selection
+        if (chosenProduct.weighingMethod !== data.weighingMethod) {
+          throw new Error(
+            `Produk ini sudah dipilih dengan metode ${chosenProduct.weighingMethod}. ` +
+              `Anda harus menggunakan metode yang sama untuk semua item dari produk ini.`,
+          );
+        }
+        // Just update the timestamp, weighing method stays the same
         chosenProduct = await tx.shipmentChosenProduct.update({
           where: { id: chosenProduct.id },
           data: {
-            weighingMethod: data.weighingMethod,
             updatedAt: jakartaTime,
           },
         });
@@ -2955,12 +2961,21 @@ export default {
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
+      // Log selective DO weighing if provided
+      if (data.deliveryOrderIds && data.deliveryOrderIds.length > 0) {
+        console.log('🎯 Selective bulk weighing for DOs:', data.deliveryOrderIds);
+      }
+
       // Find all chosen items for this product in the shipment
+      // If deliveryOrderIds is provided, filter by those specific DOs
       const items = await tx.shipmentItem.findMany({
         where: {
           shipmentId: data.shipmentId,
           productId: data.productId,
           status: SHIPMENT_ITEM_STATUS.CHOSEN,
+          ...(data.deliveryOrderIds && data.deliveryOrderIds.length > 0
+            ? { deliveryOrderId: { in: data.deliveryOrderIds } }
+            : {}),
         },
         include: {
           shipment: true,

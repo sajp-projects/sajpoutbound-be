@@ -66,6 +66,7 @@ export type ShipmentWeighInput = {
 export type ShipmentBulkWeighInput = {
   shipmentId: string;
   productId: string;
+  deliveryOrderIds?: string[]; // Optional: specific DOs to weigh together
   grossWeight: number;
   netWeight?: number;
   tareWeight?: number;
@@ -213,6 +214,10 @@ export const shipmentBulkWeighSchema = Joi.object<ShipmentBulkWeighInput>({
     'string.empty': 'Product ID is required',
     'string.guid': 'Product ID must be a valid UUID',
     'any.required': 'Product ID is required',
+  }),
+  deliveryOrderIds: Joi.array().items(Joi.string().uuid()).optional().messages({
+    'array.base': 'Delivery Order IDs must be an array',
+    'string.guid': 'Each Delivery Order ID must be a valid UUID',
   }),
   grossWeight: Joi.number().required().min(0).messages({
     'number.base': 'Gross weight must be a number',
