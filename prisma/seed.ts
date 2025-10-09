@@ -74,6 +74,7 @@ async function main() {
       PERMISSION_ACTION.UPDATE_KENEK,
       PERMISSION_ACTION.TRANSFER_ITEMS,
       PERMISSION_ACTION.REDUCE_ITEMS,
+      PERMISSION_ACTION.CANCEL_ITEMS,
     ]);
 
     // Resources that support soft deletion (unarchiving)
@@ -104,6 +105,7 @@ async function main() {
         'Mengizinkan untuk transfer item antar customer pada pengiriman',
       ],
       [PERMISSION_ACTION.REDUCE_ITEMS, 'Mengizinkan untuk mengurangi jumlah item pada pengiriman'],
+      [PERMISSION_ACTION.CANCEL_ITEMS, 'Mengizinkan untuk membatalkan item pada pengiriman'],
     ]);
 
     // Indonesian translations for actions
@@ -122,6 +124,7 @@ async function main() {
       [PERMISSION_ACTION.READ_ARCHIVED, 'melihat arsip'],
       [PERMISSION_ACTION.TRANSFER_ITEMS, 'transfer item'],
       [PERMISSION_ACTION.REDUCE_ITEMS, 'mengurangi item'],
+      [PERMISSION_ACTION.CANCEL_ITEMS, 'membatalkan item'],
     ]);
 
     // Indonesian translations for resources

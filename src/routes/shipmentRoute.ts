@@ -156,13 +156,13 @@ router.patch(
 
 router.delete(
   '/items/:shipmentItemId/cancel-reflected',
-  checkPermission('shipment', PERMISSION_ACTION.DELETE),
+  checkPermission('shipment', PERMISSION_ACTION.CANCEL_ITEMS),
   shipmentController.cancelItemReflectedToDO,
 );
 
 router.delete(
   '/items/:shipmentItemId/cancel-shipment-only',
-  checkPermission('shipment', PERMISSION_ACTION.DELETE),
+  checkPermission('shipment', PERMISSION_ACTION.CANCEL_ITEMS),
   shipmentController.cancelItemShipmentOnly,
 );
 
