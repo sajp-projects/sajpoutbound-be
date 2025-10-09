@@ -2181,7 +2181,10 @@ export default {
 
       // If items found, update each one to chosen status
       if (shipmentItems.length > 0) {
-        // Update each shipment item to mark it as chosen
+        // Generate a unique loading group ID for all items chosen together
+        const loadingGroupId = `${data.shipmentId}-${data.productId}-${Date.now()}`;
+
+        // Update each shipment item to mark it as chosen with the same loading group ID
         for (const item of shipmentItems) {
           await tx.shipmentItem.update({
             where: {
@@ -2190,6 +2193,7 @@ export default {
             data: {
               status: SHIPMENT_ITEM_STATUS.CHOSEN, // Update status to CHOSEN
               chosenProduct: true,
+              loadingGroupId,
               updatedAt: jakartaTime,
             },
           });
@@ -2362,7 +2366,10 @@ export default {
         throw new Error('Semua item untuk DO yang dipilih sudah dimuat sebelumnya');
       }
 
-      // Update each selected shipment item to mark it as chosen
+      // Generate a unique loading group ID for this batch of DOs chosen together
+      const loadingGroupId = `${data.shipmentId}-${data.productId}-${Date.now()}`;
+
+      // Update each selected shipment item to mark it as chosen with the same loading group ID
       for (const item of unchosenItems) {
         await tx.shipmentItem.update({
           where: {
@@ -2371,6 +2378,7 @@ export default {
           data: {
             status: SHIPMENT_ITEM_STATUS.CHOSEN,
             chosenProduct: true,
+            loadingGroupId,
             updatedAt: jakartaTime,
           },
         });
@@ -2997,6 +3005,37 @@ export default {
 
       if (items.length === 0) {
         return null;
+      }
+
+      // Validation: All items must belong to the same loading group
+      const loadingGroups = new Set(items.map((item) => item.loadingGroupId).filter(Boolean));
+      if (loadingGroups.size > 1) {
+        throw new Error(
+          'Tidak dapat menimbang item dari grup pemuatan yang berbeda. ' +
+            'Item yang dipilih harus dari DO yang dimuat bersamaan.',
+        );
+      }
+
+      // If no deliveryOrderIds provided but items have loadingGroupId,
+      // ensure all items with the same loadingGroupId are included
+      const firstLoadingGroupId = items[0].loadingGroupId;
+      if (firstLoadingGroupId && (!data.deliveryOrderIds || data.deliveryOrderIds.length === 0)) {
+        // Check if there are more items with the same loadingGroupId that weren't included
+        const allGroupItems = await tx.shipmentItem.findMany({
+          where: {
+            shipmentId: data.shipmentId,
+            productId: data.productId,
+            loadingGroupId: firstLoadingGroupId,
+            status: SHIPMENT_ITEM_STATUS.CHOSEN,
+          },
+        });
+
+        if (allGroupItems.length > items.length) {
+          throw new Error(
+            'Semua item dalam grup pemuatan yang sama harus ditimbang bersamaan. ' +
+              'Harap pilih semua DO yang dimuat bersamaan.',
+          );
+        }
       }
 
       const totalRequestedQuantity = items.reduce((sum, item) => sum + item.requestedQuantity, 0);

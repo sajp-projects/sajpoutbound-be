@@ -322,6 +322,7 @@ model ShipmentItem {
   updatedAt                       DateTime                       @updatedAt
   chosenProduct                   Boolean                        @default(false)
   locationType                    String?
+  loadingGroupId                  String?
   shipmentChosenProductWeighingId String?
   deliveryOrder                   DeliveryOrder                  @relation(fields: [deliveryOrderId], references: [id])
   product                         Product                        @relation(fields: [productId], references: [id])
@@ -334,6 +335,7 @@ model ShipmentItem {
   @@index([productId], map: "ShipmentItem_productId_fkey")
   @@index([warehouseId], map: "ShipmentItem_warehouseId_fkey")
   @@index([shipmentChosenProductWeighingId], map: "ShipmentItem_shipmentChosenProductWeighingId_fkey")
+  @@index([loadingGroupId], map: "ShipmentItem_loadingGroupId_idx")
 }
 
 model SPMB {
