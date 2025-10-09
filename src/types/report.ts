@@ -147,6 +147,7 @@ export interface OperationalReportGroup {
   PENDING: ReportShipment[];
   PROSES: ReportShipment[];
   SELESAI: ReportShipment[];
+  CANCEL: ReportShipment[];
 }
 
 export interface OperationalReportGroupedData {
@@ -155,9 +156,9 @@ export interface OperationalReportGroupedData {
 }
 
 export interface OperationalReportSummary {
-  ANTAR: { PENDING: number; PROSES: number; SELESAI: number; total: number };
-  JEMPUT: { PENDING: number; PROSES: number; SELESAI: number; total: number };
-  overall: { PENDING: number; PROSES: number; SELESAI: number; total: number };
+  ANTAR: { PENDING: number; PROSES: number; SELESAI: number; CANCEL: number; total: number };
+  JEMPUT: { PENDING: number; PROSES: number; SELESAI: number; CANCEL: number; total: number };
+  overall: { PENDING: number; PROSES: number; SELESAI: number; CANCEL: number; total: number };
 }
 
 export interface OperationalReportKPI {
@@ -249,13 +250,13 @@ export interface MonthlyOutputReportResult extends DailyOutputReportResult {
 export interface ShipmentAssignment {
   armada: ReportArmada;
   assignments: OperationalReportGroup;
-  summary: { PENDING: number; PROSES: number; SELESAI: number; total: number };
+  summary: { PENDING: number; PROSES: number; SELESAI: number; CANCEL: number; total: number };
 }
 
 export interface ShipmentAssignmentReportSummary {
   totalArmada: number;
   totalAssignments: number;
-  byStatus: { PENDING: number; PROSES: number; SELESAI: number };
+  byStatus: { PENDING: number; PROSES: number; SELESAI: number; CANCEL: number };
 }
 
 export interface ShipmentAssignmentKPI {

@@ -66,7 +66,15 @@ export type ShipmentWeighInput = {
 export type ShipmentBulkWeighInput = {
   shipmentId: string;
   productId: string;
-  deliveryOrderIds?: string[]; // Optional: specific DOs to weigh together
+  loadingGroupId: string; // Required: specific loading group to weigh
+  grossWeight: number;
+  netWeight?: number;
+  tareWeight?: number;
+};
+
+export type VendorBulkWeighInput = {
+  shipmentId: string;
+  loadingGroupId: string; // Required: specific loading group to weigh (already contains productId)
   grossWeight: number;
   netWeight?: number;
   tareWeight?: number;
@@ -215,9 +223,34 @@ export const shipmentBulkWeighSchema = Joi.object<ShipmentBulkWeighInput>({
     'string.guid': 'Product ID must be a valid UUID',
     'any.required': 'Product ID is required',
   }),
-  deliveryOrderIds: Joi.array().items(Joi.string().uuid()).optional().messages({
-    'array.base': 'Delivery Order IDs must be an array',
-    'string.guid': 'Each Delivery Order ID must be a valid UUID',
+  loadingGroupId: Joi.string().required().messages({
+    'string.empty': 'Loading Group ID is required',
+    'any.required': 'Loading Group ID is required',
+  }),
+  grossWeight: Joi.number().required().min(0).messages({
+    'number.base': 'Gross weight must be a number',
+    'number.min': 'Gross weight must be at least 0',
+    'any.required': 'Gross weight is required',
+  }),
+  netWeight: Joi.number().optional().min(0).messages({
+    'number.base': 'Net weight must be a number',
+    'number.min': 'Net weight must be at least 0',
+  }),
+  tareWeight: Joi.number().optional().min(0).messages({
+    'number.base': 'Tare weight must be a number',
+    'number.min': 'Tare weight must be at least 0',
+  }),
+});
+
+export const vendorBulkWeighSchema = Joi.object<VendorBulkWeighInput>({
+  shipmentId: Joi.string().required().uuid().messages({
+    'string.empty': 'Shipment ID is required',
+    'string.guid': 'Shipment ID must be a valid UUID',
+    'any.required': 'Shipment ID is required',
+  }),
+  loadingGroupId: Joi.string().required().messages({
+    'string.empty': 'Loading Group ID is required',
+    'any.required': 'Loading Group ID is required',
   }),
   grossWeight: Joi.number().required().min(0).messages({
     'number.base': 'Gross weight must be a number',

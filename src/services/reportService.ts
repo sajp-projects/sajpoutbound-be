@@ -128,11 +128,13 @@ export default {
         PENDING: [],
         PROSES: [],
         SELESAI: [],
+        CANCEL: [],
       },
       JEMPUT: {
         PENDING: [],
         PROSES: [],
         SELESAI: [],
+        CANCEL: [],
       },
     };
     shipments.forEach((shipment) => {
@@ -194,24 +196,29 @@ export default {
         PENDING: groupedData.ANTAR.PENDING.length,
         PROSES: groupedData.ANTAR.PROSES.length,
         SELESAI: groupedData.ANTAR.SELESAI.length,
+        CANCEL: groupedData.ANTAR.CANCEL.length,
         total:
           groupedData.ANTAR.PENDING.length +
           groupedData.ANTAR.PROSES.length +
-          groupedData.ANTAR.SELESAI.length,
+          groupedData.ANTAR.SELESAI.length +
+          groupedData.ANTAR.CANCEL.length,
       },
       JEMPUT: {
         PENDING: groupedData.JEMPUT.PENDING.length,
         PROSES: groupedData.JEMPUT.PROSES.length,
         SELESAI: groupedData.JEMPUT.SELESAI.length,
+        CANCEL: groupedData.JEMPUT.CANCEL.length,
         total:
           groupedData.JEMPUT.PENDING.length +
           groupedData.JEMPUT.PROSES.length +
-          groupedData.JEMPUT.SELESAI.length,
+          groupedData.JEMPUT.SELESAI.length +
+          groupedData.JEMPUT.CANCEL.length,
       },
       overall: {
         PENDING: groupedData.ANTAR.PENDING.length + groupedData.JEMPUT.PENDING.length,
         PROSES: groupedData.ANTAR.PROSES.length + groupedData.JEMPUT.PROSES.length,
         SELESAI: groupedData.ANTAR.SELESAI.length + groupedData.JEMPUT.SELESAI.length,
+        CANCEL: groupedData.ANTAR.CANCEL.length + groupedData.JEMPUT.CANCEL.length,
         total: shipments.length,
       },
     };
@@ -395,9 +402,11 @@ export default {
       ...groupedData.ANTAR.PENDING,
       ...groupedData.ANTAR.PROSES,
       ...groupedData.ANTAR.SELESAI,
+      ...groupedData.ANTAR.CANCEL,
       ...groupedData.JEMPUT.PENDING,
       ...groupedData.JEMPUT.PROSES,
       ...groupedData.JEMPUT.SELESAI,
+      ...groupedData.JEMPUT.CANCEL,
     ];
 
     const startIndex = (page - 1) * limit;
@@ -410,11 +419,13 @@ export default {
         PENDING: [],
         PROSES: [],
         SELESAI: [],
+        CANCEL: [],
       },
       JEMPUT: {
         PENDING: [],
         PROSES: [],
         SELESAI: [],
+        CANCEL: [],
       },
     };
 
@@ -1603,11 +1614,13 @@ export default {
             PENDING: [],
             PROSES: [],
             SELESAI: [],
+            CANCEL: [],
           },
           summary: {
             PENDING: 0,
             PROSES: 0,
             SELESAI: 0,
+            CANCEL: 0,
             total: 0,
           },
         });
@@ -1677,12 +1690,14 @@ export default {
         PENDING: 0,
         PROSES: 0,
         SELESAI: 0,
+        CANCEL: 0,
       },
     };
     data.forEach((armadaData: ShipmentAssignment) => {
       overallSummary.byStatus.PENDING += armadaData.summary.PENDING;
       overallSummary.byStatus.PROSES += armadaData.summary.PROSES;
       overallSummary.byStatus.SELESAI += armadaData.summary.SELESAI;
+      overallSummary.byStatus.CANCEL += armadaData.summary.CANCEL;
     });
     const allData = data; // replace with actual data array
     const startIndex = (page - 1) * limit;
@@ -1905,18 +1920,21 @@ export default {
           PENDING: 0,
           PROSES: 0,
           SELESAI: 0,
+          CANCEL: 0,
           total: 0,
         },
         JEMPUT: {
           PENDING: 0,
           PROSES: 0,
           SELESAI: 0,
+          CANCEL: 0,
           total: 0,
         },
         overall: {
           PENDING: 0,
           PROSES: 0,
           SELESAI: 0,
+          CANCEL: 0,
           total: 0,
         },
       };
@@ -1942,7 +1960,7 @@ export default {
       // Count DOs by armada usage and status
       doStatusMap.forEach((doInfo) => {
         const type = doInfo.hasArmada ? 'ANTAR' : 'JEMPUT';
-        const status = doInfo.status as 'PENDING' | 'PROSES' | 'SELESAI';
+        const status = doInfo.status as 'PENDING' | 'PROSES' | 'SELESAI' | 'CANCEL';
 
         doSummary[type][status]++;
         doSummary[type].total++;

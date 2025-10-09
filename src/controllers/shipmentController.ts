@@ -1805,4 +1805,90 @@ export default {
       next(error);
     }
   },
+
+  /**
+   * Cancel shipment item - Reflected to DO
+   */
+  async cancelItemReflectedToDO(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { shipmentItemId } = req.params;
+
+      if (!shipmentItemId) {
+        throw new CustomError({
+          message: 'Shipment Item ID tidak valid',
+          status: 400,
+          errorCode: 'SHIPMENT_ITEM_ID_REQUIRED',
+        });
+      }
+
+      // Get shipment item for validation
+      const shipmentItem = await shipmentService.getShipmentItemWithShipment(shipmentItemId);
+
+      if (!shipmentItem) {
+        throw new CustomError({
+          message: 'Shipment item tidak ditemukan',
+          status: 404,
+          errorCode: 'SHIPMENT_ITEM_NOT_FOUND',
+        });
+      }
+
+      // Validate shipment item status - cannot cancel PENDING items (use edit mode instead)
+      if (shipmentItem.status === STATUS.PENDING) {
+        throw new CustomError({
+          message: 'Tidak dapat membatalkan item dengan status PENDING. Silakan gunakan mode edit.',
+          status: 400,
+          errorCode: 'SHIPMENT_ITEM_STATUS_PENDING',
+        });
+      }
+
+      const result = await shipmentService.cancelItemReflectedToDO(shipmentItemId);
+
+      res.status(200).json(success(result));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Cancel shipment item - Shipment Only
+   */
+  async cancelItemShipmentOnly(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { shipmentItemId } = req.params;
+
+      if (!shipmentItemId) {
+        throw new CustomError({
+          message: 'Shipment Item ID tidak valid',
+          status: 400,
+          errorCode: 'SHIPMENT_ITEM_ID_REQUIRED',
+        });
+      }
+
+      // Get shipment item for validation
+      const shipmentItem = await shipmentService.getShipmentItemWithShipment(shipmentItemId);
+
+      if (!shipmentItem) {
+        throw new CustomError({
+          message: 'Shipment item tidak ditemukan',
+          status: 404,
+          errorCode: 'SHIPMENT_ITEM_NOT_FOUND',
+        });
+      }
+
+      // Validate shipment item status - cannot cancel PENDING items (use edit mode instead)
+      if (shipmentItem.status === STATUS.PENDING) {
+        throw new CustomError({
+          message: 'Tidak dapat membatalkan item dengan status PENDING. Silakan gunakan mode edit.',
+          status: 400,
+          errorCode: 'SHIPMENT_ITEM_STATUS_PENDING',
+        });
+      }
+
+      const result = await shipmentService.cancelItemShipmentOnly(shipmentItemId);
+
+      res.status(200).json(success(result));
+    } catch (error) {
+      next(error);
+    }
+  },
 };

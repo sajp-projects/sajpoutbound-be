@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, SHIPMENT_ITEM_STATUS } from '@prisma/client';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -175,9 +175,15 @@ export default {
           .moveTo(tableLeft + qtyColumnWidth, y)
           .lineTo(tableLeft + qtyColumnWidth, y + rowHeight)
           .stroke();
-        doc.text(item.product.name, tableLeft + qtyColumnWidth + 5, y + 5, {
+
+        // Apply strikethrough if item status is CANCELLED
+        const isCancelled = item.status === SHIPMENT_ITEM_STATUS.CANCELLED;
+        const productName = item.product.name;
+
+        doc.text(productName, tableLeft + qtyColumnWidth + 5, y + 5, {
           width: tableWidth - qtyColumnWidth - 10,
           align: 'left',
+          strike: isCancelled, // Add strikethrough for cancelled items
         });
         y += rowHeight;
       });

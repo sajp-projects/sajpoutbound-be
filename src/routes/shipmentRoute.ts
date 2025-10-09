@@ -154,4 +154,16 @@ router.patch(
   shipmentController.updateTally,
 );
 
+router.delete(
+  '/items/:shipmentItemId/cancel-reflected',
+  checkPermission('shipment', PERMISSION_ACTION.DELETE),
+  shipmentController.cancelItemReflectedToDO,
+);
+
+router.delete(
+  '/items/:shipmentItemId/cancel-shipment-only',
+  checkPermission('shipment', PERMISSION_ACTION.DELETE),
+  shipmentController.cancelItemShipmentOnly,
+);
+
 export default router;

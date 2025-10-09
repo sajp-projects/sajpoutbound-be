@@ -2551,6 +2551,9 @@ export default {
               shipmentId,
               productId: productId,
               chosenProduct: true,
+              status: {
+                not: SHIPMENT_ITEM_STATUS.CANCELLED,
+              },
             },
             include: {
               deliveryOrder: {
@@ -2969,21 +2972,15 @@ export default {
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-      // Log selective DO weighing if provided
-      if (data.deliveryOrderIds && data.deliveryOrderIds.length > 0) {
-        console.log('🎯 Selective bulk weighing for DOs:', data.deliveryOrderIds);
-      }
+      console.log('🎯 Weighing loading group:', data.loadingGroupId);
 
-      // Find all chosen items for this product in the shipment
-      // If deliveryOrderIds is provided, filter by those specific DOs
+      // Find all chosen items for this product in the specific loading group
       const items = await tx.shipmentItem.findMany({
         where: {
           shipmentId: data.shipmentId,
           productId: data.productId,
+          loadingGroupId: data.loadingGroupId,
           status: SHIPMENT_ITEM_STATUS.CHOSEN,
-          ...(data.deliveryOrderIds && data.deliveryOrderIds.length > 0
-            ? { deliveryOrderId: { in: data.deliveryOrderIds } }
-            : {}),
         },
         include: {
           shipment: true,
@@ -3004,38 +3001,10 @@ export default {
       });
 
       if (items.length === 0) {
-        return null;
-      }
-
-      // Validation: All items must belong to the same loading group
-      const loadingGroups = new Set(items.map((item) => item.loadingGroupId).filter(Boolean));
-      if (loadingGroups.size > 1) {
         throw new Error(
-          'Tidak dapat menimbang item dari grup pemuatan yang berbeda. ' +
-            'Item yang dipilih harus dari DO yang dimuat bersamaan.',
+          `Tidak ada item yang ditemukan untuk loading group ${data.loadingGroupId}. ` +
+            'Pastikan item sudah dipilih (CHOSEN) dan belum selesai ditimbang.',
         );
-      }
-
-      // If no deliveryOrderIds provided but items have loadingGroupId,
-      // ensure all items with the same loadingGroupId are included
-      const firstLoadingGroupId = items[0].loadingGroupId;
-      if (firstLoadingGroupId && (!data.deliveryOrderIds || data.deliveryOrderIds.length === 0)) {
-        // Check if there are more items with the same loadingGroupId that weren't included
-        const allGroupItems = await tx.shipmentItem.findMany({
-          where: {
-            shipmentId: data.shipmentId,
-            productId: data.productId,
-            loadingGroupId: firstLoadingGroupId,
-            status: SHIPMENT_ITEM_STATUS.CHOSEN,
-          },
-        });
-
-        if (allGroupItems.length > items.length) {
-          throw new Error(
-            'Semua item dalam grup pemuatan yang sama harus ditimbang bersamaan. ' +
-              'Harap pilih semua DO yang dimuat bersamaan.',
-          );
-        }
       }
 
       const totalRequestedQuantity = items.reduce((sum, item) => sum + item.requestedQuantity, 0);
@@ -3490,6 +3459,7 @@ export default {
 
   /**
    * Get vendor-marked available items for weighing by shipment ID
+   * Groups items by product AND loading group to match manual weighing behavior
    */
   async getVendorAvailableItemsForWeighingByShipmentId(shipmentId: string) {
     const items = await prisma.shipmentItem.findMany({
@@ -3508,6 +3478,7 @@ export default {
         deliveryOrder: {
           select: {
             id: true,
+            doNumber: true,
             customer: {
               select: {
                 id: true,
@@ -3546,54 +3517,82 @@ export default {
     // Filter items to only include those that are marked for vendor weighing
     const vendorItems = items.filter((item) => vendorProductIds.has(item.productId));
 
-    // Create a map to group items by product ID
-    const productMap = new Map();
+    // Group items by both product ID AND loading group ID (similar to frontend logic)
+    const productLoadingGroupMap = new Map();
 
-    // Process each vendor item and combine those with the same product ID
     for (const item of vendorItems) {
       const productId = item.product.id;
+      const loadingGroupId = item.loadingGroupId || 'no-group';
+      const groupKey = `${productId}-${loadingGroupId}`;
 
-      if (!productMap.has(productId)) {
-        productMap.set(productId, {
+      if (!productLoadingGroupMap.has(groupKey)) {
+        productLoadingGroupMap.set(groupKey, {
           shipmentId: item.shipmentId,
+          productId: productId,
+          loadingGroupId: item.loadingGroupId,
           product: {
             ...item.product,
             code: codeMap.get(productId) || null,
           },
           warehouse: item.warehouse,
-          // Create arrays to track all related delivery orders and their info
-          deliveryOrders: [item.deliveryOrder],
+          deliveryOrders: [
+            {
+              id: item.deliveryOrder.id,
+              doNumber: item.deliveryOrder.doNumber,
+              customer: item.deliveryOrder.customer,
+            },
+          ],
+          deliveryOrderIds: [item.deliveryOrderId],
+          doNumbers: [item.deliveryOrder.doNumber],
+          customers: [item.deliveryOrder.customer.name],
           requestedQuantity: item.requestedQuantity,
-          // Track all shipment item IDs for reference if needed
           shipmentItemIds: [item.id],
         });
       } else {
-        // Product already exists in our map, update the entry
-        const existingItem = productMap.get(productId);
+        const existingGroup = productLoadingGroupMap.get(groupKey);
 
         // Add to the total quantity
-        existingItem.requestedQuantity += item.requestedQuantity;
+        existingGroup.requestedQuantity += item.requestedQuantity;
 
         // Add this item's ID to the list
-        existingItem.shipmentItemIds.push(item.id);
+        existingGroup.shipmentItemIds.push(item.id);
 
-        // Add this delivery order if it's not already included
-        const doExists = existingItem.deliveryOrders.some(
-          (do1: { id: string; customer?: { id: string; name: string } }) =>
-            do1.id === item.deliveryOrder.id,
-        );
+        // Add delivery order if not already included
+        if (!existingGroup.deliveryOrderIds.includes(item.deliveryOrderId)) {
+          existingGroup.deliveryOrders.push({
+            id: item.deliveryOrder.id,
+            doNumber: item.deliveryOrder.doNumber,
+            customer: item.deliveryOrder.customer,
+          });
+          existingGroup.deliveryOrderIds.push(item.deliveryOrderId);
+          existingGroup.doNumbers.push(item.deliveryOrder.doNumber);
+        }
 
-        if (!doExists) {
-          existingItem.deliveryOrders.push(item.deliveryOrder);
+        // Add customer name if not already included
+        if (!existingGroup.customers.includes(item.deliveryOrder.customer.name)) {
+          existingGroup.customers.push(item.deliveryOrder.customer.name);
         }
       }
     }
 
-    // Convert the map back to an array
-    const combinedItems = Array.from(productMap.values());
+    // Convert the map to an array and format as loading groups
+    const loadingGroups = Array.from(productLoadingGroupMap.values()).map((group) => ({
+      id: group.loadingGroupId || 'no-group',
+      productId: group.productId,
+      productName: group.product.name,
+      productUnit: group.product.satuan,
+      productCode: group.product.code,
+      warehouse: group.warehouse,
+      doNumbers: group.doNumbers,
+      deliveryOrderIds: group.deliveryOrderIds,
+      customers: group.customers,
+      requestedQuantity: group.requestedQuantity,
+      shipmentItemIds: group.shipmentItemIds,
+      itemCount: group.shipmentItemIds.length,
+    }));
 
     return {
-      availableItems: combinedItems,
+      loadingGroups,
     };
   },
 
@@ -3970,6 +3969,349 @@ export default {
           tare: weights.tareWeight || 0,
         },
         weighedAt: jakartaTime,
+      };
+    });
+  },
+
+  /**
+   * Get shipment item with shipment for validation
+   */
+  async getShipmentItemWithShipment(shipmentItemId: string) {
+    return prisma.shipmentItem.findUnique({
+      where: { id: shipmentItemId },
+      include: {
+        shipment: true,
+      },
+    });
+  },
+
+  /**
+   * Cancel shipment item - Mode 1: Reflected to DO
+   * This will cancel the item in shipment and reflect the cancellation to the delivery order
+   * Note: Validation (existence, status) is done in controller
+   */
+  async cancelItemReflectedToDO(shipmentItemId: string) {
+    return prisma.$transaction(async (tx) => {
+      // Create Jakarta timezone date
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Get shipment item with all related data
+      const shipmentItem = await tx.shipmentItem.findUnique({
+        where: { id: shipmentItemId },
+        include: {
+          shipment: true,
+          deliveryOrder: true,
+          product: true,
+        },
+      });
+
+      const { shipmentId, deliveryOrderId, productId, requestedQuantity, shipment, warehouseId } =
+        shipmentItem!;
+
+      // 1. Nota Timbangan - DO NOTHING (keep as historical record)
+
+      // 2. Update DeliveryOrderItem quantities
+      const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+        where: {
+          deliveryOrderId,
+          productId,
+        },
+      });
+
+      if (deliveryOrderItem) {
+        // Determine which quantity to reduce based on shipment status
+        const isShipmentCompleted = shipment.status === STATUS.SELESAI;
+
+        if (isShipmentCompleted) {
+          // Shipment completed - move from completedQuantity to cancelledQuantity
+          await tx.deliveryOrderItem.update({
+            where: { id: deliveryOrderItem.id },
+            data: {
+              completedQuantity: Math.max(
+                0,
+                deliveryOrderItem.completedQuantity - requestedQuantity,
+              ),
+              cancelledQuantity: deliveryOrderItem.cancelledQuantity + requestedQuantity,
+              updatedAt: jakartaTime,
+            },
+          });
+        } else {
+          // Shipment not completed - move from processingQuantity to cancelledQuantity
+          await tx.deliveryOrderItem.update({
+            where: { id: deliveryOrderItem.id },
+            data: {
+              processingQuantity: Math.max(
+                0,
+                deliveryOrderItem.processingQuantity - requestedQuantity,
+              ),
+              cancelledQuantity: deliveryOrderItem.cancelledQuantity + requestedQuantity,
+              updatedAt: jakartaTime,
+            },
+          });
+        }
+      }
+
+      // 3. Mark shipment item as CANCELLED (do this BEFORE SPMB regeneration so PDF sees the status)
+      await tx.shipmentItem.update({
+        where: { id: shipmentItemId },
+        data: {
+          status: SHIPMENT_ITEM_STATUS.CANCELLED,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // 4. Handle SPMB - Regenerate with cancelled item marked
+      const spmb = await tx.sPMB.findFirst({
+        where: {
+          shipmentId,
+          deliveryOrderId,
+          warehouseId,
+        },
+      });
+
+      if (spmb) {
+        // Regenerate SPMB including the cancelled item (it will be marked as CANCELLED in PDF)
+        const spmbData = await tx.sPMB.findUnique({
+          where: { id: spmb.id },
+          include: {
+            shipment: {
+              include: {
+                armada: true,
+                driver: true,
+                shipmentItems: {
+                  where: {
+                    deliveryOrderId,
+                    warehouseId,
+                  },
+                  include: {
+                    product: true,
+                    deliveryOrder: {
+                      include: {
+                        customer: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            deliveryOrder: {
+              include: {
+                customer: true,
+                items: {
+                  include: {
+                    product: true,
+                  },
+                },
+              },
+            },
+            warehouse: true,
+            generatedBy: true,
+          },
+        });
+
+        if (spmbData && spmbData.shipment) {
+          await spmbPdfService.generateSPMB(spmbData, spmbData.shipment);
+        }
+      }
+
+      // 5. Check if all DO items are cancelled/completed
+      const allDOItems = await tx.deliveryOrderItem.findMany({
+        where: { deliveryOrderId },
+      });
+
+      const allItemsCancelled = allDOItems.every(
+        (item) =>
+          item.pendingQuantity === 0 &&
+          item.processingQuantity === 0 &&
+          item.completedQuantity === 0,
+      );
+
+      if (allItemsCancelled) {
+        await tx.deliveryOrder.update({
+          where: { id: deliveryOrderId },
+          data: {
+            status: STATUS.CANCEL,
+            updatedAt: jakartaTime,
+          },
+        });
+      }
+
+      // 6. Check if all shipment items are cancelled
+      const remainingActiveShipmentItems = await tx.shipmentItem.findMany({
+        where: {
+          shipmentId,
+          status: { not: SHIPMENT_ITEM_STATUS.CANCELLED },
+        },
+      });
+
+      if (remainingActiveShipmentItems.length === 0) {
+        await tx.shipment.update({
+          where: { id: shipmentId },
+          data: {
+            status: STATUS.CANCEL,
+            updatedAt: jakartaTime,
+          },
+        });
+      }
+
+      return {
+        message: 'Item cancelled successfully and reflected to delivery order',
+        shipmentItemId,
+      };
+    });
+  },
+
+  /**
+   * Cancel shipment item - Mode 2: Shipment Only
+   * This will cancel the item only in shipment, returning quantity to pending in DO
+   * Note: Validation (existence, status) is done in controller
+   */
+  async cancelItemShipmentOnly(shipmentItemId: string) {
+    return prisma.$transaction(async (tx) => {
+      // Create Jakarta timezone date
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Get shipment item with all related data
+      const shipmentItem = await tx.shipmentItem.findUnique({
+        where: { id: shipmentItemId },
+        include: {
+          shipment: true,
+          deliveryOrder: true,
+          product: true,
+        },
+      });
+
+      const { shipmentId, deliveryOrderId, productId, requestedQuantity, shipment, warehouseId } =
+        shipmentItem!;
+
+      // 1. Nota Timbangan - DO NOTHING (keep as historical record)
+
+      // 2. Return quantity to pending in DeliveryOrderItem
+      const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
+        where: {
+          deliveryOrderId,
+          productId,
+        },
+      });
+
+      if (deliveryOrderItem) {
+        const isShipmentCompleted = shipment.status === STATUS.SELESAI;
+
+        if (isShipmentCompleted) {
+          // Return from completedQuantity to pendingQuantity
+          await tx.deliveryOrderItem.update({
+            where: { id: deliveryOrderItem.id },
+            data: {
+              completedQuantity: Math.max(
+                0,
+                deliveryOrderItem.completedQuantity - requestedQuantity,
+              ),
+              pendingQuantity: deliveryOrderItem.pendingQuantity + requestedQuantity,
+              updatedAt: jakartaTime,
+            },
+          });
+        } else {
+          // Return from processingQuantity to pendingQuantity
+          await tx.deliveryOrderItem.update({
+            where: { id: deliveryOrderItem.id },
+            data: {
+              processingQuantity: Math.max(
+                0,
+                deliveryOrderItem.processingQuantity - requestedQuantity,
+              ),
+              pendingQuantity: deliveryOrderItem.pendingQuantity + requestedQuantity,
+              updatedAt: jakartaTime,
+            },
+          });
+        }
+      }
+
+      // 3. Mark shipment item as CANCELLED (do this BEFORE SPMB regeneration so PDF sees the status)
+      await tx.shipmentItem.update({
+        where: { id: shipmentItemId },
+        data: {
+          status: SHIPMENT_ITEM_STATUS.CANCELLED,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      // 4. Handle SPMB - Regenerate with cancelled item marked
+      const spmb = await tx.sPMB.findFirst({
+        where: {
+          shipmentId,
+          deliveryOrderId,
+          warehouseId: shipmentItem?.warehouseId,
+        },
+      });
+
+      if (spmb) {
+        // Regenerate SPMB including the cancelled item (it will be marked as CANCELLED in PDF)
+        const spmbData = await tx.sPMB.findUnique({
+          where: { id: spmb.id },
+          include: {
+            shipment: {
+              include: {
+                armada: true,
+                driver: true,
+                shipmentItems: {
+                  where: {
+                    deliveryOrderId,
+                    warehouseId,
+                  },
+                  include: {
+                    product: true,
+                    deliveryOrder: {
+                      include: {
+                        customer: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            deliveryOrder: {
+              include: {
+                customer: true,
+                items: {
+                  include: {
+                    product: true,
+                  },
+                },
+              },
+            },
+            warehouse: true,
+            generatedBy: true,
+          },
+        });
+
+        if (spmbData && spmbData.shipment) {
+          await spmbPdfService.generateSPMB(spmbData, spmbData.shipment);
+        }
+      }
+
+      // 5. Check if all shipment items are cancelled
+      const remainingActiveShipmentItems = await tx.shipmentItem.findMany({
+        where: {
+          shipmentId,
+          status: { not: SHIPMENT_ITEM_STATUS.CANCELLED },
+        },
+      });
+
+      if (remainingActiveShipmentItems.length === 0) {
+        await tx.shipment.update({
+          where: { id: shipmentId },
+          data: {
+            status: STATUS.CANCEL,
+            updatedAt: jakartaTime,
+          },
+        });
+      }
+
+      return {
+        message: 'Item cancelled from shipment, quantity returned to delivery order pending',
+        shipmentItemId,
       };
     });
   },

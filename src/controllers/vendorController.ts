@@ -2,12 +2,7 @@ import { WEIGHING_METHOD } from '@prisma/client';
 import { NextFunction, Request, Response } from 'express';
 import { customAlphabet } from 'nanoid';
 import { CustomError } from '../middlewares/error';
-import {
-  ShipmentBulkWeighInput,
-  shipmentBulkWeighSchema,
-  shipmentIdSchema,
-} from '../schemas/shipment';
-import productService from '../services/productService';
+import { VendorBulkWeighInput, vendorBulkWeighSchema, shipmentIdSchema } from '../schemas/shipment';
 import shipmentService from '../services/shipmentService';
 import userService from '../services/userService';
 import { success } from '../types/response';
@@ -90,7 +85,7 @@ export default {
    * Bulk weigh multiple shipment items with the same product (vendor-only endpoint)
    */
   async bulkWeighShipmentItems(
-    req: Request<unknown, unknown, ShipmentBulkWeighInput>,
+    req: Request<unknown, unknown, VendorBulkWeighInput>,
     res: Response,
     next: NextFunction,
   ) {
@@ -105,7 +100,7 @@ export default {
         });
       }
 
-      const validated = await shipmentBulkWeighSchema.validateAsync(req.body);
+      const validated = await vendorBulkWeighSchema.validateAsync(req.body);
 
       let performedById;
 
@@ -113,11 +108,11 @@ export default {
       if ((req as any).user) {
         performedById = (req as any).user.id;
       } else {
-        const user = await userService.getUserByEmail('admin@example.com');
+        const user = await userService.getUserByEmail('jeffrey@gmail.com');
         performedById = user?.id;
       }
 
-      // Check if shipment exists
+      // Check if shipment exists and get items with the loading group
       const shipment = await shipmentService.getShipmentById(validated.shipmentId);
       if (!shipment) {
         throw new CustomError({
@@ -127,20 +122,26 @@ export default {
         });
       }
 
-      // Check if product exists
-      const product = await productService.getProductById(validated.productId);
-      if (!product) {
+      // Find items in this loading group to extract productId
+      const itemsInLoadingGroup = shipment.shipmentItems.filter(
+        (item) => item.loadingGroupId === validated.loadingGroupId && item.status === 'CHOSEN',
+      );
+
+      if (itemsInLoadingGroup.length === 0) {
         throw new CustomError({
-          message: 'Produk tidak ditemukan',
-          errorCode: 'PRODUK_TIDAK_DITEMUKAN',
+          message: 'Tidak ada item dipilih untuk loading group ini',
+          errorCode: 'TIDAK_ADA_ITEM_DIPILIH_UNTUK_LOADING_GROUP',
           status: 404,
         });
       }
 
+      // Extract productId from the loading group items (all items in a group have the same product)
+      const productId = itemsInLoadingGroup[0].productId;
+
       // Validate that the chosen product is marked for vendor weighing
       const chosenProduct = await shipmentService.getShipmentChosenProduct(
         validated.shipmentId,
-        validated.productId,
+        productId,
       );
 
       if (!chosenProduct) {
@@ -156,19 +157,6 @@ export default {
           message: 'Produk ini tidak ditandai untuk penimbangan vendor',
           errorCode: 'BUKAN_PRODUK_VENDOR',
           status: 400,
-        });
-      }
-
-      // Check if there are any items with this product that are in CHOSEN status
-      const chosenItems = shipment.shipmentItems.filter(
-        (item) => item.productId === validated.productId && item.status === 'CHOSEN',
-      );
-
-      if (chosenItems.length === 0) {
-        throw new CustomError({
-          message: 'Tidak ada item dipilih untuk produk ini dalam pengiriman',
-          errorCode: 'TIDAK_ADA_ITEM_DIPILIH_UNTUK_PRODUK',
-          status: 404,
         });
       }
 
@@ -195,7 +183,15 @@ export default {
       }
 
       // Now proceed with bulk weighing the items
-      const result = await shipmentService.bulkWeighShipmentItems(validated, performedById, code);
+      // Convert vendor input to shipment bulk weigh input by adding the extracted productId
+      const result = await shipmentService.bulkWeighShipmentItems(
+        {
+          ...validated,
+          productId,
+        },
+        performedById,
+        code,
+      );
 
       // If the service returns null, it means no items were found
       if (!result) {

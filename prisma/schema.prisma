@@ -255,6 +255,7 @@ model DeliveryOrderItem {
   completedQuantity  Float         @default(0)
   pendingQuantity    Float         @default(0)
   processingQuantity Float         @default(0)
+  cancelledQuantity  Float         @default(0)
   deliveryOrder      DeliveryOrder @relation(fields: [deliveryOrderId], references: [id], onDelete: Cascade)
   product            Product       @relation(fields: [productId], references: [id])
 
@@ -468,12 +469,14 @@ enum STATUS {
   PENDING
   PROSES
   SELESAI
+  CANCEL
 }
 
 enum SHIPMENT_ITEM_STATUS {
   PENDING
   CHOSEN
   COMPLETED
+  CANCELLED
 }
 
 enum SHIPMENT_TYPE {
