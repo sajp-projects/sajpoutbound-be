@@ -358,6 +358,12 @@ export default {
             deliveryOrder: {
               select: {
                 doNumber: true,
+                customer: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
               },
             },
           },

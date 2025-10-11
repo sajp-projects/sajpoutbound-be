@@ -2617,6 +2617,14 @@ export default {
         };
       }
 
+      // Check if item is cancelled
+      if (shipmentItem.status === 'CANCELLED') {
+        return {
+          success: false,
+          message: 'Cannot reduce quantity of cancelled items.',
+        };
+      }
+
       // Only allow reduction if item is chosen but not yet weighted
       if (shipmentItem.status !== 'CHOSEN') {
         return {
