@@ -354,20 +354,45 @@ export default {
           }
         }
 
-        // --- Begin: Validation for processed/completed quantities ---
+        // --- Begin: Validation for used quantities (cancelled/processing/completed) ---
         // Create a map of old items by id for quick lookup
         const oldItemsMap = new Map();
         for (const oldItem of existingDeliveryOrder.items) {
           oldItemsMap.set(oldItem.id, oldItem);
         }
+
+        // Get all item IDs in the update data
+        const updatedItemIds = validated.items
+          .filter((item) => item.id)
+          .map((item) => item.id) as string[];
+
+        // Check if any items are being deleted (exist in old but not in new)
+        for (const oldItem of existingDeliveryOrder.items) {
+          if (!updatedItemIds.includes(oldItem.id)) {
+            // Item is being deleted - check if it has used quantities
+            const usedQuantity =
+              oldItem.processingQuantity + oldItem.completedQuantity + oldItem.cancelledQuantity;
+            if (usedQuantity > 0) {
+              throw new CustomError({
+                message: `Tidak dapat menghapus item "${oldItem.product.name}" karena sudah memiliki kuantitas yang digunakan (${usedQuantity} dari ${oldItem.quantity}). Item hanya bisa ditambah kuantitasnya, tidak bisa dihapus.`,
+                errorCode: 'CANNOT_DELETE_ITEM_WITH_USED_QUANTITY',
+                status: 400,
+              });
+            }
+          }
+        }
+
+        // Check if any items are being reduced below their used quantity
         for (const item of validated.items) {
           if (item.id) {
             const oldItem = oldItemsMap.get(item.id);
             if (oldItem) {
-              const minQuantity = oldItem.processingQuantity + oldItem.completedQuantity;
+              // Minimum quantity = processing + completed + cancelled
+              const minQuantity =
+                oldItem.processingQuantity + oldItem.completedQuantity + oldItem.cancelledQuantity;
               if (item.quantity < minQuantity) {
                 throw new CustomError({
-                  message: `Kuantitas tidak boleh kurang dari jumlah yang sudah diproses/selesai untuk produk ${oldItem.product.name}. Minimal: ${minQuantity}`,
+                  message: `Kuantitas untuk produk "${oldItem.product.name}" tidak boleh kurang dari jumlah yang sudah digunakan (diproses/selesai/dibatalkan). Minimal: ${minQuantity}, saat ini: ${item.quantity}`,
                   errorCode: 'KUANTITAS_TIDAK_CUKUP',
                   status: 400,
                 });
@@ -375,7 +400,7 @@ export default {
             }
           }
         }
-        // --- End: Validation for processed/completed quantities ---
+        // --- End: Validation for used quantities ---
       }
 
       const performedById = req.user?.id;

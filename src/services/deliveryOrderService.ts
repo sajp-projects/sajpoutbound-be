@@ -2676,22 +2676,17 @@ export default {
         },
       });
 
-      // Recalculate quantities: sum of ALL shipment items for this DO item (regardless of status)
-      const totalAllocated = await tx.shipmentItem.aggregate({
-        _sum: { requestedQuantity: true },
-        where: {
-          deliveryOrderId: shipmentItem.deliveryOrderId,
-          productId: shipmentItem.productId,
-        },
-      });
-
-      const totalAllocatedQuantity = totalAllocated._sum.requestedQuantity || 0;
-
+      // Use relative updates to adjust delivery order item quantities
+      // This ensures we don't have stale data issues
       const updatedDeliveryOrderItem = await tx.deliveryOrderItem.update({
         where: { id: deliveryOrderItem.id },
         data: {
-          pendingQuantity: deliveryOrderItem.quantity - totalAllocatedQuantity,
-          processingQuantity: totalAllocatedQuantity - deliveryOrderItem.completedQuantity,
+          pendingQuantity: {
+            increment: reductionAmount, // Return the reduced amount back to pending
+          },
+          processingQuantity: {
+            decrement: reductionAmount, // Decrease processing by the reduction amount
+          },
           // completedQuantity remains unchanged since we only reduce pre-completion items
           updatedAt: jakartaTime,
         },

@@ -2552,14 +2552,12 @@ export default {
           }
 
           // Get all delivery orders for this product in this shipment
+          // Include ALL items (even cancelled) so weighing data remains visible in frontend
           const shipmentItems = await prisma.shipmentItem.findMany({
             where: {
               shipmentId,
               productId: productId,
               chosenProduct: true,
-              status: {
-                not: SHIPMENT_ITEM_STATUS.CANCELLED,
-              },
             },
             include: {
               deliveryOrder: {
@@ -2591,7 +2589,10 @@ export default {
           let totalRequestedQuantity = 0;
 
           for (const item of shipmentItems) {
-            totalRequestedQuantity += item.requestedQuantity;
+            // Only count non-cancelled items in total quantity
+            if (item.status !== SHIPMENT_ITEM_STATUS.CANCELLED) {
+              totalRequestedQuantity += item.requestedQuantity;
+            }
 
             if (item.locationType && !locationTypes.includes(item.locationType)) {
               locationTypes.push(item.locationType);
