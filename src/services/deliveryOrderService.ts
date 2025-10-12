@@ -2894,11 +2894,14 @@ export default {
         };
       }
 
-      // Get all shipment items for this DO and product to recalculate totals
+      // Get all non-cancelled shipment items for this DO and product to recalculate totals
       const allShipmentItems = await tx.shipmentItem.findMany({
         where: {
           deliveryOrderId: shipmentItem.deliveryOrderId,
           productId: shipmentItem.productId,
+          status: {
+            not: 'CANCELLED',
+          },
         },
         include: {
           shipment: true,
@@ -2924,11 +2927,15 @@ export default {
         return total;
       }, 0);
 
-      // Validate that new total doesn't exceed the original DO quantity
-      const wouldExceedOriginal = newQuantity + otherShipmentItemsTotal > originalDOItem.quantity;
-      if (wouldExceedOriginal) {
+      // Calculate available quantity (pending + processing only)
+      // This is the maximum quantity that can be allocated to shipment items
+      const availableQuantity = originalDOItem.pendingQuantity + originalDOItem.processingQuantity;
+
+      // Validate that new total doesn't exceed the available quantity
+      const wouldExceedAvailable = newQuantity + otherShipmentItemsTotal > availableQuantity;
+      if (wouldExceedAvailable) {
         return {
-          error: `Tidak dapat merevisi quantity ke ${newQuantity}. Total quantity (${newQuantity + otherShipmentItemsTotal}) akan melebihi quantity asli DO (${originalDOItem.quantity}). Maksimal quantity untuk shipment item ini: ${originalDOItem.quantity - otherShipmentItemsTotal}`,
+          error: `Tidak dapat merevisi quantity ke ${newQuantity}. Total quantity shipment (${newQuantity + otherShipmentItemsTotal}) akan melebihi quantity yang tersedia (${availableQuantity}). Quantity tersedia = pending (${originalDOItem.pendingQuantity}) + processing (${originalDOItem.processingQuantity}). Maksimal quantity untuk shipment item ini: ${availableQuantity - otherShipmentItemsTotal}`,
         };
       }
 
@@ -3007,6 +3014,10 @@ export default {
         }
       });
 
+      // Calculate the change in shipment item quantity
+      const originalItemQuantity = itemBeingRevised?.requestedQuantity || 0;
+      const quantityChange = newQuantity - originalItemQuantity;
+
       // Handle the revised item based on its current status
       let processingQuantity = otherProcessingQuantity;
       let completedQuantity = otherCompletedQuantity;
@@ -3029,26 +3040,45 @@ export default {
       }
       // If newQuantity is 0, item is deleted, so don't add it to any totals
 
-      // Calculate the new total DO quantity (reduced by the amount we removed)
-      const originalItemQuantity = itemBeingRevised?.requestedQuantity || 0;
-      const quantityReduction = originalItemQuantity - newQuantity;
-      const newTotalDOQuantity = originalDOItem.quantity - quantityReduction;
+      // Calculate new DO quantities based on whether we're increasing or decreasing
+      let newTotalDOQuantity = originalDOItem.quantity;
+      let pendingQuantity = originalDOItem.pendingQuantity;
 
-      // Calculate pending quantity: new total DO quantity minus processing and completed quantities
-      const pendingQuantity = Math.max(
-        0,
-        newTotalDOQuantity - processingQuantity - completedQuantity,
-      );
+      if (quantityChange > 0) {
+        // INCREASING shipment quantity - prioritize taking from pending first
+        const availablePending = originalDOItem.pendingQuantity;
+        const takenFromPending = Math.min(quantityChange, availablePending);
+
+        // Reduce pending by the amount we took
+        pendingQuantity = availablePending - takenFromPending;
+
+        // If increase exceeds pending, add remainder to DO total
+        const remainingIncrease = quantityChange - takenFromPending;
+        if (remainingIncrease > 0) {
+          newTotalDOQuantity += remainingIncrease;
+        }
+      } else if (quantityChange < 0) {
+        // DECREASING shipment quantity - reduce from DO total (current logic, keep as is)
+        const quantityReduction = Math.abs(quantityChange);
+        newTotalDOQuantity -= quantityReduction;
+        // Recalculate pending from total
+        pendingQuantity = Math.max(0, newTotalDOQuantity - processingQuantity - completedQuantity);
+      } else {
+        // No change in quantity
+        pendingQuantity = Math.max(0, newTotalDOQuantity - processingQuantity - completedQuantity);
+      }
 
       // Debug logging final results
       console.log('=== FINAL CALCULATION ===');
+      console.log('originalItemQuantity:', originalItemQuantity);
+      console.log('newQuantity:', newQuantity);
+      console.log('quantityChange:', quantityChange);
       console.log('otherProcessingQuantity:', otherProcessingQuantity);
       console.log('otherCompletedQuantity:', otherCompletedQuantity);
       console.log('final processingQuantity:', processingQuantity);
       console.log('final completedQuantity:', completedQuantity);
       console.log('final pendingQuantity:', pendingQuantity);
       console.log('originalDOItem.quantity:', originalDOItem.quantity);
-      console.log('quantityReduction:', quantityReduction);
       console.log('newTotalDOQuantity:', newTotalDOQuantity);
       console.log('========================');
 
