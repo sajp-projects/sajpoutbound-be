@@ -435,8 +435,8 @@ export default {
   },
 
   /**
-   * Validate that all shipment items are in COMPLETED status
-   * Returns null if all items are complete, otherwise returns an array of incomplete items
+   * Validate that all non-cancelled shipment items are in COMPLETED status
+   * Returns null if all active items are complete, otherwise returns an array of incomplete items
    * Returns false if shipment not found
    */
   async validateAllItemsComplete(shipmentId: string) {
@@ -446,7 +446,10 @@ export default {
       return false;
     }
 
-    const pendingItems = shipment.shipmentItems.filter((item) => item.status !== 'COMPLETED');
+    // Only check non-cancelled items
+    const pendingItems = shipment.shipmentItems.filter(
+      (item) => item.status !== 'COMPLETED' && item.status !== SHIPMENT_ITEM_STATUS.CANCELLED,
+    );
 
     return pendingItems.length > 0 ? pendingItems : null;
   },
@@ -2873,10 +2876,13 @@ export default {
         },
       });
 
-      // Update all shipment items to COMPLETED
+      // Update all non-cancelled shipment items to COMPLETED
       await tx.shipmentItem.updateMany({
         where: {
           shipmentId: id,
+          status: {
+            not: SHIPMENT_ITEM_STATUS.CANCELLED,
+          },
         },
         data: {
           status: SHIPMENT_ITEM_STATUS.COMPLETED,
@@ -2887,8 +2893,13 @@ export default {
       // Track delivery orders to check their completion status
       const processedDeliveryOrderIds = new Set<string>();
 
-      // Process each shipment item to update related delivery order item quantities
+      // Process each non-cancelled shipment item to update related delivery order item quantities
       for (const item of existingShipment!.shipmentItems) {
+        // Skip cancelled items - they shouldn't affect delivery order quantities
+        if (item.status === SHIPMENT_ITEM_STATUS.CANCELLED) {
+          continue;
+        }
+
         // Get the corresponding delivery order item
         const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
           where: {

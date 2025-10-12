@@ -1179,9 +1179,11 @@ export default {
         });
       }
 
-      // Ensure all shipment items are either in CHOSEN or COMPLETED status
+      // Ensure all non-cancelled shipment items are either in CHOSEN or COMPLETED status
       const invalidItems = existingShipment.shipmentItems.filter((item) => {
-        return item.status !== 'CHOSEN' && item.status !== 'COMPLETED';
+        return (
+          item.status !== 'CHOSEN' && item.status !== 'COMPLETED' && item.status !== 'CANCELLED'
+        );
       });
 
       if (invalidItems.length > 0) {
@@ -1314,9 +1316,11 @@ export default {
         });
       }
 
-      // Ensure all shipment items are either in CHOSEN or COMPLETED status
+      // Ensure all non-cancelled shipment items are either in CHOSEN or COMPLETED status
       const invalidItems = existingShipment.shipmentItems.filter((item) => {
-        return item.status !== 'CHOSEN' && item.status !== 'COMPLETED';
+        return (
+          item.status !== 'CHOSEN' && item.status !== 'COMPLETED' && item.status !== 'CANCELLED'
+        );
       });
 
       if (invalidItems.length > 0) {
