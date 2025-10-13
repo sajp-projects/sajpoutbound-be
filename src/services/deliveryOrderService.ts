@@ -1698,6 +1698,29 @@ export default {
         },
       });
 
+      // Check if DO should be marked as SELESAI after revision
+      if (updatedDeliveryOrder) {
+        const hasIncompleteItems = updatedDeliveryOrder.items.some(
+          (item) => item.pendingQuantity > 0 || item.processingQuantity > 0,
+        );
+
+        // Update DO status to SELESAI if all items are completed
+        if (!hasIncompleteItems) {
+          await tx.deliveryOrder.update({
+            where: {
+              id: deliveryOrderId,
+            },
+            data: {
+              status: STATUS.SELESAI,
+              updatedAt: jakartaTime,
+            },
+          });
+
+          // Update the local object for consistent response
+          updatedDeliveryOrder.status = STATUS.SELESAI;
+        }
+      }
+
       // Prepare old and new data for logging
       const oldDataForLog = {
         items: oldData,
@@ -3149,6 +3172,32 @@ export default {
           updatedAt: jakartaTime,
         },
       });
+
+      // Check if DO should be marked as SELESAI
+      // Get all items for this delivery order to check completion status
+      const allDOItems = await tx.deliveryOrderItem.findMany({
+        where: {
+          deliveryOrderId: shipmentItem.deliveryOrderId,
+        },
+      });
+
+      // Check if all items have no pending or processing quantity (all completed)
+      const hasIncompleteItems = allDOItems.some(
+        (item) => item.pendingQuantity > 0 || item.processingQuantity > 0,
+      );
+
+      // Update DO status to SELESAI if all items are completed
+      if (!hasIncompleteItems) {
+        await tx.deliveryOrder.update({
+          where: {
+            id: shipmentItem.deliveryOrderId,
+          },
+          data: {
+            status: STATUS.SELESAI,
+            updatedAt: jakartaTime,
+          },
+        });
+      }
 
       // Update weighing records if they exist for this specific shipment
       const chosenProduct = await tx.shipmentChosenProduct.findFirst({
