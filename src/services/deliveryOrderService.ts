@@ -2894,6 +2894,13 @@ export default {
         };
       }
 
+      // Validate that the shipment item is not cancelled
+      if (shipmentItem.status === 'CANCELLED') {
+        return {
+          error: 'Tidak dapat merevisi shipment item yang sudah dibatalkan',
+        };
+      }
+
       // Get all non-cancelled shipment items for this DO and product to recalculate totals
       const allShipmentItems = await tx.shipmentItem.findMany({
         where: {
@@ -2919,28 +2926,24 @@ export default {
         };
       }
 
-      // Calculate the sum of OTHER shipment items (excluding the one being revised)
-      const otherShipmentItemsTotal = allShipmentItems.reduce((total, item) => {
-        if (item.id !== shipmentItemId) {
-          return total + item.requestedQuantity;
-        }
-        return total;
-      }, 0);
-
-      // Calculate available quantity (pending + processing only)
-      // This is the maximum quantity that can be allocated to shipment items
-      const availableQuantity = originalDOItem.pendingQuantity + originalDOItem.processingQuantity;
-
-      // Validate that new total doesn't exceed the available quantity
-      const wouldExceedAvailable = newQuantity + otherShipmentItemsTotal > availableQuantity;
-      if (wouldExceedAvailable) {
-        return {
-          error: `Tidak dapat merevisi quantity ke ${newQuantity}. Total quantity shipment (${newQuantity + otherShipmentItemsTotal}) akan melebihi quantity yang tersedia (${availableQuantity}). Quantity tersedia = pending (${originalDOItem.pendingQuantity}) + processing (${originalDOItem.processingQuantity}). Maksimal quantity untuk shipment item ini: ${availableQuantity - otherShipmentItemsTotal}`,
-        };
-      }
-
-      // Store old data for logging
+      // Store old data for logging and calculate quantity change first
       const oldQuantity = shipmentItem.requestedQuantity;
+      const quantityChange = newQuantity - oldQuantity;
+
+      // Only validate against available quantity when INCREASING
+      if (quantityChange > 0) {
+        // When increasing, we can only use:
+        // 1. The pending quantity (available for any shipment)
+        // 2. The current quantity this shipment item already has
+        const maxAllowedQuantity = originalDOItem.pendingQuantity + oldQuantity;
+
+        // Validate that new quantity doesn't exceed what's available
+        if (newQuantity > maxAllowedQuantity) {
+          return {
+            error: `Tidak dapat merevisi quantity ke ${newQuantity}. Quantity maksimal yang bisa digunakan: ${maxAllowedQuantity} (pending: ${originalDOItem.pendingQuantity} + current shipment item: ${oldQuantity}). Anda hanya bisa menambah sebesar ${originalDOItem.pendingQuantity} dari quantity saat ini.`,
+          };
+        }
+      }
       const oldWeightedQuantity = shipmentItem.weightedQuantity;
 
       // Calculate weight per unit if this item was previously weighed
@@ -3014,9 +3017,8 @@ export default {
         }
       });
 
-      // Calculate the change in shipment item quantity
-      const originalItemQuantity = itemBeingRevised?.requestedQuantity || 0;
-      const quantityChange = newQuantity - originalItemQuantity;
+      // Use the original quantity from the shipment item we fetched earlier
+      const originalItemQuantity = oldQuantity;
 
       // Handle the revised item based on its current status
       let processingQuantity = otherProcessingQuantity;
@@ -3058,9 +3060,46 @@ export default {
           newTotalDOQuantity += remainingIncrease;
         }
       } else if (quantityChange < 0) {
-        // DECREASING shipment quantity - reduce from DO total (current logic, keep as is)
+        // DECREASING shipment quantity
+        // Reduce from the DO quantity based on where this shipment item's quantity is allocated
         const quantityReduction = Math.abs(quantityChange);
+
+        // Determine which DO bucket to reduce from based on shipment item and shipment status
+        let shouldReduceFromCompleted = false;
+        if (
+          itemBeingRevised?.status === 'COMPLETED' &&
+          itemBeingRevised?.shipment?.status === 'SELESAI'
+        ) {
+          shouldReduceFromCompleted = true;
+        }
+
+        // Validate: cannot reduce more than what this shipment item currently has
+        if (quantityReduction > originalItemQuantity) {
+          return {
+            error: `Tidak dapat mengurangi quantity sebesar ${quantityReduction}. Shipment item ini hanya menggunakan ${originalItemQuantity} unit. Maksimal pengurangan: ${originalItemQuantity}`,
+          };
+        }
+
+        // Validate: ensure we have enough in the target bucket to reduce from
+        if (shouldReduceFromCompleted) {
+          // Check if we have enough in completed quantity
+          if (quantityReduction > originalDOItem.completedQuantity) {
+            return {
+              error: `Tidak dapat mengurangi ${quantityReduction} dari completed quantity. Hanya ada ${originalDOItem.completedQuantity} unit di completed.`,
+            };
+          }
+        } else {
+          // Check if we have enough in processing quantity
+          if (quantityReduction > originalDOItem.processingQuantity) {
+            return {
+              error: `Tidak dapat mengurangi ${quantityReduction} dari processing quantity. Hanya ada ${originalDOItem.processingQuantity} unit di processing.`,
+            };
+          }
+        }
+
+        // Apply the reduction to total DO quantity
         newTotalDOQuantity -= quantityReduction;
+
         // Recalculate pending from total
         pendingQuantity = Math.max(0, newTotalDOQuantity - processingQuantity - completedQuantity);
       } else {

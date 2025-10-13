@@ -4309,25 +4309,43 @@ export default {
         }
       }
 
-      // 5. Check if DO should be reverted to PENDING
-      // If all items in DO are now pending (no processing/completed), revert DO to PENDING
+      // 5. Update DO status based on item quantities
       const allDOItems = await tx.deliveryOrderItem.findMany({
         where: { deliveryOrderId },
       });
+
+      // Determine the appropriate DO status based on ALL items
+      let newDOStatus: STATUS;
+
+      const allItemsCompleted = allDOItems.every(
+        (item) =>
+          item.completedQuantity === item.quantity &&
+          item.processingQuantity === 0 &&
+          item.pendingQuantity === 0,
+      );
 
       const allItemsPending = allDOItems.every(
         (item) => item.processingQuantity === 0 && item.completedQuantity === 0,
       );
 
       if (allItemsPending) {
-        await tx.deliveryOrder.update({
-          where: { id: deliveryOrderId },
-          data: {
-            status: STATUS.PENDING,
-            updatedAt: jakartaTime,
-          },
-        });
+        // All items are fully pending
+        newDOStatus = STATUS.PENDING;
+      } else if (allItemsCompleted) {
+        // All items are fully completed
+        newDOStatus = STATUS.SELESAI;
+      } else {
+        // Some items are in processing or mixed states
+        newDOStatus = STATUS.PROSES;
       }
+
+      await tx.deliveryOrder.update({
+        where: { id: deliveryOrderId },
+        data: {
+          status: newDOStatus,
+          updatedAt: jakartaTime,
+        },
+      });
 
       // 6. Check if all shipment items are cancelled
       const remainingActiveShipmentItems = await tx.shipmentItem.findMany({
