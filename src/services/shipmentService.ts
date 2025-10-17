@@ -4004,6 +4004,149 @@ export default {
   },
 
   /**
+   * Helper function: Handle nota timbangan regeneration when cancelling an item
+   * Logic:
+   * - If there are other DOs with the same item in the shipment (same weighing), regenerate with reduced quantity
+   * - If this is the last/only DO with this item in the shipment, regenerate with quantity = 0
+   */
+  async handleNotaTimbanganOnCancellation(
+    shipmentItemId: string,
+    shipmentId: string,
+    productId: string,
+    tx: any,
+  ) {
+    // Get the shipment item being cancelled
+    const cancelledItem = await tx.shipmentItem.findUnique({
+      where: { id: shipmentItemId },
+    });
+
+    if (!cancelledItem || !cancelledItem.shipmentChosenProductWeighingId) {
+      // No weighing record, nothing to regenerate
+      return;
+    }
+
+    // Find all OTHER shipment items in the SAME shipment with the SAME product that share the SAME weighing
+    // (excluding cancelled items and the current item being cancelled)
+    const otherItemsWithSameProductAndWeighing = await tx.shipmentItem.findMany({
+      where: {
+        shipmentId,
+        productId,
+        shipmentChosenProductWeighingId: cancelledItem.shipmentChosenProductWeighingId,
+        status: { not: SHIPMENT_ITEM_STATUS.CANCELLED },
+        id: { not: shipmentItemId }, // Exclude the current item being cancelled
+      },
+    });
+
+    // Find ALL items (including the one being cancelled) to calculate original total
+    const allItemsWithSameProductAndWeighing = await tx.shipmentItem.findMany({
+      where: {
+        shipmentId,
+        productId,
+        shipmentChosenProductWeighingId: cancelledItem.shipmentChosenProductWeighingId,
+        status: { not: SHIPMENT_ITEM_STATUS.CANCELLED },
+      },
+    });
+
+    // Calculate original total quantity (including the item being cancelled)
+    const originalTotalQuantity = allItemsWithSameProductAndWeighing.reduce(
+      (sum: number, item: any) => sum + item.requestedQuantity,
+      0,
+    );
+
+    // Calculate new total quantity (excluding the item being cancelled)
+    const newTotalQuantity = otherItemsWithSameProductAndWeighing.reduce(
+      (sum: number, item: any) => sum + item.requestedQuantity,
+      0,
+    );
+
+    // Get the weighing record with all includes needed for PDF generation
+    const weighingWithIncludes = await tx.shipmentChosenProductWeighing.findUnique({
+      where: { id: cancelledItem.shipmentChosenProductWeighingId },
+      include: {
+        shipmentChosenProduct: {
+          include: {
+            product: true,
+            shipment: {
+              include: {
+                armada: true,
+                shipmentItems: {
+                  include: {
+                    deliveryOrder: {
+                      include: {
+                        customer: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        notaTimbangan: true,
+      },
+    });
+
+    if (weighingWithIncludes && weighingWithIncludes.notaTimbangan) {
+      // Calculate the ratio for weight reduction
+      const ratio = originalTotalQuantity > 0 ? newTotalQuantity / originalTotalQuantity : 0;
+
+      // Calculate proportional weights
+      const newGrossWeight = weighingWithIncludes.grossWeight * ratio;
+      const newTareWeight = (weighingWithIncludes.tareWeight || 0) * ratio;
+      const newNetWeight = (weighingWithIncludes.netWeight || 0) * ratio;
+
+      // Update the weighing record with new weights
+      await tx.shipmentChosenProductWeighing.update({
+        where: { id: cancelledItem.shipmentChosenProductWeighingId },
+        data: {
+          grossWeight: newGrossWeight,
+          tareWeight: newTareWeight,
+          netWeight: newNetWeight,
+        },
+      });
+
+      // Fetch the updated weighing record for PDF generation
+      const updatedWeighingWithIncludes = await tx.shipmentChosenProductWeighing.findUnique({
+        where: { id: cancelledItem.shipmentChosenProductWeighingId },
+        include: {
+          shipmentChosenProduct: {
+            include: {
+              product: true,
+              shipment: {
+                include: {
+                  armada: true,
+                  shipmentItems: {
+                    include: {
+                      deliveryOrder: {
+                        include: {
+                          customer: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          notaTimbangan: true,
+        },
+      });
+
+      if (updatedWeighingWithIncludes && updatedWeighingWithIncludes.notaTimbangan) {
+        // Always regenerate the nota timbangan with the new quantity and weights
+        await notaTimbanganPdfService.generateNotaTimbangan(
+          {
+            ...updatedWeighingWithIncludes,
+            timeOut: updatedWeighingWithIncludes.timeOut || updatedWeighingWithIncludes.createdAt,
+          },
+          updatedWeighingWithIncludes.notaTimbangan.ticketNumber,
+          newTotalQuantity, // New reduced quantity (0 if all items cancelled)
+        );
+      }
+    }
+  },
+
+  /**
    * Cancel shipment item - Mode 1: Reflected to DO
    * This will cancel the item in shipment and reflect the cancellation to the delivery order
    * Note: Validation (existence, status) is done in controller
@@ -4027,7 +4170,9 @@ export default {
       const { shipmentId, deliveryOrderId, productId, requestedQuantity, shipment, warehouseId } =
         shipmentItem!;
 
-      // 1. Nota Timbangan - DO NOTHING (keep as historical record)
+      // 1. Handle Nota Timbangan regeneration (conditionally)
+      // This must be done BEFORE marking the item as cancelled
+      await this.handleNotaTimbanganOnCancellation(shipmentItemId, shipmentId, productId, tx);
 
       // 2. Update DeliveryOrderItem quantities
       const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
@@ -4204,7 +4349,9 @@ export default {
       const { shipmentId, deliveryOrderId, productId, requestedQuantity, shipment, warehouseId } =
         shipmentItem!;
 
-      // 1. Nota Timbangan - DO NOTHING (keep as historical record)
+      // 1. Handle Nota Timbangan regeneration (conditionally)
+      // This must be done BEFORE marking the item as cancelled
+      await this.handleNotaTimbanganOnCancellation(shipmentItemId, shipmentId, productId, tx);
 
       // 2. Return quantity to pending in DeliveryOrderItem
       const deliveryOrderItem = await tx.deliveryOrderItem.findFirst({
