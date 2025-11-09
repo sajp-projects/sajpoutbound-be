@@ -4038,12 +4038,13 @@ export default {
     });
 
     // Find ALL items (including the one being cancelled) to calculate original total
+    // NOTE: We should NOT exclude CANCELLED items here because we need the original total
+    // that was used when the weighing was first recorded
     const allItemsWithSameProductAndWeighing = await tx.shipmentItem.findMany({
       where: {
         shipmentId,
         productId,
         shipmentChosenProductWeighingId: cancelledItem.shipmentChosenProductWeighingId,
-        status: { not: SHIPMENT_ITEM_STATUS.CANCELLED },
       },
     });
 
