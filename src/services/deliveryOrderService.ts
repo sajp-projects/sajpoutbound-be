@@ -1952,10 +1952,20 @@ export default {
             );
           }
 
-          // Validate transfer quantity doesn't exceed completed quantity
-          if (transferItem.quantity > doItem.completedQuantity) {
+          // Calculate transferable quantity (completed - cancelled)
+          const transferableQuantity = doItem.completedQuantity - (doItem.cancelledQuantity || 0);
+
+          // Validate transfer quantity doesn't exceed transferable quantity
+          if (transferItem.quantity > transferableQuantity) {
             throw new Error(
-              `Cannot transfer ${transferItem.quantity} of ${doItem.product.name} from DO ${deliveryOrder.doNumber}. Only ${doItem.completedQuantity} completed.`,
+              `Cannot transfer ${transferItem.quantity} of ${doItem.product.name} from DO ${deliveryOrder.doNumber}. Only ${transferableQuantity} available for transfer (${doItem.completedQuantity} completed, ${doItem.cancelledQuantity || 0} cancelled).`,
+            );
+          }
+
+          // Additional check: Don't allow transfer if item has been cancelled
+          if (doItem.cancelledQuantity > 0 && transferItem.quantity > 0) {
+            throw new Error(
+              `Cannot transfer ${doItem.product.name} from DO ${deliveryOrder.doNumber}. This item has ${doItem.cancelledQuantity} cancelled quantity and cannot be transferred.`,
             );
           }
 
