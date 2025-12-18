@@ -234,34 +234,25 @@ export default {
       },
     };
     // --- KPI CALCULATION START ---
-    // Use filtered shipments for most KPIs, but use all shipments for customer calculations when no status filter
+    // Use filtered shipments for most KPIs, but use all shipments for customer calculations when no status filter.
+    // KPI cards should not count CANCEL shipments.
     const filteredShipments = status ? shipments.filter((s) => s.status === status) : shipments;
-    const allShipmentsForCustomerCalc = shipments; // Always use all shipments for customer calculations
+    const kpiShipments = filteredShipments.filter((s) => s.status !== STATUS.CANCEL);
+    const allShipmentsForCustomerCalc = shipments.filter((s) => s.status !== STATUS.CANCEL);
 
-    // Use date filter for KPI calculations instead of just today
-    const startDateForKPI = startDate
-      ? moment.tz(startDate, 'Asia/Jakarta').startOf('day')
-      : moment.tz('Asia/Jakarta').startOf('day');
-    const endDateForKPI = endDate
-      ? moment.tz(endDate, 'Asia/Jakarta').endOf('day')
-      : moment.tz('Asia/Jakarta').endOf('day');
-
+    // KPI date range is already applied at the DB query level via whereConditions.createdAt (+7 Jakarta handling).
+    // Re-filtering with moment() without the same offset handling can incorrectly drop rows (showing 0 KPIs).
     // 1. Total Shipments Created in Date Range (all statuses)
-    const totalShipmentsCreatedToday = filteredShipments.filter((s) =>
-      moment(s.createdAt).isBetween(startDateForKPI, endDateForKPI, 'day', '[]'),
-    ).length;
-    // 2. Total Shipments Verified in Date Range (filtered only)
-    const totalShipmentsVerifiedToday = filteredShipments.filter(
-      (s) =>
-        s.verifiedAt && moment(s.verifiedAt).isBetween(startDateForKPI, endDateForKPI, 'day', '[]'),
-    ).length;
+    const totalShipmentsCreatedToday = kpiShipments.length;
+    // 2. Total Shipments Verified in Date Range (within the already-filtered shipments list)
+    const totalShipmentsVerifiedToday = kpiShipments.filter((s) => Boolean(s.verifiedAt)).length;
     // 3. Unique Products Moved (filtered only)
     const productSet = new Set<string>();
-    filteredShipments.forEach((s) => s.shipmentItems.forEach((i) => productSet.add(i.product.id)));
+    kpiShipments.forEach((s) => s.shipmentItems.forEach((i) => productSet.add(i.product.id)));
     const uniqueProductsMoved = productSet.size;
     // 4. Dispatched Totals by Unit (satuan, filtered only)
     const unitMap = new Map<string, number>();
-    filteredShipments.forEach((s) =>
+    kpiShipments.forEach((s) =>
       s.shipmentItems.forEach((i) => {
         if (!i.product.satuan) return;
         unitMap.set(
@@ -279,7 +270,7 @@ export default {
       string,
       { id: string; name: string; satuan: string; totalQuantity: number }
     >();
-    filteredShipments.forEach((s) => {
+    kpiShipments.forEach((s) => {
       s.shipmentItems.forEach((i) => {
         if (!productQtyMap.has(i.product.id)) {
           productQtyMap.set(i.product.id, {
@@ -371,7 +362,7 @@ export default {
     const trendline7Days: Array<{ date: string; shipmentCount: number }> = [];
     for (let i = 6; i >= 0; i--) {
       const day = moment().subtract(i, 'days').startOf('day');
-      const count = filteredShipments.filter((s) => moment(s.createdAt).isSame(day, 'day')).length;
+      const count = kpiShipments.filter((s) => moment(s.createdAt).isSame(day, 'day')).length;
       trendline7Days.push({
         date: String(day.format('YYYY-MM-DD')),
         shipmentCount: Number(count),
@@ -721,6 +712,9 @@ export default {
 
     const whereConditions: any = {
       deletedAt: null,
+      status: {
+        not: STATUS.CANCEL,
+      },
     };
 
     // Since DB stores Jakarta time with +7 offset, create date with same offset
@@ -823,6 +817,12 @@ export default {
 
     shipments.forEach((shipment) => {
       shipment.shipmentItems.forEach((item) => {
+        // Laporan Pengeluaran should only count items that are actually shipped (SELESAI) and already weighed.
+        // Exclude cancelled items entirely.
+        if (shipment.status !== STATUS.SELESAI) return;
+        if (item.status !== 'COMPLETED') return;
+        if (!item.weighedAt) return;
+
         if (productId && item.product.id !== productId) return;
         if (warehouseId && item.warehouse.id !== warehouseId) return;
         if (customerId && item.deliveryOrder.customer.id !== customerId) return;
@@ -903,11 +903,14 @@ export default {
           group.totalQuantity += item.requestedQuantity;
           group.totalWeight += item.weightedQuantity || 0;
 
-          // Only add shipment-item combination if it's not already in the group's shipments
+          // For grouping by item: keep one row per shipment-item.
+          // For grouping by customer/vehicle/warehouse: count unique shipments (not multiplied by product rows).
+          const shipmentExists = group.shipments.some((s) => s.shipmentId === shipment.id);
           const shipmentItemExists = group.shipments.some(
             (s) => s.shipmentId === shipment.id && s.item.id === item.id,
           );
-          if (!shipmentItemExists) {
+          const shouldAddRow = groupBy === 'item' ? !shipmentItemExists : !shipmentExists;
+          if (shouldAddRow) {
             // Find SPMB for this delivery order and warehouse
             const spmbForDO = item.deliveryOrder.spmbs.find(
               (spmb) => spmb.warehouseId === item.warehouse.id,
@@ -1141,6 +1144,9 @@ export default {
 
     const whereConditions: any = {
       deletedAt: null,
+      status: {
+        not: STATUS.CANCEL,
+      },
     };
 
     // Since DB stores Jakarta time with +7 offset, create date with same offset
@@ -1238,6 +1244,12 @@ export default {
 
     shipments.forEach((shipment) => {
       shipment.shipmentItems.forEach((item) => {
+        // Laporan Pengeluaran should only count items that are actually shipped (SELESAI) and already weighed.
+        // Exclude cancelled items entirely.
+        if (shipment.status !== STATUS.SELESAI) return;
+        if (item.status !== 'COMPLETED') return;
+        if (!item.weighedAt) return;
+
         if (productId && item.product.id !== productId) return;
         if (warehouseId && item.warehouse.id !== warehouseId) return;
         if (customerId && item.deliveryOrder.customer.id !== customerId) return;
@@ -1317,6 +1329,15 @@ export default {
         if (group) {
           group.totalQuantity += item.requestedQuantity;
           group.totalWeight += item.weightedQuantity || 0;
+
+          // For grouping by item: keep one row per shipment-item.
+          // For grouping by customer/vehicle/warehouse: count unique shipments (not multiplied by product rows).
+          const shipmentExists = group.shipments.some((s) => s.shipmentId === shipment.id);
+          const shipmentItemExists = group.shipments.some(
+            (s) => s.shipmentId === shipment.id && s.item.id === item.id,
+          );
+          const shouldAddRow = groupBy === 'item' ? !shipmentItemExists : !shipmentExists;
+          if (!shouldAddRow) return;
 
           // Find SPMB for this delivery order and warehouse
           const spmbForDO = item.deliveryOrder.spmbs.find(
@@ -1512,24 +1533,18 @@ export default {
       },
     });
     // KPIs
-    const today = moment.tz('Asia/Jakarta').startOf('day');
-    const startOfWeek = moment.tz('Asia/Jakarta').startOf('isoWeek');
-    const startOfMonth = moment.tz('Asia/Jakarta').startOf('month');
-    const totalAssignedToday = shipments.filter((s) =>
-      moment(s.createdAt).isSame(today, 'day'),
-    ).length;
-    const totalAssignedWeek = shipments.filter((s) =>
-      moment(s.createdAt).isSameOrAfter(startOfWeek),
-    ).length;
-    const totalAssignedMonth = shipments.filter((s) =>
-      moment(s.createdAt).isSameOrAfter(startOfMonth),
-    ).length;
+    // Shipments are already filtered by createdAt at the DB query level (with Jakarta +7 handling).
+    // KPI cards should not count CANCEL shipments.
+    const kpiShipments = shipments.filter((s) => s.status !== 'CANCEL');
+    const totalAssignedToday = kpiShipments.length;
+    const totalAssignedWeek = kpiShipments.length;
+    const totalAssignedMonth = kpiShipments.length;
     // Most Active Armada
     const armadaCountMap = new Map<
       string,
       { id: string; model: string; plateNumber: string; count: number }
     >();
-    shipments.forEach((s) => {
+    kpiShipments.forEach((s) => {
       if (s.armada) {
         const key = s.armada.id;
         if (!armadaCountMap.has(key)) {
@@ -1545,13 +1560,9 @@ export default {
     });
     const mostActiveArmada =
       Array.from(armadaCountMap.values()).sort((a, b) => b.count - a.count)[0] || null;
-    // Get most used verified armadas for today with plate photos from finished shipments
-    const todayFinishedShipments = shipments.filter(
-      (s) =>
-        moment(s.createdAt).isSame(today, 'day') &&
-        s.status === 'SELESAI' &&
-        s.isVerified === true &&
-        s.platePhoto,
+    // Get most used verified armadas for "today"/current date-range with plate photos from finished shipments
+    const todayFinishedShipments = kpiShipments.filter(
+      (s) => s.status === 'SELESAI' && s.isVerified === true && s.platePhoto,
     );
 
     const todayArmadaCountMap = new Map<
@@ -1597,8 +1608,11 @@ export default {
         count: armadaInfo.count,
         platePhotos: armadaInfo.platePhotos,
       }));
-    // Pending Assignments (status != SELESAI)
-    const pendingAssignments = shipments.filter((s) => s.status !== 'SELESAI').length;
+    // Pending Assignments: exclude CANCEL and SELESAI
+    // (pending work = PENDING + PROSES only)
+    const pendingAssignments = kpiShipments.filter(
+      (s) => s.status === 'PENDING' || s.status === 'PROSES',
+    ).length;
     // Grouped by armada for table/chart
     const groupedByArmada: ShipmentAssignment[] = [];
     shipments.forEach((shipment) => {

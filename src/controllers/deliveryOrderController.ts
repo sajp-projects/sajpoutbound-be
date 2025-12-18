@@ -914,6 +914,7 @@ export default {
         validated.shipmentId,
         validated.shipmentItemId,
         validated.newQuantity,
+        validated.decreaseMode,
         performedById,
       );
 

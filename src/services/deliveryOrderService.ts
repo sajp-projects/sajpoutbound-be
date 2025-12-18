@@ -4,6 +4,7 @@ import moment from 'moment-timezone';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import prisma from '../config/prisma';
+import { CustomError } from '../middlewares/error';
 import { DeliveryOrderCreateInput, DeliveryOrderUpdateInput } from '../schemas/deliveryOrder';
 import deliveryOrderLogService from './deliveryOrderLogService';
 import notaTimbanganPdfService from './notaTimbanganPdfService';
@@ -321,6 +322,23 @@ export default {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      // Guard: if all DO items are effectively cancelled, customer must not be changeable
+      // (prevents bypass via Edit DO / API)
+      if (data.customerId && oldDeliveryOrder.items && oldDeliveryOrder.items.length > 0) {
+        const isAllItemsCancelled = oldDeliveryOrder.items.every((i) => {
+          const remaining = (i.quantity || 0) - (i.cancelledQuantity || 0);
+          return remaining <= 0;
+        });
+        if (isAllItemsCancelled) {
+          throw new CustomError({
+            message:
+              'Tidak bisa mengubah customer: semua item pada delivery order sudah dibatalkan',
+            errorCode: 'DELIVERY_ORDER_ALL_ITEMS_CANCELLED',
+            status: 400,
+          });
+        }
+      }
 
       // Prepare update data and track changes
       const updateData: any = {
@@ -952,6 +970,24 @@ export default {
 
       if (!deliveryOrder) {
         return null; // Let controller handle error
+      }
+
+      // Guard: if all items are effectively cancelled, customer must not be changeable
+      // (matches FE expectation + prevents bypass via API)
+      const hasItems = (deliveryOrder.items || []).length > 0;
+      const isAllItemsCancelled =
+        hasItems &&
+        deliveryOrder.items.every((i) => {
+          const remaining = (i.quantity || 0) - (i.cancelledQuantity || 0);
+          return remaining <= 0;
+        });
+
+      if (isAllItemsCancelled) {
+        throw new CustomError({
+          message: 'Tidak bisa mengubah customer: semua item pada delivery order sudah dibatalkan',
+          errorCode: 'DELIVERY_ORDER_ALL_ITEMS_CANCELLED',
+          status: 400,
+        });
       }
 
       // Get old customer name for better logging
@@ -2870,6 +2906,7 @@ export default {
     shipmentId: string,
     shipmentItemId: string,
     newQuantity: number,
+    decreaseMode: 'to_cancelled' | 'to_pending' | undefined,
     performedById: string,
   ) {
     return await prisma.$transaction(async (tx) => {
@@ -2963,6 +3000,19 @@ export default {
       const oldQuantity = shipmentItem.requestedQuantity;
       const quantityChange = newQuantity - oldQuantity;
 
+      // Guard: decrease must specify a mode; increase must NOT specify a mode
+      if (quantityChange < 0 && !decreaseMode) {
+        return {
+          error:
+            'decreaseMode wajib diisi ketika melakukan pengurangan quantity (pilih: to_cancelled atau to_pending)',
+        };
+      }
+      if (quantityChange >= 0 && decreaseMode) {
+        return {
+          error: 'decreaseMode hanya boleh digunakan ketika quantity berkurang',
+        };
+      }
+
       // Only validate against available quantity when INCREASING
       if (quantityChange > 0) {
         // When increasing, we can only use:
@@ -2989,13 +3039,27 @@ export default {
       const newWeightedQuantity =
         weightPerUnit > 0 ? Math.round(newQuantity * weightPerUnit) : null;
 
-      // If new quantity is 0, delete the shipment item instead of updating
+      // If new quantity is 0:
+      // - when decreaseMode === 'to_cancelled' => mark shipment item as CANCELLED (so shipment can become CANCEL)
+      // - otherwise => delete shipment item (so quantity goes back to pending / removed from shipment)
       if (newQuantity === 0) {
-        await tx.shipmentItem.delete({
-          where: {
-            id: shipmentItemId,
-          },
-        });
+        if (decreaseMode === 'to_cancelled') {
+          await tx.shipmentItem.update({
+            where: { id: shipmentItemId },
+            data: {
+              status: 'CANCELLED',
+              requestedQuantity: 0,
+              weightedQuantity: 0,
+              updatedAt: jakartaTime,
+            },
+          });
+        } else {
+          await tx.shipmentItem.delete({
+            where: {
+              id: shipmentItemId,
+            },
+          });
+        }
       } else {
         // Update the specific shipment item
         await tx.shipmentItem.update({
@@ -3078,6 +3142,7 @@ export default {
       // Calculate new DO quantities based on whether we're increasing or decreasing
       let newTotalDOQuantity = originalDOItem.quantity;
       let pendingQuantity = originalDOItem.pendingQuantity;
+      let cancelledQuantity = originalDOItem.cancelledQuantity || 0;
 
       if (quantityChange > 0) {
         // INCREASING shipment quantity - prioritize taking from pending first
@@ -3094,17 +3159,8 @@ export default {
         }
       } else if (quantityChange < 0) {
         // DECREASING shipment quantity
-        // Reduce from the DO quantity based on where this shipment item's quantity is allocated
+        // IMPORTANT: total DO quantity must NOT change.
         const quantityReduction = Math.abs(quantityChange);
-
-        // Determine which DO bucket to reduce from based on shipment item and shipment status
-        let shouldReduceFromCompleted = false;
-        if (
-          itemBeingRevised?.status === 'COMPLETED' &&
-          itemBeingRevised?.shipment?.status === 'SELESAI'
-        ) {
-          shouldReduceFromCompleted = true;
-        }
 
         // Validate: cannot reduce more than what this shipment item currently has
         if (quantityReduction > originalItemQuantity) {
@@ -3113,31 +3169,38 @@ export default {
           };
         }
 
-        // Validate: ensure we have enough in the target bucket to reduce from
-        if (shouldReduceFromCompleted) {
-          // Check if we have enough in completed quantity
-          if (quantityReduction > originalDOItem.completedQuantity) {
+        // Apply reduction outcome based on mode
+        if (decreaseMode === 'to_cancelled') {
+          cancelledQuantity = (originalDOItem.cancelledQuantity || 0) + quantityReduction;
+
+          // Guard: cancelled cannot exceed remaining allocatable quantity
+          const maxCancelledAllowed = Math.max(
+            0,
+            originalDOItem.quantity - processingQuantity - completedQuantity,
+          );
+          if (cancelledQuantity > maxCancelledAllowed) {
             return {
-              error: `Tidak dapat mengurangi ${quantityReduction} dari completed quantity. Hanya ada ${originalDOItem.completedQuantity} unit di completed.`,
+              error: `Tidak dapat memindahkan ${quantityReduction} ke cancelled. Maksimal cancelled yang diperbolehkan adalah ${maxCancelledAllowed} (quantity DO: ${originalDOItem.quantity}, proses: ${processingQuantity}, selesai: ${completedQuantity}).`,
             };
           }
-        } else {
-          // Check if we have enough in processing quantity
-          if (quantityReduction > originalDOItem.processingQuantity) {
-            return {
-              error: `Tidak dapat mengurangi ${quantityReduction} dari processing quantity. Hanya ada ${originalDOItem.processingQuantity} unit di processing.`,
-            };
-          }
+        } else if (decreaseMode === 'to_pending') {
+          // No explicit write needed: reduced amount will naturally flow back into pending
+          // when we recompute pending = total - processing - completed - cancelled
+          cancelledQuantity = originalDOItem.cancelledQuantity || 0;
         }
 
-        // Apply the reduction to total DO quantity
-        newTotalDOQuantity -= quantityReduction;
-
-        // Recalculate pending from total
-        pendingQuantity = Math.max(0, newTotalDOQuantity - processingQuantity - completedQuantity);
+        // Recalculate pending from invariant (total never changes)
+        newTotalDOQuantity = originalDOItem.quantity;
+        pendingQuantity = Math.max(
+          0,
+          newTotalDOQuantity - processingQuantity - completedQuantity - cancelledQuantity,
+        );
       } else {
         // No change in quantity
-        pendingQuantity = Math.max(0, newTotalDOQuantity - processingQuantity - completedQuantity);
+        pendingQuantity = Math.max(
+          0,
+          newTotalDOQuantity - processingQuantity - completedQuantity - cancelledQuantity,
+        );
       }
 
       // Debug logging final results
@@ -3175,15 +3238,16 @@ export default {
           id: doItem.id,
         },
         data: {
-          quantity: newTotalDOQuantity, // Update total quantity (reduced amount)
+          quantity: newTotalDOQuantity,
           completedQuantity: completedQuantity,
           processingQuantity: processingQuantity,
           pendingQuantity: pendingQuantity,
+          cancelledQuantity: cancelledQuantity,
           updatedAt: jakartaTime,
         },
       });
 
-      // Check if DO should be marked as SELESAI
+      // Update DO / Shipment status:
       // Get all items for this delivery order to check completion status
       const allDOItems = await tx.deliveryOrderItem.findMany({
         where: {
@@ -3191,21 +3255,61 @@ export default {
         },
       });
 
-      // Check if all items have no pending or processing quantity (all completed)
+      const isDOAllItemsCancelled =
+        allDOItems.length > 0 &&
+        allDOItems.every((i) => (i.quantity || 0) - (i.cancelledQuantity || 0) <= 0);
+
+      const isDOAllItemsPendingOnly =
+        allDOItems.length > 0 &&
+        allDOItems.every((i) => {
+          const qty = i.quantity || 0;
+          const pending = i.pendingQuantity || 0;
+          const processing = i.processingQuantity || 0;
+          const completed = i.completedQuantity || 0;
+          const cancelled = i.cancelledQuantity || 0;
+
+          // Treat as "back to pending" when nothing is allocated to processing/completed.
+          // Cancelled is allowed: pending should cover the rest of the quantity.
+          // Invariant: pending + cancelled ~= qty (tolerate minor float issues).
+          const pendingPlusCancelledCoversAll = Math.abs(qty - (pending + cancelled)) < 1e-6;
+          return processing === 0 && completed === 0 && pendingPlusCancelledCoversAll;
+        });
+
       const hasIncompleteItems = allDOItems.some(
         (item) => item.pendingQuantity > 0 || item.processingQuantity > 0,
       );
 
-      // Update DO status to SELESAI if all items are completed
-      if (!hasIncompleteItems) {
+      if (isDOAllItemsCancelled) {
+        // If everything is cancelled, DO should be CANCEL
         await tx.deliveryOrder.update({
-          where: {
-            id: shipmentItem.deliveryOrderId,
-          },
-          data: {
-            status: STATUS.SELESAI,
-            updatedAt: jakartaTime,
-          },
+          where: { id: shipmentItem.deliveryOrderId },
+          data: { status: STATUS.CANCEL, updatedAt: jakartaTime },
+        });
+      } else if (isDOAllItemsPendingOnly) {
+        // If everything is pending (and nothing is cancelled/completed/processing), DO should be PENDING
+        await tx.deliveryOrder.update({
+          where: { id: shipmentItem.deliveryOrderId },
+          data: { status: STATUS.PENDING, updatedAt: jakartaTime },
+        });
+      } else if (!hasIncompleteItems) {
+        // Otherwise, if nothing pending/processing, DO is SELESAI
+        await tx.deliveryOrder.update({
+          where: { id: shipmentItem.deliveryOrderId },
+          data: { status: STATUS.SELESAI, updatedAt: jakartaTime },
+        });
+      }
+
+      // If all shipment items in this shipment are cancelled (or none left), shipment should be CANCEL
+      const remainingNonCancelledItemsCount = await tx.shipmentItem.count({
+        where: {
+          shipmentId,
+          status: { not: 'CANCELLED' },
+        },
+      });
+      if (remainingNonCancelledItemsCount === 0) {
+        await tx.shipment.update({
+          where: { id: shipmentId },
+          data: { status: STATUS.CANCEL, updatedAt: jakartaTime },
         });
       }
 

@@ -43,6 +43,7 @@ export type ReviseShipmentItemInput = {
   shipmentId: string;
   shipmentItemId: string;
   newQuantity: number;
+  decreaseMode?: 'to_cancelled' | 'to_pending';
 };
 
 export const createDeliveryOrderSchema = Joi.object<DeliveryOrderCreateInput>({
@@ -188,10 +189,13 @@ export const reviseShipmentItemSchema = Joi.object<ReviseShipmentItemInput>({
     'string.guid': 'Shipment item ID must be a valid UUID',
     'any.required': 'Shipment item ID is required',
   }),
-  newQuantity: Joi.number().required().positive().messages({
+  newQuantity: Joi.number().required().min(0).messages({
     'number.base': 'New quantity must be a number',
-    'number.positive': 'New quantity must be greater than 0',
+    'number.min': 'New quantity must be greater than or equal to 0',
     'any.required': 'New quantity is required',
+  }),
+  decreaseMode: Joi.string().valid('to_cancelled', 'to_pending').optional().messages({
+    'any.only': 'decreaseMode must be one of: to_cancelled, to_pending',
   }),
 });
 

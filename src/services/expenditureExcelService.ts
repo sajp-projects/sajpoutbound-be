@@ -216,6 +216,14 @@ export default {
           return;
         }
 
+        // Exclude cancelled/unweighed items; expenditure should reflect only shipped & weighed items
+        if (item.status !== 'COMPLETED') {
+          return;
+        }
+        if (!item.weighedAt) {
+          return;
+        }
+
         // Calculate netto from weighings for this specific product
         const chosenProduct = shipment.chosenProducts.find((cp) => cp.productId === item.productId);
 
