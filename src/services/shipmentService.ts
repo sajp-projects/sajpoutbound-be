@@ -578,7 +578,7 @@ export default {
       // Prepare shipment creation data
       const shipmentData: any = {
         type: data.type,
-        kenek: data.kenek,
+        kenek: data.kenek || null,
         internalNote: data.internalNote,
         plateNumber: plateNumberToUse,
         status: STATUS.PENDING,
@@ -2414,14 +2414,8 @@ export default {
           },
         });
       } else {
-        // Enforce that the weighing method must match the first selection
-        if (chosenProduct.weighingMethod !== data.weighingMethod) {
-          throw new Error(
-            `Produk ini sudah dipilih dengan metode ${chosenProduct.weighingMethod}. ` +
-              `Anda harus menggunakan metode yang sama untuk semua item dari produk ini.`,
-          );
-        }
-        // Just update the timestamp, weighing method stays the same
+        // Use the existing weighing method (ignore the one in data)
+        // Users can change the weighing method via the dedicated updateWeighingMethod endpoint
         chosenProduct = await tx.shipmentChosenProduct.update({
           where: { id: chosenProduct.id },
           data: {
@@ -4516,6 +4510,113 @@ export default {
       return {
         message: 'Item cancelled from shipment, quantity returned to delivery order pending',
         shipmentItemId,
+      };
+    });
+  },
+
+  async updateWeighingMethod(
+    shipmentId: string,
+    productId: string,
+    newWeighingMethod: WEIGHING_METHOD,
+    performedById: string,
+  ) {
+    const jakartaTime = moment().tz('Asia/Jakarta').toDate();
+
+    return prisma.$transaction(async (tx) => {
+      const chosenProduct = await tx.shipmentChosenProduct.findFirst({
+        where: {
+          shipmentId,
+          productId,
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              satuan: true,
+            },
+          },
+          weighings: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      });
+
+      if (!chosenProduct) {
+        throw new CustomError({
+          message: 'Produk tidak ditemukan dalam pengiriman ini',
+          errorCode: 'PRODUK_TIDAK_DITEMUKAN',
+          status: 404,
+        });
+      }
+
+      if (chosenProduct.weighings.length > 0) {
+        throw new CustomError({
+          message: 'Tidak dapat mengubah tipe penimbangan karena produk ini sudah pernah ditimbang',
+          errorCode: 'PRODUK_SUDAH_DITIMBANG',
+          status: 400,
+        });
+      }
+
+      if (chosenProduct.weighingMethod === newWeighingMethod) {
+        return {
+          message: 'Tipe penimbangan sudah sama, tidak ada perubahan',
+          chosenProduct,
+          updated: false,
+        };
+      }
+
+      const oldWeighingMethod = chosenProduct.weighingMethod;
+
+      await tx.shipmentChosenProduct.update({
+        where: {
+          id: chosenProduct.id,
+        },
+        data: {
+          weighingMethod: newWeighingMethod,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      await shipmentLogService.logShipmentUpdate(
+        shipmentId,
+        performedById,
+        { weighingMethod: oldWeighingMethod },
+        { weighingMethod: newWeighingMethod },
+        tx,
+        `Tipe penimbangan produk "${chosenProduct.product.name}" diubah dari ${oldWeighingMethod} ke ${newWeighingMethod}`,
+      );
+
+      const updatedChosenProduct = await tx.shipmentChosenProduct.findFirst({
+        where: {
+          id: chosenProduct.id,
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              satuan: true,
+            },
+          },
+          weighings: {
+            select: {
+              id: true,
+              grossWeight: true,
+              netWeight: true,
+              tareWeight: true,
+            },
+          },
+        },
+      });
+
+      return {
+        message: `Tipe penimbangan berhasil diubah dari ${oldWeighingMethod} ke ${newWeighingMethod}`,
+        chosenProduct: updatedChosenProduct,
+        updated: true,
+        hasWeighings: chosenProduct.weighings.length > 0,
       };
     });
   },
