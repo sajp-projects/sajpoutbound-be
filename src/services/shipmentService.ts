@@ -3292,7 +3292,7 @@ export default {
    * Get all shipments that have vendor-marked chosen products with CHOSEN status
    */
   async getVendorPendingShipments() {
-    return prisma.shipment.findMany({
+    const shipments = await prisma.shipment.findMany({
       where: {
         deletedAt: null,
         chosenProducts: {
@@ -3350,6 +3350,24 @@ export default {
         createdAt: 'desc',
       },
     });
+
+    return shipments.map((shipment) => ({
+      ...shipment,
+      truckWeighing: {
+        preWeighing: {
+          loadingGroupId: `PRE_WEIGH_${shipment.id}`,
+          status: shipment.preWeighingAt ? 'COMPLETED' : 'PENDING',
+          weight: shipment.preWeighingWeight,
+          completedAt: shipment.preWeighingAt,
+        },
+        postWeighing: {
+          loadingGroupId: `POST_WEIGH_${shipment.id}`,
+          status: shipment.postWeighingAt ? 'COMPLETED' : 'PENDING',
+          weight: shipment.postWeighingWeight,
+          completedAt: shipment.postWeighingAt,
+        },
+      },
+    }));
   },
 
   /**
@@ -3474,6 +3492,17 @@ export default {
    * Groups items by product AND loading group to match manual weighing behavior
    */
   async getVendorAvailableItemsForWeighingByShipmentId(shipmentId: string) {
+    const shipment = await prisma.shipment.findUnique({
+      where: { id: shipmentId },
+      select: {
+        id: true,
+        preWeighingWeight: true,
+        preWeighingAt: true,
+        postWeighingWeight: true,
+        postWeighingAt: true,
+      },
+    });
+
     const items = await prisma.shipmentItem.findMany({
       where: {
         status: SHIPMENT_ITEM_STATUS.CHOSEN,
@@ -3605,6 +3634,20 @@ export default {
 
     return {
       loadingGroups,
+      truckWeighing: {
+        preWeighing: {
+          loadingGroupId: `PRE_WEIGH_${shipmentId}`,
+          status: shipment?.preWeighingAt ? 'COMPLETED' : 'PENDING',
+          weight: shipment?.preWeighingWeight ?? null,
+          completedAt: shipment?.preWeighingAt ?? null,
+        },
+        postWeighing: {
+          loadingGroupId: `POST_WEIGH_${shipmentId}`,
+          status: shipment?.postWeighingAt ? 'COMPLETED' : 'PENDING',
+          weight: shipment?.postWeighingWeight ?? null,
+          completedAt: shipment?.postWeighingAt ?? null,
+        },
+      },
     };
   },
 
@@ -4512,6 +4555,113 @@ export default {
         shipmentItemId,
       };
     });
+  },
+
+  async performPreWeighing(shipmentId: string, grossWeight: number) {
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+    const shipment = await prisma.shipment.findUnique({
+      where: { id: shipmentId },
+    });
+
+    if (!shipment) {
+      throw new CustomError({
+        message: 'Pengiriman tidak ditemukan',
+        errorCode: 'SHIPMENT_NOT_FOUND',
+        status: 404,
+      });
+    }
+
+    if (!shipment.tally || shipment.tally.trim() === '') {
+      throw new CustomError({
+        message: 'Tally harus diisi terlebih dahulu',
+        errorCode: 'TALLY_REQUIRED',
+        status: 400,
+      });
+    }
+
+    if (shipment.preWeighingAt) {
+      throw new CustomError({
+        message: 'Pre-weighing sudah dilakukan',
+        errorCode: 'PRE_WEIGHING_ALREADY_DONE',
+        status: 400,
+      });
+    }
+
+    const updatedShipment = await prisma.shipment.update({
+      where: { id: shipmentId },
+      data: {
+        preWeighingWeight: grossWeight,
+        preWeighingAt: jakartaTime,
+        preWeighingById: 'VENDOR',
+        status: STATUS.PROSES,
+        updatedAt: jakartaTime,
+      },
+    });
+
+    return updatedShipment;
+  },
+
+  async performPostWeighing(shipmentId: string, grossWeight: number) {
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+    const shipment = await prisma.shipment.findUnique({
+      where: { id: shipmentId },
+      include: {
+        shipmentItems: true,
+      },
+    });
+
+    if (!shipment) {
+      throw new CustomError({
+        message: 'Pengiriman tidak ditemukan',
+        errorCode: 'SHIPMENT_NOT_FOUND',
+        status: 404,
+      });
+    }
+
+    if (!shipment.preWeighingAt) {
+      throw new CustomError({
+        message: 'Pre-weighing harus dilakukan terlebih dahulu',
+        errorCode: 'PRE_WEIGHING_REQUIRED',
+        status: 400,
+      });
+    }
+
+    const nonCancelledItems = shipment.shipmentItems.filter(
+      (item) => item.status !== SHIPMENT_ITEM_STATUS.CANCELLED,
+    );
+    const allCompleted = nonCancelledItems.every((item) => item.status === SHIPMENT_ITEM_STATUS.COMPLETED);
+
+    if (!allCompleted) {
+      throw new CustomError({
+        message: 'Semua item harus selesai ditimbang',
+        errorCode: 'ITEMS_NOT_COMPLETED',
+        status: 400,
+      });
+    }
+
+    if (shipment.postWeighingAt) {
+      throw new CustomError({
+        message: 'Post-weighing sudah dilakukan',
+        errorCode: 'POST_WEIGHING_ALREADY_DONE',
+        status: 400,
+      });
+    }
+
+    const updatedShipment = await prisma.shipment.update({
+      where: { id: shipmentId },
+      data: {
+        postWeighingWeight: grossWeight,
+        postWeighingAt: jakartaTime,
+        postWeighingById: 'VENDOR',
+        updatedAt: jakartaTime,
+      },
+    });
+
+    return updatedShipment;
   },
 
   async updateWeighingMethod(
