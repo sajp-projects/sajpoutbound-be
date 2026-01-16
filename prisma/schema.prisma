@@ -295,6 +295,17 @@ model Shipment {
   platePhoto     String?
   isVerified     Boolean                 @default(false)
   verifiedAt     DateTime?
+
+  // Pre-weighing (truck empty) - VENDOR ONLY
+  preWeighingWeight    Decimal?   @db.Decimal(10, 2)
+  preWeighingAt        DateTime?
+  preWeighingById      String?    // "VENDOR" for vendor API
+
+  // Post-weighing (truck loaded) - VENDOR ONLY
+  postWeighingWeight   Decimal?   @db.Decimal(10, 2)
+  postWeighingAt       DateTime?
+  postWeighingById     String?    // "VENDOR" for vendor API
+
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
   deletedAt      DateTime?
