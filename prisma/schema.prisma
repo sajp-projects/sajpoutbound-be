@@ -298,6 +298,12 @@ model Shipment {
   createdAt      DateTime                @default(now())
   updatedAt      DateTime                @updatedAt
   deletedAt      DateTime?
+  preWeighingWeight   Float?
+  preWeighingAt       DateTime?
+  preWeighingById     String?
+  postWeighingWeight  Float?
+  postWeighingAt      DateTime?
+  postWeighingById    String?
   spmbs          SPMB[]
   armada         Armada?                 @relation(fields: [armadaId], references: [id])
   driver         Driver?                @relation(fields: [driverId], references: [id])

@@ -4860,6 +4860,99 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Vendor Truck Weighing API",
+      "item": [
+        {
+          "name": "Get Shipments for Truck Weighing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-auth",
+                "value": "{{vendorApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor/truck-weighing/shipments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendor", "truck-weighing", "shipments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Shipment Detail for Truck Weighing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-auth",
+                "value": "{{vendorApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor/truck-weighing/shipments/{{shipmentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendor", "truck-weighing", "shipments", "{{shipmentId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Perform Pre-Weighing (Empty Truck)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-auth",
+                "value": "{{vendorApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"shipmentId\": \"{{shipmentId}}\", \"type\": \"PRE\", \"weight\": 5000}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor/truck-weighing/weigh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendor", "truck-weighing", "weigh"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Perform Post-Weighing (Loaded Truck)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-auth",
+                "value": "{{vendorApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"shipmentId\": \"{{shipmentId}}\", \"type\": \"POST\", \"weight\": 15000}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor/truck-weighing/weigh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "vendor", "truck-weighing", "weigh"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "event": [

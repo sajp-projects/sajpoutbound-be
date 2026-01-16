@@ -12,6 +12,7 @@ import rolePermissionRoutes from './rolePermissionRoutes';
 import roleRoutes from './roleRoute';
 import shipmentRoutes from './shipmentRoute';
 import userRoutes from './userRoute';
+import truckWeighingRoutes from './truckWeighingRoute';
 import vendorRoutes from './vendorRoute';
 import warehouseRoutes from './warehouseRoute';
 
@@ -21,6 +22,7 @@ router.use('/auth', authRoutes);
 
 // Vendor routes (require x-auth header instead of JWT)
 router.use('/vendor', vendorRoutes);
+router.use('/vendor/truck-weighing', truckWeighingRoutes);
 
 router.use(authenticateToken);
 
