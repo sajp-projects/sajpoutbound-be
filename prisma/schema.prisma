@@ -287,7 +287,7 @@ model Shipment {
   type           SHIPMENT_TYPE           @default(ANTAR)
   status         STATUS                  @default(PENDING)
   armadaId       String?
-  driverId       String
+  driverId       String?
   tally          String?
   kenek          String?
   internalNote   String?
@@ -300,7 +300,7 @@ model Shipment {
   deletedAt      DateTime?
   spmbs          SPMB[]
   armada         Armada?                 @relation(fields: [armadaId], references: [id])
-  driver         Driver                 @relation(fields: [driverId], references: [id])
+  driver         Driver?                @relation(fields: [driverId], references: [id])
   chosenProducts ShipmentChosenProduct[]
   shipmentItems  ShipmentItem[]
   shipmentLogs   ShipmentLog[]
