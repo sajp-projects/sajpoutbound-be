@@ -143,7 +143,7 @@ export default {
         shipmentNumber: shipment.shipmentNumber || '',
         type: shipment.type,
         status: shipment.status,
-        plateNumber: shipment.plateNumber || '',
+        plateNumber: shipment.plateNumber || shipment.armada?.plateNumber || '',
         armada: shipment.armada
           ? {
               id: shipment.armada.id,
@@ -502,6 +502,15 @@ export default {
             plateNumber: true,
           },
         },
+        chosenProducts: {
+          include: {
+            weighings: {
+              select: {
+                netWeight: true,
+              },
+            },
+          },
+        },
         shipmentItems: {
           include: {
             deliveryOrder: {
@@ -548,7 +557,14 @@ export default {
     const tableData: ReportShipment[] = shipments.map((shipment) => {
       const deliveryOrderMap = new Map();
       let totalItems = 0;
+
+      // Calculate totalWeight from chosenProducts weighings (sum of all netWeight)
       let totalWeight = 0;
+      shipment.chosenProducts.forEach((chosenProduct) => {
+        chosenProduct.weighings.forEach((weighing) => {
+          totalWeight += weighing.netWeight || 0;
+        });
+      });
 
       shipment.shipmentItems.forEach((item) => {
         const doId = item.deliveryOrder.id;
@@ -571,7 +587,6 @@ export default {
           locationType: item.locationType,
         });
         totalItems += item.requestedQuantity;
-        totalWeight += item.weightedQuantity || 0;
       });
 
       return {
@@ -579,7 +594,7 @@ export default {
         shipmentNumber: shipment.shipmentNumber || '',
         type: shipment.type,
         status: shipment.status,
-        plateNumber: shipment.plateNumber || '',
+        plateNumber: shipment.plateNumber || shipment.armada?.plateNumber || '',
         armada: shipment.armada
           ? {
               id: shipment.armada.id,
@@ -951,7 +966,7 @@ export default {
                     plateNumber: shipment.armada.plateNumber || '',
                   }
                 : null,
-              plateNumber: shipment.plateNumber || '',
+              plateNumber: shipment.plateNumber || shipment.armada?.plateNumber || '',
             });
             group.shipmentCount++;
           }
@@ -1379,7 +1394,7 @@ export default {
                   plateNumber: shipment.armada.plateNumber || '',
                 }
               : null,
-            plateNumber: shipment.plateNumber || '',
+            plateNumber: shipment.plateNumber || shipment.armada?.plateNumber || '',
           });
           group.shipmentCount++;
         }
@@ -1644,7 +1659,7 @@ export default {
         shipmentNumber: shipment.shipmentNumber || '',
         type: shipment.type,
         status: shipment.status,
-        plateNumber: shipment.plateNumber || '',
+        plateNumber: shipment.plateNumber || shipment.armada?.plateNumber || '',
         armada: shipment.armada
           ? {
               id: shipment.armada.id,
