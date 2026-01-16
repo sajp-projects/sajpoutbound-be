@@ -2167,6 +2167,27 @@ export default {
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
+      const shipmentForPreWeighCheck = await tx.shipment.findUnique({
+        where: { id: data.shipmentId },
+        select: { id: true, preWeighingAt: true },
+      });
+
+      if (!shipmentForPreWeighCheck) {
+        throw new CustomError({
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      if (!shipmentForPreWeighCheck.preWeighingAt) {
+        throw new CustomError({
+          message: 'Pre-weighing harus dilakukan terlebih dahulu',
+          errorCode: 'PRE_WEIGHING_REQUIRED',
+          status: 400,
+        });
+      }
+
       // Find all matching shipment items with this product
       const shipmentItems = await tx.shipmentItem.findMany({
         where: {
@@ -2336,6 +2357,27 @@ export default {
       // Create a Jakarta timezone date (UTC+7)
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+      const shipmentForPreWeighCheck = await tx.shipment.findUnique({
+        where: { id: data.shipmentId },
+        select: { id: true, preWeighingAt: true },
+      });
+
+      if (!shipmentForPreWeighCheck) {
+        throw new CustomError({
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      if (!shipmentForPreWeighCheck.preWeighingAt) {
+        throw new CustomError({
+          message: 'Pre-weighing harus dilakukan terlebih dahulu',
+          errorCode: 'PRE_WEIGHING_REQUIRED',
+          status: 400,
+        });
+      }
 
       // Find only the specified shipment items for this product and specific delivery orders
       // FIXED: Removed status filter to ensure we only select items from the specified DOs
@@ -2830,6 +2872,27 @@ export default {
       const jakartaTime = new Date();
       jakartaTime.setHours(jakartaTime.getHours() + 7);
 
+      const shipmentForPostWeighingCheck = await tx.shipment.findUnique({
+        where: { id },
+        select: { id: true, postWeighingAt: true },
+      });
+
+      if (!shipmentForPostWeighingCheck) {
+        throw new CustomError({
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      if (!shipmentForPostWeighingCheck.postWeighingAt) {
+        throw new CustomError({
+          message: 'Post-weighing harus dilakukan terlebih dahulu',
+          errorCode: 'POST_WEIGHING_REQUIRED',
+          status: 400,
+        });
+      }
+
       // Update the shipment to mark plate number as verified
       const updatedShipment = await tx.shipment.update({
         where: {
@@ -2995,7 +3058,13 @@ export default {
           status: SHIPMENT_ITEM_STATUS.CHOSEN,
         },
         include: {
-          shipment: true,
+          shipment: {
+            select: {
+              id: true,
+              status: true,
+              preWeighingAt: true,
+            },
+          },
           deliveryOrder: {
             include: {
               customer: true,
@@ -3019,19 +3088,15 @@ export default {
         );
       }
 
-      const totalRequestedQuantity = items.reduce((sum, item) => sum + item.requestedQuantity, 0);
-
-      if (items[0].shipment.status === STATUS.PENDING) {
-        await tx.shipment.update({
-          where: {
-            id: data.shipmentId,
-          },
-          data: {
-            status: STATUS.PROSES,
-            updatedAt: jakartaTime,
-          },
+      if (!items[0].shipment.preWeighingAt) {
+        throw new CustomError({
+          message: 'Pre-weighing harus dilakukan terlebih dahulu',
+          errorCode: 'PRE_WEIGHING_REQUIRED',
+          status: 400,
         });
       }
+
+      const totalRequestedQuantity = items.reduce((sum, item) => sum + item.requestedQuantity, 0);
 
       // TODO: NEED CHORE cleaning code
       const updatedItems = [];
@@ -3128,13 +3193,19 @@ export default {
             shipmentChosenProductWeighingId: weighing.id,
             updatedAt: jakartaTime,
           },
-          include: {
-            shipment: true,
-            deliveryOrder: {
-              include: {
-                customer: true,
-              },
+        include: {
+          shipment: {
+            select: {
+              id: true,
+              status: true,
+              preWeighingAt: true,
             },
+          },
+          deliveryOrder: {
+            include: {
+              customer: true,
+            },
+          },
             product: {
               select: {
                 id: true,
@@ -3883,16 +3954,11 @@ export default {
         return null;
       }
 
-      // Update shipment status to PROSES if it's PENDING
-      if (shipmentItem.shipment.status === STATUS.PENDING) {
-        await tx.shipment.update({
-          where: {
-            id: shipmentItem.shipmentId,
-          },
-          data: {
-            status: STATUS.PROSES,
-            updatedAt: jakartaTime,
-          },
+      if (!shipmentItem.shipment.preWeighingAt) {
+        throw new CustomError({
+          message: 'Pre-weighing harus dilakukan terlebih dahulu',
+          errorCode: 'PRE_WEIGHING_REQUIRED',
+          status: 400,
         });
       }
 
