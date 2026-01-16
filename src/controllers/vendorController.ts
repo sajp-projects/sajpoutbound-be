@@ -102,6 +102,50 @@ export default {
 
       const validated = await vendorBulkWeighSchema.validateAsync(req.body);
 
+      // Detect truck weighing patterns - must be FIRST before any loadingGroup validation
+      if (validated.loadingGroupId.startsWith('PRE_WEIGH_')) {
+        // Pre-weighing: validate shipmentId matches pattern
+        const patternShipmentId = validated.loadingGroupId.replace('PRE_WEIGH_', '');
+        if (patternShipmentId !== validated.shipmentId) {
+          throw new CustomError({
+            message: 'ShipmentId tidak sesuai dengan loadingGroupId',
+            errorCode: 'INVALID_LOADING_GROUP_ID',
+            status: 400,
+          });
+        }
+
+        const result = await shipmentService.performPreWeighing(validated.shipmentId, validated.grossWeight);
+        res.status(200).json(success({
+          type: 'PRE_WEIGHING',
+          shipment: { id: result.id, shipmentNumber: result.shipmentNumber, status: result.status },
+          weight: result.preWeighingWeight,
+          weighedAt: result.preWeighingAt,
+        }));
+        return;
+      }
+
+      if (validated.loadingGroupId.startsWith('POST_WEIGH_')) {
+        // Post-weighing: validate shipmentId matches pattern
+        const patternShipmentId = validated.loadingGroupId.replace('POST_WEIGH_', '');
+        if (patternShipmentId !== validated.shipmentId) {
+          throw new CustomError({
+            message: 'ShipmentId tidak sesuai dengan loadingGroupId',
+            errorCode: 'INVALID_LOADING_GROUP_ID',
+            status: 400,
+          });
+        }
+
+        const result = await shipmentService.performPostWeighing(validated.shipmentId, validated.grossWeight);
+        res.status(200).json(success({
+          type: 'POST_WEIGHING',
+          shipment: { id: result.id, shipmentNumber: result.shipmentNumber, status: result.status },
+          weight: result.postWeighingWeight,
+          weighedAt: result.postWeighingAt,
+        }));
+        return;
+      }
+      // End of truck weighing detection - continue with product weighing logic
+
       let performedById;
 
       // Use system user for vendor weighing
