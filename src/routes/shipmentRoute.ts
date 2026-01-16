@@ -72,6 +72,14 @@ router.delete(
   shipmentController.deleteChosenProduct,
 );
 
+router.patch(
+  '/:shipmentId/choosen-product/:productId/weighing-method',
+  checkPermission('shipment', PERMISSION_ACTION.UPDATE),
+  checkWarehouseAccess(),
+  checkShipmentNotArchived,
+  shipmentController.updateWeighingMethod,
+);
+
 // Get Nota Timbangan documents for a product
 router.get(
   '/:shipmentId/nota-timbangan/:productId',

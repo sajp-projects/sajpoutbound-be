@@ -1877,4 +1877,57 @@ export default {
       next(error);
     }
   },
+
+  async updateWeighingMethod(
+    req: Request<
+      { shipmentId: string; productId: string },
+      unknown,
+      { weighingMethod: WEIGHING_METHOD }
+    >,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { shipmentId, productId } = req.params;
+      const { weighingMethod } = req.body;
+
+      await shipmentIdSchema.validateAsync({ id: shipmentId });
+
+      if (!productId) {
+        throw new CustomError({
+          message: 'Product ID harus diisi',
+          errorCode: 'PRODUCT_ID_REQUIRED',
+          status: 400,
+        });
+      }
+
+      if (!weighingMethod || !['MANUAL', 'VENDOR'].includes(weighingMethod)) {
+        throw new CustomError({
+          message: 'Tipe penimbangan harus MANUAL atau VENDOR',
+          errorCode: 'INVALID_WEIGHING_METHOD',
+          status: 400,
+        });
+      }
+
+      const userId = req.user?.id;
+      if (!userId) {
+        throw new CustomError({
+          message: 'User tidak terautentikasi',
+          errorCode: 'UNAUTHORIZED',
+          status: 401,
+        });
+      }
+
+      const result = await shipmentService.updateWeighingMethod(
+        shipmentId,
+        productId,
+        weighingMethod as WEIGHING_METHOD,
+        userId,
+      );
+
+      res.status(200).json(success(result));
+    } catch (error) {
+      next(error);
+    }
+  },
 };
