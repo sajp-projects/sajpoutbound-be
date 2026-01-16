@@ -6,37 +6,102 @@ import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+/**
+ * Reset Users & Permissions Script
+ *
+ * This script resets users, roles, and permissions while preserving all other data.
+ *
+ * RESET (Deleted & Re-seeded):
+ * - User
+ * - Role
+ * - Permission
+ * - RolePermission
+ * - UserLog (cleared due to FK constraints)
+ *
+ * PRESERVED:
+ * - All transactional data (DeliveryOrder, Shipment, etc.)
+ * - Master data (Warehouse, Product, Customer, Armada, Driver)
+ * - All other logs
+ */
 async function main() {
+  console.log('='.repeat(60));
+  console.log('RESET USERS & PERMISSIONS');
+  console.log('='.repeat(60));
+  console.log('');
+  console.log('This will RESET:');
+  console.log('  - Users (deleted & re-created with default Pemilik)');
+  console.log('  - Roles (deleted & re-created)');
+  console.log('  - Permissions (deleted & re-created with latest actions)');
+  console.log('  - RolePermissions (deleted & re-created)');
+  console.log('  - UserLog (cleared due to FK constraints)');
+  console.log('');
+  console.log('All other data will be PRESERVED.');
+  console.log('');
+  console.log('='.repeat(60));
+
   try {
-    // Clear all existing data
-    await prisma.armadaLog.deleteMany();
-    await prisma.customerLog.deleteMany();
-    await prisma.productLog.deleteMany();
-    await prisma.userLog.deleteMany();
-    await prisma.warehouseLog.deleteMany();
-    await prisma.deliveryOrderLog.deleteMany();
-    await prisma.deliveryOrderItem.deleteMany();
-    await prisma.deliveryOrder.deleteMany();
-    await prisma.permission.deleteMany();
-    await prisma.rolePermission.deleteMany();
-    await prisma.role.deleteMany();
-    await prisma.armada.deleteMany();
-    await prisma.customer.deleteMany();
-    await prisma.product.deleteMany();
-    await prisma.warehouse.deleteMany();
-    await prisma.user.deleteMany();
+    // Step 1: Clear references that point to users
+    console.log('\n[1/6] Clearing user references...');
 
-    console.log('Cleared existing data');
+    const userLogCount = await prisma.userLog.deleteMany();
+    console.log(`  - UserLog: ${userLogCount.count} records deleted`);
 
-    // Create only one role: Pemilik (Owner)
+    const warehouseLogCount = await prisma.warehouseLog.deleteMany();
+    console.log(`  - WarehouseLog: ${warehouseLogCount.count} records deleted`);
+
+    const productLogCount = await prisma.productLog.deleteMany();
+    console.log(`  - ProductLog: ${productLogCount.count} records deleted`);
+
+    const customerLogCount = await prisma.customerLog.deleteMany();
+    console.log(`  - CustomerLog: ${customerLogCount.count} records deleted`);
+
+    const armadaLogCount = await prisma.armadaLog.deleteMany();
+    console.log(`  - ArmadaLog: ${armadaLogCount.count} records deleted`);
+
+    const deliveryOrderLogCount = await prisma.deliveryOrderLog.deleteMany();
+    console.log(`  - DeliveryOrderLog: ${deliveryOrderLogCount.count} records deleted`);
+
+    const shipmentLogCount = await prisma.shipmentLog.deleteMany();
+    console.log(`  - ShipmentLog: ${shipmentLogCount.count} records deleted`);
+
+    // Clear SPMB generatedById (nullable field)
+    const spmbClearCount = await prisma.sPMB.updateMany({
+      where: { generatedById: { not: null } },
+      data: { generatedById: null },
+    });
+    console.log(`  - SPMB generatedById cleared: ${spmbClearCount.count} records`);
+
+    // Step 2: Delete users
+    console.log('\n[2/6] Deleting users...');
+    const deletedUserCount = await prisma.user.deleteMany();
+    console.log(`  - Users deleted: ${deletedUserCount.count}`);
+
+    // Step 3: Delete role permissions
+    console.log('\n[3/6] Deleting role permissions...');
+    const deletedRolePermCount = await prisma.rolePermission.deleteMany();
+    console.log(`  - RolePermissions deleted: ${deletedRolePermCount.count}`);
+
+    // Step 4: Delete permissions
+    console.log('\n[4/6] Deleting permissions...');
+    const deletedPermCount = await prisma.permission.deleteMany();
+    console.log(`  - Permissions deleted: ${deletedPermCount.count}`);
+
+    // Step 5: Delete roles
+    console.log('\n[5/6] Deleting roles...');
+    const deletedRoleCount = await prisma.role.deleteMany();
+    console.log(`  - Roles deleted: ${deletedRoleCount.count}`);
+
+    // Step 6: Re-seed users, roles, and permissions
+    console.log('\n[6/6] Re-seeding users, roles, and permissions...');
+
+    // Create Pemilik role
     const pemilikRole = await prisma.role.create({
       data: {
         name: 'Pemilik',
         description: 'Pemilik sistem dengan akses penuh ke semua fitur',
       },
     });
-
-    console.log('Created Pemilik role');
+    console.log('  - Created Pemilik role');
 
     // Create permissions for different resources and actions
     const resources = [
@@ -61,7 +126,6 @@ async function main() {
     ];
     const actions = Object.values(PERMISSION_ACTION);
 
-    // Create all possible permissions
     const permissions: Permission[] = [];
     const specialActions: Set<PERMISSION_ACTION> = new Set([
       PERMISSION_ACTION.WEIGH,
@@ -194,7 +258,7 @@ async function main() {
       }
     }
 
-    console.log(`Created ${permissions.length} permissions`);
+    console.log(`  - Created ${permissions.length} permissions`);
 
     // Assign all permissions to Pemilik role
     const pemilikPermissionAssignments = await Promise.all(
@@ -208,9 +272,9 @@ async function main() {
       ),
     );
 
-    console.log(`Assigned ${pemilikPermissionAssignments.length} permissions to Pemilik role`);
+    console.log(`  - Assigned ${pemilikPermissionAssignments.length} permissions to Pemilik role`);
 
-    // Create only one user: Jeffrey as Pemilik
+    // Create default user: Jeffrey as Pemilik
     const defaultPassword = await bcrypt.hash('Password123!', 10);
 
     await prisma.user.create({
@@ -219,25 +283,30 @@ async function main() {
         name: 'Jeffrey',
         password: defaultPassword,
         roleId: pemilikRole.id,
-        // No warehouse assigned - can access all warehouses
       },
     });
 
-    console.log('Created Jeffrey user as Pemilik');
+    console.log('  - Created Jeffrey user as Pemilik');
 
-    // Log summary of created data
-    console.log('Seed data created successfully:');
-    console.log(`- Roles: 1 (Pemilik)`);
-    console.log(`- Users: 1 (Jeffrey)`);
-    console.log(`- Permissions: ${permissions.length}`);
-    console.log(`- Pemilik permissions: ${pemilikPermissionAssignments.length}`);
+    // Summary
+    console.log('\n' + '='.repeat(60));
+    console.log('RESET COMPLETE');
+    console.log('='.repeat(60));
+    console.log('');
+    console.log('Created:');
+    console.log(`  - Roles: 1 (Pemilik)`);
+    console.log(`  - Users: 1 (Jeffrey)`);
+    console.log(`  - Permissions: ${permissions.length}`);
+    console.log(`  - RolePermissions: ${pemilikPermissionAssignments.length}`);
     console.log('');
     console.log('Login credentials:');
-    console.log(`- Email: jeffrey@gmail.com`);
-    console.log(`- Password: Password123!`);
-    console.log(`- Role: Pemilik (Full access to all features)`);
+    console.log(`  - Email: jeffrey@gmail.com`);
+    console.log(`  - Password: Password123!`);
+    console.log(`  - Role: Pemilik (Full access to all features)`);
+    console.log('');
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error('\nError resetting users & permissions:', error);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }

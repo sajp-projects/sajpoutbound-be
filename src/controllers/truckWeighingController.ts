@@ -51,21 +51,27 @@ export const getShipmentsForTruckWeighing = async (
         const allItemsCompleted =
           nonCancelledItems.length > 0 && completedItems.length === nonCancelledItems.length;
 
-        const needsPreWeighing = s.status === 'PENDING' && s.preWeighingWeight === null;
+        const needsPreWeighing =
+          s.status === 'PENDING' && s.preWeighingWeight === null && !!s.tally;
         const needsPostWeighing =
           s.status === 'PROSES' && s.postWeighingWeight === null && allItemsCompleted;
+        // Shipment is waiting for items to be completed before POST weighing
+        const awaitingItemCompletion =
+          s.status === 'PROSES' && s.postWeighingWeight === null && !allItemsCompleted;
 
         return {
           id: s.id,
           shipmentNumber: s.shipmentNumber,
           plateNumber: s.plateNumber,
           status: s.status,
+          hasTally: !!s.tally,
           needsPreWeighing,
           needsPostWeighing,
+          awaitingItemCompletion,
           armada: s.armada ? { model: s.armada.model, plateNumber: s.armada.plateNumber } : null,
         };
       })
-      .filter((s) => s.needsPreWeighing || s.needsPostWeighing);
+      .filter((s) => s.needsPreWeighing || s.needsPostWeighing || s.awaitingItemCompletion);
 
     res.status(200).json(success({ shipments: result }));
   } catch (error) {
@@ -103,7 +109,8 @@ export const getShipmentDetailForTruckWeighing = async (
     const nonCancelledItems = shipment.shipmentItems.filter((i) => i.status !== 'CANCELLED');
     const completedItems = nonCancelledItems.filter((i) => i.status === 'COMPLETED');
 
-    const needsPreWeighing = shipment.status === 'PENDING' && shipment.preWeighingWeight === null;
+    const needsPreWeighing =
+      shipment.status === 'PENDING' && shipment.preWeighingWeight === null && !!shipment.tally;
     const needsPostWeighing =
       shipment.status === 'PROSES' &&
       shipment.postWeighingWeight === null &&
@@ -117,6 +124,7 @@ export const getShipmentDetailForTruckWeighing = async (
           shipmentNumber: shipment.shipmentNumber,
           plateNumber: shipment.plateNumber,
           status: shipment.status,
+          hasTally: !!shipment.tally,
           needsPreWeighing,
           needsPostWeighing,
           preWeighingWeight: shipment.preWeighingWeight,
@@ -126,8 +134,6 @@ export const getShipmentDetailForTruckWeighing = async (
           armada: shipment.armada
             ? { model: shipment.armada.model, plateNumber: shipment.armada.plateNumber }
             : null,
-          itemsCompleted: completedItems.length,
-          itemsTotal: nonCancelledItems.length,
         },
       }),
     );

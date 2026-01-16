@@ -4692,6 +4692,13 @@ export default {
           status: 404,
         });
       }
+      if (shipment.preWeighingWeight !== null) {
+        throw new CustomError({
+          message: 'Timbang awal (truk kosong) sudah dilakukan sebelumnya',
+          errorCode: 'PRE_WEIGHING_ALREADY_DONE',
+          status: 400,
+        });
+      }
       if (shipment.status !== 'PENDING') {
         throw new CustomError({
           message: 'Pengiriman harus berstatus PENDING untuk timbang awal',
@@ -4699,10 +4706,10 @@ export default {
           status: 400,
         });
       }
-      if (shipment.preWeighingWeight !== null) {
+      if (!shipment.tally) {
         throw new CustomError({
-          message: 'Truk sudah ditimbang sebelumnya',
-          errorCode: 'ALREADY_WEIGHED',
+          message: 'Tally harus diisi terlebih dahulu sebelum timbang awal',
+          errorCode: 'TALLY_REQUIRED',
           status: 400,
         });
       }
@@ -4744,17 +4751,17 @@ export default {
           status: 404,
         });
       }
+      if (shipment.postWeighingWeight !== null) {
+        throw new CustomError({
+          message: 'Timbang akhir (truk muat) sudah dilakukan sebelumnya',
+          errorCode: 'POST_WEIGHING_ALREADY_DONE',
+          status: 400,
+        });
+      }
       if (shipment.status !== 'PROSES') {
         throw new CustomError({
           message: 'Pengiriman harus berstatus PROSES untuk timbang akhir',
           errorCode: 'INVALID_STATUS',
-          status: 400,
-        });
-      }
-      if (shipment.postWeighingWeight !== null) {
-        throw new CustomError({
-          message: 'Truk sudah ditimbang sebelumnya',
-          errorCode: 'ALREADY_WEIGHED',
           status: 400,
         });
       }
@@ -4772,7 +4779,8 @@ export default {
           status: { not: 'CANCELLED' },
         },
       });
-      const allCompleted = activeItems.length > 0 && activeItems.every((i) => i.status === 'COMPLETED');
+      const allCompleted =
+        activeItems.length > 0 && activeItems.every((i) => i.status === 'COMPLETED');
       if (!allCompleted) {
         throw new CustomError({
           message: 'Semua item harus sudah selesai ditimbang sebelum timbang truk akhir',

@@ -74,7 +74,7 @@ router.delete(
 
 router.patch(
   '/:shipmentId/choosen-product/:productId/weighing-method',
-  checkPermission('shipment', PERMISSION_ACTION.UPDATE),
+  checkPermission('shipment', PERMISSION_ACTION.UPDATE_WEIGHING_METHOD),
   checkWarehouseAccess(),
   checkShipmentNotArchived,
   shipmentController.updateWeighingMethod,

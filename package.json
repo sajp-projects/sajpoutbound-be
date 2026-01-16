@@ -9,7 +9,9 @@
     "start": "cross-env TZ=Asia/Jakarta node dist/index.js",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "seed": "cross-env TZ=Asia/Jakarta ts-node prisma/seed.ts"
+    "seed": "cross-env TZ=Asia/Jakarta ts-node prisma/seed.ts",
+    "reset-transactional": "cross-env TZ=Asia/Jakarta ts-node prisma/reset-transactional.ts",
+    "reset-permissions": "cross-env TZ=Asia/Jakarta ts-node prisma/reset-permissions.ts"
   },
   "author": "",
   "license": "ISC",
