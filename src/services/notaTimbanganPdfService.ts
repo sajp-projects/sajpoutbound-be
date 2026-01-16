@@ -128,13 +128,26 @@ export default {
       const labelWidth = 80;
       const valueX = infoX + labelWidth + 5;
 
+      const maxValueWidth = 240 - 15 - 15 - labelWidth - 5 - 5;
+      const rowSpacing = 14;
+      const colonWidth = 8;
+
       const addInfoRow = (label: string, value: string) => {
         const currentY = doc.y;
         doc.font(fontName).fontSize(fontSize).text(label, infoX, currentY, {
           width: labelWidth,
         });
-        doc.font(fontName).fontSize(fontSize).text(`: ${value}`, valueX, currentY);
-        doc.y = currentY + 12;
+
+        doc.font(fontName).fontSize(fontSize).text(':', valueX, currentY);
+
+        const textStartX = valueX + colonWidth;
+        const textWidth = maxValueWidth - colonWidth;
+        doc.font(fontName).fontSize(fontSize).text(value, textStartX, currentY, {
+          width: textWidth,
+          lineGap: 2,
+        });
+
+        doc.y = Math.max(doc.y, currentY + rowSpacing) + 2;
       };
 
       addInfoRow('No. Tiket', ticketNumber);
@@ -169,7 +182,7 @@ export default {
 
       console.log('DEBUG PDF: Final totalQuantity:', totalQuantity);
 
-      addInfoRow('Jumlah', `${formatNumber(totalQuantity)}`);
+      addInfoRow('Jumlah', `${formatNumber(totalQuantity)} ${product.satuan || ''}`.trim());
       doc.moveDown(1);
 
       // Weight Section
@@ -216,14 +229,13 @@ export default {
 
       doc.moveDown(1.5);
 
-      // Manual customer name field
-      doc.moveDown(4);
-      const currentY = doc.y;
+      // Signature fields - fixed at bottom of page
+      const signatureY = 320 - 10 - 15; // Page height - bottom margin - signature height
       const pageWidth = 240 - 30;
       const leftX = infoX;
       const rightX = infoX + pageWidth - 90;
-      doc.font(fontName).fontSize(fontSize).text('(                    )', leftX, currentY);
-      doc.font(fontName).fontSize(fontSize).text('(                    )', rightX, currentY);
+      doc.font(fontName).fontSize(fontSize).text('(                    )', leftX, signatureY);
+      doc.font(fontName).fontSize(fontSize).text('(                    )', rightX, signatureY);
 
       doc.end();
 
