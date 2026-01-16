@@ -5,8 +5,8 @@ import { createResourceIdSchema } from './base';
 export type ShipmentCreateInput = {
   type: SHIPMENT_TYPE;
   armadaId?: string;
-  driverId: string;
-  kenek: string;
+  driverId?: string;
+  kenek?: string;
   internalNote?: string;
   plateNumber?: string;
 
@@ -105,16 +105,28 @@ export const createShipmentSchema = Joi.object<ShipmentCreateInput>({
   armadaId: Joi.string().uuid().allow(null).messages({
     'string.guid': 'Armada ID must be a valid UUID',
   }),
-  driverId: Joi.string().uuid().required().messages({
-    'string.guid': 'Driver ID must be a valid UUID',
-    'string.empty': 'Driver ID is required',
-    'any.required': 'Driver ID is required',
+  driverId: Joi.when('type', {
+    is: 'ANTAR',
+    then: Joi.string().uuid().required().messages({
+      'string.guid': 'Driver ID must be a valid UUID',
+      'string.empty': 'Driver ID is required',
+      'any.required': 'Driver ID is required',
+    }),
+    otherwise: Joi.string().uuid().optional().allow(null, '').messages({
+      'string.guid': 'Driver ID must be a valid UUID',
+    }),
   }),
-  kenek: Joi.string().required().min(1).max(255).messages({
-    'string.empty': 'Kenek is required',
-    'string.min': 'Kenek cannot be empty',
-    'string.max': 'Kenek cannot exceed {#limit} characters',
-    'any.required': 'Kenek is required',
+  kenek: Joi.when('type', {
+    is: 'ANTAR',
+    then: Joi.string().required().min(1).max(255).messages({
+      'string.empty': 'Kenek is required',
+      'string.min': 'Kenek cannot be empty',
+      'string.max': 'Kenek cannot exceed {#limit} characters',
+      'any.required': 'Kenek is required',
+    }),
+    otherwise: Joi.string().optional().allow(null, '').max(255).messages({
+      'string.max': 'Kenek cannot exceed {#limit} characters',
+    }),
   }),
   internalNote: Joi.string().allow('', null).max(1000).messages({
     'string.max': 'Internal note cannot exceed {#limit} characters',
