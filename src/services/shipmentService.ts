@@ -4624,110 +4624,114 @@ export default {
   },
 
   async performPreWeighing(shipmentId: string, grossWeight: number) {
-    const jakartaTime = new Date();
-    jakartaTime.setHours(jakartaTime.getHours() + 7);
+    return prisma.$transaction(async (tx) => {
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-    const shipment = await prisma.shipment.findUnique({
-      where: { id: shipmentId },
+      const shipment = await tx.shipment.findUnique({
+        where: { id: shipmentId },
+      });
+
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      if (!shipment.tally || shipment.tally.trim() === '') {
+        throw new CustomError({
+          message: 'Tally harus diisi terlebih dahulu',
+          errorCode: 'TALLY_REQUIRED',
+          status: 400,
+        });
+      }
+
+      if (shipment.preWeighingAt) {
+        throw new CustomError({
+          message: 'Pre-weighing sudah dilakukan',
+          errorCode: 'PRE_WEIGHING_ALREADY_DONE',
+          status: 400,
+        });
+      }
+
+      const updatedShipment = await tx.shipment.update({
+        where: { id: shipmentId },
+        data: {
+          preWeighingWeight: grossWeight,
+          preWeighingAt: jakartaTime,
+          preWeighingById: 'VENDOR',
+          status: STATUS.PROSES,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      return updatedShipment;
     });
-
-    if (!shipment) {
-      throw new CustomError({
-        message: 'Pengiriman tidak ditemukan',
-        errorCode: 'SHIPMENT_NOT_FOUND',
-        status: 404,
-      });
-    }
-
-    if (!shipment.tally || shipment.tally.trim() === '') {
-      throw new CustomError({
-        message: 'Tally harus diisi terlebih dahulu',
-        errorCode: 'TALLY_REQUIRED',
-        status: 400,
-      });
-    }
-
-    if (shipment.preWeighingAt) {
-      throw new CustomError({
-        message: 'Pre-weighing sudah dilakukan',
-        errorCode: 'PRE_WEIGHING_ALREADY_DONE',
-        status: 400,
-      });
-    }
-
-    const updatedShipment = await prisma.shipment.update({
-      where: { id: shipmentId },
-      data: {
-        preWeighingWeight: grossWeight,
-        preWeighingAt: jakartaTime,
-        preWeighingById: 'VENDOR',
-        status: STATUS.PROSES,
-        updatedAt: jakartaTime,
-      },
-    });
-
-    return updatedShipment;
   },
 
   async performPostWeighing(shipmentId: string, grossWeight: number) {
-    const jakartaTime = new Date();
-    jakartaTime.setHours(jakartaTime.getHours() + 7);
+    return prisma.$transaction(async (tx) => {
+      const jakartaTime = new Date();
+      jakartaTime.setHours(jakartaTime.getHours() + 7);
 
-    const shipment = await prisma.shipment.findUnique({
-      where: { id: shipmentId },
-      include: {
-        shipmentItems: true,
-      },
+      const shipment = await tx.shipment.findUnique({
+        where: { id: shipmentId },
+        include: {
+          shipmentItems: true,
+        },
+      });
+
+      if (!shipment) {
+        throw new CustomError({
+          message: 'Pengiriman tidak ditemukan',
+          errorCode: 'SHIPMENT_NOT_FOUND',
+          status: 404,
+        });
+      }
+
+      if (!shipment.preWeighingAt) {
+        throw new CustomError({
+          message: 'Pre-weighing harus dilakukan terlebih dahulu',
+          errorCode: 'PRE_WEIGHING_REQUIRED',
+          status: 400,
+        });
+      }
+
+      const nonCancelledItems = shipment.shipmentItems.filter(
+        (item) => item.status !== SHIPMENT_ITEM_STATUS.CANCELLED,
+      );
+      const allCompleted = nonCancelledItems.every((item) => item.status === SHIPMENT_ITEM_STATUS.COMPLETED);
+
+      if (!allCompleted) {
+        throw new CustomError({
+          message: 'Semua item harus selesai ditimbang',
+          errorCode: 'ITEMS_NOT_COMPLETED',
+          status: 400,
+        });
+      }
+
+      if (shipment.postWeighingAt) {
+        throw new CustomError({
+          message: 'Post-weighing sudah dilakukan',
+          errorCode: 'POST_WEIGHING_ALREADY_DONE',
+          status: 400,
+        });
+      }
+
+      const updatedShipment = await tx.shipment.update({
+        where: { id: shipmentId },
+        data: {
+          postWeighingWeight: grossWeight,
+          postWeighingAt: jakartaTime,
+          postWeighingById: 'VENDOR',
+          updatedAt: jakartaTime,
+        },
+      });
+
+      return updatedShipment;
     });
-
-    if (!shipment) {
-      throw new CustomError({
-        message: 'Pengiriman tidak ditemukan',
-        errorCode: 'SHIPMENT_NOT_FOUND',
-        status: 404,
-      });
-    }
-
-    if (!shipment.preWeighingAt) {
-      throw new CustomError({
-        message: 'Pre-weighing harus dilakukan terlebih dahulu',
-        errorCode: 'PRE_WEIGHING_REQUIRED',
-        status: 400,
-      });
-    }
-
-    const nonCancelledItems = shipment.shipmentItems.filter(
-      (item) => item.status !== SHIPMENT_ITEM_STATUS.CANCELLED,
-    );
-    const allCompleted = nonCancelledItems.every((item) => item.status === SHIPMENT_ITEM_STATUS.COMPLETED);
-
-    if (!allCompleted) {
-      throw new CustomError({
-        message: 'Semua item harus selesai ditimbang',
-        errorCode: 'ITEMS_NOT_COMPLETED',
-        status: 400,
-      });
-    }
-
-    if (shipment.postWeighingAt) {
-      throw new CustomError({
-        message: 'Post-weighing sudah dilakukan',
-        errorCode: 'POST_WEIGHING_ALREADY_DONE',
-        status: 400,
-      });
-    }
-
-    const updatedShipment = await prisma.shipment.update({
-      where: { id: shipmentId },
-      data: {
-        postWeighingWeight: grossWeight,
-        postWeighingAt: jakartaTime,
-        postWeighingById: 'VENDOR',
-        updatedAt: jakartaTime,
-      },
-    });
-
-    return updatedShipment;
   },
 
   async updateWeighingMethod(
