@@ -76,6 +76,7 @@ async function main() {
       PERMISSION_ACTION.REDUCE_ITEMS,
       PERMISSION_ACTION.CANCEL_ITEMS,
       PERMISSION_ACTION.UPDATE_WEIGHING_METHOD,
+      PERMISSION_ACTION.MANUAL_WEIGHING_OVERRIDE,
     ]);
 
     // Resources that support soft deletion (unarchiving)
@@ -111,6 +112,10 @@ async function main() {
         PERMISSION_ACTION.UPDATE_WEIGHING_METHOD,
         'Mengizinkan untuk mengubah metode penimbangan (manual/vendor)',
       ],
+      [
+        PERMISSION_ACTION.MANUAL_WEIGHING_OVERRIDE,
+        'Mengizinkan untuk input penimbangan truk secara manual',
+      ],
     ]);
 
     // Indonesian translations for actions
@@ -131,6 +136,7 @@ async function main() {
       [PERMISSION_ACTION.REDUCE_ITEMS, 'mengurangi item'],
       [PERMISSION_ACTION.CANCEL_ITEMS, 'membatalkan item'],
       [PERMISSION_ACTION.UPDATE_WEIGHING_METHOD, 'mengubah metode timbang'],
+      [PERMISSION_ACTION.MANUAL_WEIGHING_OVERRIDE, 'timbang truk manual'],
     ]);
 
     // Indonesian translations for resources

@@ -301,9 +301,13 @@ model Shipment {
   preWeighingWeight   Float?
   preWeighingAt       DateTime?
   preWeighingById     String?
-  postWeighingWeight  Float?
-  postWeighingAt      DateTime?
-  postWeighingById    String?
+  postWeighingWeight     Float?
+  postWeighingAt         DateTime?
+  postWeighingById       String?
+  isPreWeighingManual    Boolean  @default(false)
+  preWeighingManualReason String?
+  isPostWeighingManual   Boolean  @default(false)
+  postWeighingManualReason String?
   spmbs          SPMB[]
   armada         Armada?                 @relation(fields: [armadaId], references: [id])
   driver         Driver?                @relation(fields: [driverId], references: [id])
@@ -471,6 +475,7 @@ enum PERMISSION_ACTION {
   REDUCE_ITEMS
   CANCEL_ITEMS
   UPDATE_WEIGHING_METHOD
+  MANUAL_WEIGHING_OVERRIDE
 }
 
 enum STATUS {

@@ -140,6 +140,7 @@ async function main() {
       PERMISSION_ACTION.REDUCE_ITEMS,
       PERMISSION_ACTION.CANCEL_ITEMS,
       PERMISSION_ACTION.UPDATE_WEIGHING_METHOD,
+      PERMISSION_ACTION.MANUAL_WEIGHING_OVERRIDE,
     ]);
 
     // Resources that support soft deletion (unarchiving)

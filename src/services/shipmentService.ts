@@ -4801,4 +4801,154 @@ export default {
       return updated;
     });
   },
+
+  async manualTruckWeighing(
+    shipmentId: string,
+    type: 'PRE' | 'POST',
+    weight: number,
+    reason: string,
+    performedById: string,
+  ) {
+    const jakartaTime = new Date();
+    jakartaTime.setHours(jakartaTime.getHours() + 7);
+
+    const shipment = await prisma.shipment.findUnique({
+      where: { id: shipmentId },
+    });
+
+    if (!shipment) {
+      throw new CustomError({
+        message: 'Pengiriman tidak ditemukan',
+        errorCode: 'SHIPMENT_NOT_FOUND',
+        status: 404,
+      });
+    }
+
+    if (type === 'PRE') {
+      if (shipment.preWeighingWeight !== null) {
+        throw new CustomError({
+          message: 'Timbang awal (truk kosong) sudah dilakukan sebelumnya',
+          errorCode: 'PRE_WEIGHING_ALREADY_DONE',
+          status: 400,
+        });
+      }
+      if (shipment.status !== 'PENDING') {
+        throw new CustomError({
+          message: 'Pengiriman harus berstatus PENDING untuk timbang awal',
+          errorCode: 'INVALID_STATUS',
+          status: 400,
+        });
+      }
+      if (!shipment.tally) {
+        throw new CustomError({
+          message: 'Tally harus diisi terlebih dahulu sebelum timbang awal',
+          errorCode: 'TALLY_REQUIRED',
+          status: 400,
+        });
+      }
+
+      const oldData = {
+        preWeighingWeight: shipment.preWeighingWeight,
+        preWeighingAt: shipment.preWeighingAt,
+        status: shipment.status,
+        isPreWeighingManual: shipment.isPreWeighingManual,
+        preWeighingManualReason: shipment.preWeighingManualReason,
+      };
+
+      const updated = await prisma.shipment.update({
+        where: { id: shipmentId },
+        data: {
+          preWeighingWeight: weight,
+          preWeighingAt: jakartaTime,
+          status: 'PROSES',
+          isPreWeighingManual: true,
+          preWeighingManualReason: reason,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      await shipmentLogService.logShipmentUpdate(
+        shipmentId,
+        performedById,
+        oldData,
+        {
+          preWeighingWeight: updated.preWeighingWeight,
+          preWeighingAt: updated.preWeighingAt,
+          status: updated.status,
+          isPreWeighingManual: updated.isPreWeighingManual,
+          preWeighingManualReason: updated.preWeighingManualReason,
+        },
+        undefined,
+        `Timbang truk manual PRE: ${weight} kg - ${reason}`,
+      );
+
+      return updated;
+    } else {
+      // POST weighing
+      if (shipment.postWeighingWeight !== null) {
+        throw new CustomError({
+          message: 'Timbang akhir (truk muat) sudah dilakukan sebelumnya',
+          errorCode: 'POST_WEIGHING_ALREADY_DONE',
+          status: 400,
+        });
+      }
+      if (shipment.status !== 'PROSES') {
+        throw new CustomError({
+          message: 'Pengiriman harus berstatus PROSES untuk timbang akhir',
+          errorCode: 'INVALID_STATUS',
+          status: 400,
+        });
+      }
+
+      const activeItems = await prisma.shipmentItem.findMany({
+        where: {
+          shipmentId,
+          status: { not: 'CANCELLED' },
+        },
+      });
+      const allCompleted =
+        activeItems.length > 0 && activeItems.every((i) => i.status === 'COMPLETED');
+      if (!allCompleted) {
+        throw new CustomError({
+          message: 'Semua item harus sudah selesai ditimbang sebelum timbang truk akhir',
+          errorCode: 'ITEMS_NOT_COMPLETED',
+          status: 400,
+        });
+      }
+
+      const oldData = {
+        postWeighingWeight: shipment.postWeighingWeight,
+        postWeighingAt: shipment.postWeighingAt,
+        isPostWeighingManual: shipment.isPostWeighingManual,
+        postWeighingManualReason: shipment.postWeighingManualReason,
+      };
+
+      const updated = await prisma.shipment.update({
+        where: { id: shipmentId },
+        data: {
+          postWeighingWeight: weight,
+          postWeighingAt: jakartaTime,
+          isPostWeighingManual: true,
+          postWeighingManualReason: reason,
+          updatedAt: jakartaTime,
+        },
+      });
+
+      await shipmentLogService.logShipmentUpdate(
+        shipmentId,
+        performedById,
+        oldData,
+        {
+          postWeighingWeight: updated.postWeighingWeight,
+          postWeighingAt: updated.postWeighingAt,
+          isPostWeighingManual: updated.isPostWeighingManual,
+          postWeighingManualReason: updated.postWeighingManualReason,
+        },
+        undefined,
+        `Timbang truk manual POST: ${weight} kg - ${reason}`,
+      );
+
+      return updated;
+    }
+  },
 };

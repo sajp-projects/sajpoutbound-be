@@ -7,6 +7,7 @@ import { CustomError } from '../middlewares/error';
 import { deliveryOrderIdSchema } from '../schemas/deliveryOrder';
 import {
   createShipmentSchema,
+  manualTruckWeighSchema,
   ShipmentBulkWeighInput,
   shipmentBulkWeighSchema,
   ShipmentChosenProductInput,
@@ -1926,6 +1927,35 @@ export default {
       );
 
       res.status(200).json(success(result));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async manualTruckWeigh(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id: shipmentId } = req.params;
+      const validated = await manualTruckWeighSchema.validateAsync(req.body);
+      const { type, weight, reason } = validated;
+
+      const performedById = req.user?.id;
+      if (!performedById) {
+        throw new CustomError({
+          message: 'Autentikasi diperlukan untuk aksi ini',
+          errorCode: 'PERLU_AUTENTIKASI',
+          status: 401,
+        });
+      }
+
+      const result = await shipmentService.manualTruckWeighing(
+        shipmentId,
+        type,
+        weight,
+        reason,
+        performedById,
+      );
+
+      res.json({ success: true, message: `Timbang truk manual ${type} berhasil`, data: result });
     } catch (error) {
       next(error);
     }

@@ -396,3 +396,27 @@ export const shipmentSelectiveChosenProductSchema = Joi.object<ShipmentSelective
 
 // Using createResourceIdSchema for shipment ID validation
 export const shipmentIdSchema = createResourceIdSchema('Shipment');
+
+export type ManualTruckWeighInput = {
+  type: 'PRE' | 'POST';
+  weight: number;
+  reason: string;
+};
+
+export const manualTruckWeighSchema = Joi.object<ManualTruckWeighInput>({
+  type: Joi.string().valid('PRE', 'POST').required().messages({
+    'string.empty': 'Tipe timbangan harus diisi',
+    'any.only': 'Tipe timbangan harus PRE atau POST',
+    'any.required': 'Tipe timbangan harus diisi',
+  }),
+  weight: Joi.number().positive().required().messages({
+    'number.base': 'Berat harus berupa angka',
+    'number.positive': 'Berat harus lebih dari 0',
+    'any.required': 'Berat harus diisi',
+  }),
+  reason: Joi.string().min(5).max(500).required().messages({
+    'string.min': 'Alasan minimal 5 karakter',
+    'string.max': 'Alasan maksimal 500 karakter',
+    'any.required': 'Alasan harus diisi',
+  }),
+});

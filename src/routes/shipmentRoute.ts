@@ -148,6 +148,14 @@ router.post(
   shipmentController.manualWeighItems,
 );
 
+// Manual truck weighing (PRE/POST)
+router.post(
+  '/:id/manual-truck-weigh',
+  checkShipmentNotArchived,
+  checkPermission('shipment', PERMISSION_ACTION.MANUAL_WEIGHING_OVERRIDE),
+  shipmentController.manualTruckWeigh,
+);
+
 // Individual item weighing (legacy)
 router.post(
   '/:shipmentId/weigh-item',
