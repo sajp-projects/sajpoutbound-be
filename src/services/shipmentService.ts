@@ -4706,13 +4706,7 @@ export default {
           status: 400,
         });
       }
-      if (!shipment.tally) {
-        throw new CustomError({
-          message: 'Tally harus diisi terlebih dahulu sebelum timbang awal',
-          errorCode: 'TALLY_REQUIRED',
-          status: 400,
-        });
-      }
+
       if (weight <= 0) {
         throw new CustomError({
           message: 'Berat harus lebih dari 0',
@@ -4836,13 +4830,6 @@ export default {
         throw new CustomError({
           message: 'Pengiriman harus berstatus PENDING untuk timbang awal',
           errorCode: 'INVALID_STATUS',
-          status: 400,
-        });
-      }
-      if (!shipment.tally) {
-        throw new CustomError({
-          message: 'Tally harus diisi terlebih dahulu sebelum timbang awal',
-          errorCode: 'TALLY_REQUIRED',
           status: 400,
         });
       }

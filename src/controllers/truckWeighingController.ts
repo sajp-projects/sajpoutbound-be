@@ -51,8 +51,7 @@ export const getShipmentsForTruckWeighing = async (
         const allItemsCompleted =
           nonCancelledItems.length > 0 && completedItems.length === nonCancelledItems.length;
 
-        const needsPreWeighing =
-          s.status === 'PENDING' && s.preWeighingWeight === null && !!s.tally;
+        const needsPreWeighing = s.status === 'PENDING' && s.preWeighingWeight === null;
         const needsPostWeighing =
           s.status === 'PROSES' && s.postWeighingWeight === null && allItemsCompleted;
         // Shipment is waiting for items to be completed before POST weighing
@@ -109,8 +108,7 @@ export const getShipmentDetailForTruckWeighing = async (
     const nonCancelledItems = shipment.shipmentItems.filter((i) => i.status !== 'CANCELLED');
     const completedItems = nonCancelledItems.filter((i) => i.status === 'COMPLETED');
 
-    const needsPreWeighing =
-      shipment.status === 'PENDING' && shipment.preWeighingWeight === null && !!shipment.tally;
+    const needsPreWeighing = shipment.status === 'PENDING' && shipment.preWeighingWeight === null;
     const needsPostWeighing =
       shipment.status === 'PROSES' &&
       shipment.postWeighingWeight === null &&
