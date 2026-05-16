@@ -1073,6 +1073,44 @@ export default {
   },
 
   /**
+   * Get SPMB data for frontend PDF generation
+   */
+  async getSpmbData(
+    req: Request<{ shipmentId: string; spmbId: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { shipmentId, spmbId } = req.params;
+
+      const result = await shipmentService.getSpmbData(shipmentId, spmbId);
+
+      res.status(200).json(success(result));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * Get Nota Timbangan data for frontend PDF generation
+   */
+  async getNotaTimbanganData(
+    req: Request<{ shipmentId: string; weighingId: string }>,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const { shipmentId, weighingId } = req.params;
+
+      const result = await shipmentService.getNotaTimbanganData(shipmentId, weighingId);
+
+      res.status(200).json(success(result));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
    * Upload plate photo for a shipment
    *
    * This can only be done when all shipment items are in COMPLETED status

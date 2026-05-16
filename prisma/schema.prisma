@@ -374,7 +374,8 @@ model SPMB {
 model NotaTimbangan {
   id                              String                        @id @default(uuid())
   ticketNumber                    String                        @unique
-  documentPath                    String
+  ticketSeq                       Int                           @unique @default(autoincrement())
+  documentPath                    String?
   shipmentChosenProductWeighingId String                        @unique
   createdAt                       DateTime                      @default(now())
   updatedAt                       DateTime                      @updatedAt

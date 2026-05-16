@@ -87,6 +87,20 @@ router.get(
   shipmentController.getNotaTimbanganForProduct,
 );
 
+// Get SPMB data for frontend PDF generation
+router.get(
+  '/:shipmentId/spmb/:spmbId/data',
+  checkPermission('shipment', PERMISSION_ACTION.READ),
+  shipmentController.getSpmbData,
+);
+
+// Get Nota Timbangan data for frontend PDF generation
+router.get(
+  '/:shipmentId/nota-timbangan/:weighingId/data',
+  checkPermission('shipment', PERMISSION_ACTION.READ),
+  shipmentController.getNotaTimbanganData,
+);
+
 // Get shipment by ID
 router.get(
   '/:id',

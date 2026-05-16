@@ -7,9 +7,7 @@ import prisma from '../config/prisma';
 import { CustomError } from '../middlewares/error';
 import { DeliveryOrderCreateInput, DeliveryOrderUpdateInput } from '../schemas/deliveryOrder';
 import deliveryOrderLogService from './deliveryOrderLogService';
-import notaTimbanganPdfService from './notaTimbanganPdfService';
 import shipmentLogService from './shipmentLogService';
-import spmbPdfService from './spmbPdfService';
 
 /**
  * Service for handling delivery order operations
@@ -1139,7 +1137,7 @@ export default {
         });
 
         if (shipmentForPdf) {
-          const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
+          const pdfPath = null;
           await tx.sPMB.update({
             where: {
               id: spmb.id,
@@ -1217,10 +1215,7 @@ export default {
           // Generate new nota timbangan PDF with updated customer
           const nanoid = customAlphabet('1234567890', 6);
           const ticketNumber = nanoid();
-          const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
-            weighing,
-            ticketNumber,
-          );
+          const pdfPath = null;
 
           // Update nota timbangan record
           await tx.notaTimbangan.update({
@@ -1568,11 +1563,7 @@ export default {
           console.log('DEBUG: Weighing ID:', weighingUpdate.weighingId);
           console.log('DEBUG: New gross weight:', weighingUpdate.grossWeight);
 
-          const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
-            updatedWeighing,
-            ticketNumber,
-            weighingUpdate.revisedQuantity,
-          );
+          const pdfPath = null;
 
           // Update nota timbangan record
           if (weighingUpdate.notaTimbangan?.id) {
@@ -1695,7 +1686,7 @@ export default {
         });
 
         if (shipmentForPdf) {
-          const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
+          const pdfPath = null;
           await tx.sPMB.update({
             where: {
               id: spmb.id,
@@ -2286,7 +2277,7 @@ export default {
           } else {
             // Regenerate SPMB with updated quantities
             try {
-              const pdfPath = await spmbPdfService.generateSPMB(spmb, spmb.shipment);
+              const pdfPath = null;
 
               await tx.sPMB.update({
                 where: { id: spmb.id },
@@ -2426,14 +2417,7 @@ export default {
         if (weighingWithIncludes) {
           // Generate the Nota Timbangan PDF
           try {
-            const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
-              {
-                ...weighingWithIncludes,
-                timeOut: jakartaTime,
-              },
-              ticketNumber,
-              totalTransferredQuantity, // Use total transferred quantity for PDF
-            );
+            const pdfPath = null;
 
             // Create NotaTimbangan record in database
             await tx.notaTimbangan.create({
@@ -2582,7 +2566,7 @@ export default {
             shipmentItemsCount: spmb.shipment.shipmentItems?.length || 0,
           });
 
-          const pdfPath = await spmbPdfService.generateSPMB(spmb, spmb.shipment);
+          const pdfPath = null;
 
           // Update SPMB record with the PDF path
           await tx.sPMB.update({
@@ -2851,7 +2835,7 @@ export default {
 
         // Generate new SPMB PDF with updated quantities
         if (updatedSpmb.shipment) {
-          const pdfPath = await spmbPdfService.generateSPMB(updatedSpmb, updatedSpmb.shipment);
+          const pdfPath = null;
           await tx.sPMB.update({
             where: {
               id: updatedSpmb.id,
@@ -3543,11 +3527,7 @@ export default {
             // Generate new nota timbangan PDF
             const nanoid = customAlphabet('1234567890', 6);
             const ticketNumber = nanoid();
-            const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
-              updatedWeighing,
-              ticketNumber,
-              quantityForPdf, // Pass the correct quantity based on weighing type
-            );
+            const pdfPath = null;
 
             // Update nota timbangan record
             if (weighing.notaTimbangan?.id) {
@@ -3656,7 +3636,7 @@ export default {
 
         // Generate new SPMB PDF
         if (updatedSpmb.shipment) {
-          const pdfPath = await spmbPdfService.generateSPMB(updatedSpmb, updatedSpmb.shipment);
+          const pdfPath = null;
           await tx.sPMB.update({
             where: {
               id: updatedSpmb.id,

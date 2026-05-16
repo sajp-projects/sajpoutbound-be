@@ -17,9 +17,7 @@ import {
 } from '../schemas/shipment';
 import { SPMBCreateInput } from '../schemas/spmb';
 import armadaService from './armadaService';
-import notaTimbanganPdfService from './notaTimbanganPdfService';
 import shipmentLogService from './shipmentLogService';
-import spmbPdfService from './spmbPdfService';
 
 /**
  * Service for handling shipment operations
@@ -815,7 +813,7 @@ export default {
         });
 
         if (shipmentForPdf) {
-          const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
+          const pdfPath = null;
           const updatedSpmb = await tx.sPMB.update({
             where: {
               id: spmb.id,
@@ -1453,7 +1451,7 @@ export default {
           });
 
           if (shipmentForPdf) {
-            const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
+            const pdfPath = null;
             const updatedSpmb = await tx.sPMB.update({
               where: {
                 id: spmb.id,
@@ -1890,14 +1888,7 @@ export default {
         throw new Error('Weighing record not found for PDF generation');
       }
 
-      const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
-        {
-          ...weighingWithIncludes,
-          timeOut: weighingWithIncludes.createdAt,
-        },
-        ticketNumber,
-        existingItem.requestedQuantity, // Use the individual item's requested quantity
-      );
+      const pdfPath = null;
 
       // Save Nota Timbangan to database
       await tx.notaTimbangan.create({
@@ -3224,14 +3215,7 @@ export default {
       // Generate Nota Timbangan PDF and save to DB
       const nanoid = customAlphabet('1234567890', 6);
       const ticketNumber = nanoid();
-      const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
-        {
-          ...weighing,
-          timeOut: weighing.createdAt,
-        },
-        ticketNumber,
-        totalRequestedQuantity, // Pass the actual quantity being weighed
-      );
+      const pdfPath = null;
       await tx.notaTimbangan.create({
         data: {
           ticketNumber,
@@ -3403,6 +3387,103 @@ export default {
         createdAt: 'desc',
       },
     });
+  },
+
+  /**
+   * Get all Nota Timbangan documents for a product in a shipment
+   */
+  async getSpmbData(shipmentId: string, spmbId: string) {
+    const spmb = await prisma.sPMB.findUnique({
+      where: {
+        id: spmbId,
+        shipmentId,
+      },
+      include: {
+        deliveryOrder: {
+          include: {
+            customer: true,
+            items: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        },
+        shipment: {
+          include: {
+            armada: true,
+            driver: true,
+            shipmentItems: {
+              include: {
+                product: true,
+                deliveryOrder: {
+                  include: {
+                    customer: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        warehouse: true,
+        generatedBy: true,
+      },
+    });
+
+    if (!spmb) {
+      throw new CustomError({
+        message: 'SPMB tidak ditemukan',
+        errorCode: 'NOT_FOUND',
+        status: 404,
+      });
+    }
+
+    return spmb;
+  },
+
+  /**
+   * Get Nota Timbangan data for frontend PDF generation
+   */
+  async getNotaTimbanganData(shipmentId: string, weighingId: string) {
+    const weighing = await prisma.shipmentChosenProductWeighing.findUnique({
+      where: {
+        id: weighingId,
+      },
+      include: {
+        shipmentChosenProduct: {
+          include: {
+            product: true,
+            shipment: {
+              include: {
+                armada: true,
+                driver: true,
+                shipmentItems: {
+                  include: {
+                    deliveryOrder: {
+                      include: {
+                        customer: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        notaTimbangan: true,
+        shipmentItems: true, // Need shipment items for quantity calculation
+      },
+    });
+
+    if (!weighing || weighing.shipmentChosenProduct.shipmentId !== shipmentId) {
+      throw new CustomError({
+        message: 'Data timbangan tidak ditemukan',
+        errorCode: 'NOT_FOUND',
+        status: 404,
+      });
+    }
+
+    return weighing;
   },
 
   /**
@@ -3820,7 +3901,7 @@ export default {
             }
 
             // Regenerate PDF with updated shipment data (which includes new tally)
-            const pdfPath = await spmbPdfService.generateSPMB(spmb, shipmentForPdf);
+            const pdfPath = null;
 
             // Update SPMB with new path
             await tx.sPMB.update({
@@ -3997,11 +4078,7 @@ export default {
       // Generate Nota Timbangan PDF and save to DB
       const nanoid = customAlphabet('1234567890', 6);
       const ticketNumber = nanoid();
-      const pdfPath = await notaTimbanganPdfService.generateNotaTimbangan(
-        weighing,
-        ticketNumber,
-        shipmentItem.requestedQuantity,
-      );
+      const pdfPath = null;
 
       await tx.notaTimbangan.create({
         data: {
@@ -4184,14 +4261,7 @@ export default {
 
       if (updatedWeighingWithIncludes && updatedWeighingWithIncludes.notaTimbangan) {
         // Always regenerate the nota timbangan with the new quantity and weights
-        await notaTimbanganPdfService.generateNotaTimbangan(
-          {
-            ...updatedWeighingWithIncludes,
-            timeOut: updatedWeighingWithIncludes.timeOut || updatedWeighingWithIncludes.createdAt,
-          },
-          updatedWeighingWithIncludes.notaTimbangan.ticketNumber,
-          newTotalQuantity, // New reduced quantity (0 if all items cancelled)
-        );
+        null;
       }
     }
   },
@@ -4324,7 +4394,7 @@ export default {
         });
 
         if (spmbData && spmbData.shipment) {
-          await spmbPdfService.generateSPMB(spmbData, spmbData.shipment);
+          null;
         }
       }
 
@@ -4502,7 +4572,7 @@ export default {
         });
 
         if (spmbData && spmbData.shipment) {
-          await spmbPdfService.generateSPMB(spmbData, spmbData.shipment);
+          null;
         }
       }
 

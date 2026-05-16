@@ -1,0 +1,2 @@
+ALTER TABLE `NotaTimbangan` ADD COLUMN `ticketSeq` INT NOT NULL AUTO_INCREMENT, MODIFY COLUMN `documentPath` VARCHAR(191) NULL, ADD UNIQUE INDEX `NotaTimbangan_ticketSeq_key`(`ticketSeq`);
+ALTER TABLE `SPMB` MODIFY COLUMN `documentPath` VARCHAR(191) NULL;
