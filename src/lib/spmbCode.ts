@@ -6,9 +6,12 @@ const MONTH_LETTERS = 'ABCDEFGHIJKL';
 /**
  * Generates the user-facing SPMB display code in the format:
  *   {warehouseCode}-{monthLetter}{yy}{dd}{sequence}
- * Example: GDB-A26160001 (first SPMB of January 16, 2026 for warehouse GDB)
+ * Example: GDB-G26161 (SPMB #1 for warehouse GDB, created July 16, 2026)
  *
- * The sequence is 4 digits and resets per warehouse per day.
+ * The date part reflects when the SPMB was created; the sequence is a
+ * per-warehouse counter that starts at 1, never resets, and has no zero
+ * padding (…9, 10, 11, … 100, …).
+ *
  * This is stored in SPMB.displayCode and shown to users; SPMB.code remains
  * the internal unique identifier.
  *
@@ -29,20 +32,26 @@ export const generateSpmbDisplayCode = async (
   const monthLetter = MONTH_LETTERS[jakartaTime.getMonth()];
   const yearSuffix = String(jakartaTime.getFullYear() % 100).padStart(2, '0');
   const daySuffix = String(jakartaTime.getDate()).padStart(2, '0');
-  const prefix = `${warehouseCode || 'WH'}-${monthLetter}${yearSuffix}${daySuffix}`;
+  const warehouse = warehouseCode || 'WH';
+  const prefix = `${warehouse}-${monthLetter}${yearSuffix}${daySuffix}`;
+
+  // Sequence spans all dates for this warehouse: match any month letter and
+  // 4-digit yy+dd, capture everything after as the sequence number.
+  const escapedWarehouse = warehouse.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const sequencePattern = new RegExp(`^${escapedWarehouse}-[A-L]\\d{4}(\\d+)$`);
 
   const existingCodes = await tx.sPMB.findMany({
-    where: { displayCode: { startsWith: prefix } },
+    where: { displayCode: { startsWith: `${warehouse}-` } },
     select: { displayCode: true },
   });
 
   let maxSequence = 0;
   for (const { displayCode } of existingCodes) {
-    const suffix = displayCode?.slice(prefix.length) ?? '';
-    if (/^\d{4,}$/.test(suffix)) {
-      maxSequence = Math.max(maxSequence, parseInt(suffix, 10));
+    const match = displayCode?.match(sequencePattern);
+    if (match) {
+      maxSequence = Math.max(maxSequence, parseInt(match[1], 10));
     }
   }
 
-  return `${prefix}${String(maxSequence + 1).padStart(4, '0')}`;
+  return `${prefix}${maxSequence + 1}`;
 };
