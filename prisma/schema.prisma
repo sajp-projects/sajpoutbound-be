@@ -372,6 +372,14 @@ model SPMB {
   @@index([generatedById], map: "SPMB_generatedById_fkey")
 }
 
+model SpmbDailyCounter {
+  warehouseCode String
+  dateKey       String // YYMMDD (Jakarta time)
+  seq           Int    @default(0)
+
+  @@id([warehouseCode, dateKey])
+}
+
 model NotaTimbangan {
   id                              String                        @id @default(uuid())
   ticketNumber                    String                        @unique

@@ -31,22 +31,22 @@ export const generateSpmbDisplayCode = async (
   const monthLetter = MONTH_LETTERS[jakartaTime.getMonth()];
   const yearSuffix = String(jakartaTime.getFullYear() % 100).padStart(2, '0');
   const daySuffix = String(jakartaTime.getDate()).padStart(2, '0');
-  const prefix = `${warehouseCode || 'WH'}-${monthLetter}${yearSuffix}${daySuffix}`;
+  const warehouse = warehouseCode || 'WH';
+  const prefix = `${warehouse}-${monthLetter}${yearSuffix}${daySuffix}`;
+  const dateKey = `${yearSuffix}${String(jakartaTime.getMonth() + 1).padStart(2, '0')}${daySuffix}`;
 
-  const existingCodes = await tx.sPMB.findMany({
-    where: { displayCode: { startsWith: prefix } },
-    select: { displayCode: true },
-  });
+  // Atomic per-warehouse-per-day counter. The INSERT..ON DUPLICATE KEY UPDATE
+  // row lock serializes concurrent transactions, so two shipments created at
+  // the same moment can never get the same sequence. LAST_INSERT_ID(expr)
+  // makes the incremented value readable on this connection without another
+  // locking read.
+  await tx.$executeRaw`
+    INSERT INTO SpmbDailyCounter (warehouseCode, dateKey, seq)
+    VALUES (${warehouse}, ${dateKey}, LAST_INSERT_ID(1))
+    ON DUPLICATE KEY UPDATE seq = LAST_INSERT_ID(seq + 1)
+  `;
+  const rows = await tx.$queryRaw<{ seq: bigint }[]>`SELECT LAST_INSERT_ID() AS seq`;
+  const sequence = Number(rows[0].seq);
 
-  // Suffix after today's prefix is the sequence. The optional dash and
-  // leading zeros tolerate codes from earlier format iterations.
-  let maxSequence = 0;
-  for (const { displayCode } of existingCodes) {
-    const match = (displayCode ?? '').slice(prefix.length).match(/^-?(\d+)$/);
-    if (match) {
-      maxSequence = Math.max(maxSequence, parseInt(match[1], 10));
-    }
-  }
-
-  return `${prefix}${maxSequence + 1}`;
+  return `${prefix}${sequence}`;
 };
