@@ -5,8 +5,8 @@ const MONTH_LETTERS = 'ABCDEFGHIJKL';
 
 /**
  * Generates the user-facing SPMB display code in the format:
- *   {warehouseCode}-{monthLetter}{yy}{dd}{sequence}
- * Example: GDB-G26161 (SPMB #1 for warehouse GDB, created July 16, 2026)
+ *   {warehouseCode}-{monthLetter}{yy}{dd}-{sequence}
+ * Example: GDB-G2616-1 (SPMB #1 for warehouse GDB, created July 16, 2026)
  *
  * The date part reflects when the SPMB was created; the sequence is a
  * per-warehouse counter that starts at 1, never resets, and has no zero
@@ -36,9 +36,10 @@ export const generateSpmbDisplayCode = async (
   const prefix = `${warehouse}-${monthLetter}${yearSuffix}${daySuffix}`;
 
   // Sequence spans all dates for this warehouse: match any month letter and
-  // 4-digit yy+dd, capture everything after as the sequence number.
+  // 4-digit yy+dd, capture everything after as the sequence number. The dash
+  // before the sequence is optional so legacy codes without it still count.
   const escapedWarehouse = warehouse.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const sequencePattern = new RegExp(`^${escapedWarehouse}-[A-L]\\d{4}(\\d+)$`);
+  const sequencePattern = new RegExp(`^${escapedWarehouse}-[A-L]\\d{4}-?(\\d+)$`);
 
   const existingCodes = await tx.sPMB.findMany({
     where: { displayCode: { startsWith: `${warehouse}-` } },
@@ -53,5 +54,5 @@ export const generateSpmbDisplayCode = async (
     }
   }
 
-  return `${prefix}${maxSequence + 1}`;
+  return `${prefix}-${maxSequence + 1}`;
 };
