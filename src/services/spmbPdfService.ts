@@ -119,7 +119,7 @@ export default {
       const spmbInfoTop = doc.y + 10;
       doc.fontSize(10);
       doc.text('No.', 20, spmbInfoTop);
-      doc.text(`: ${spmb.code}`, 80, spmbInfoTop);
+      doc.text(`: ${spmb.displayCode ?? spmb.code}`, 80, spmbInfoTop);
       doc.text('Tanggal', 20, spmbInfoTop + 15);
       doc.text(`: ${new Date(spmb.createdAt).toLocaleDateString('id-ID')}`, 80, spmbInfoTop + 15);
       doc.text('Kepada', 20, spmbInfoTop + 30);

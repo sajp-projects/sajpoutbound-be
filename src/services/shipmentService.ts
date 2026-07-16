@@ -4,6 +4,7 @@ import moment from 'moment-timezone';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import prisma from '../config/prisma';
+import { generateSpmbDisplayCode } from '../lib/spmbCode';
 import { CustomError } from '../middlewares/error';
 import {
   ShipmentBulkWeighInput,
@@ -755,12 +756,16 @@ export default {
         const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
         const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
 
+        // Generate the user-facing SPMB display code
+        const spmbDisplayCode = await generateSpmbDisplayCode(tx, warehouse?.code);
+
         const spmb = await tx.sPMB.create({
           data: {
             shipmentId: shipment.id,
             deliveryOrderId: combination.deliveryOrderId,
             warehouseId: combination.warehouseId,
             code: spmbCode,
+            displayCode: spmbDisplayCode,
             createdAt: jakartaTime,
             generatedById: performedById,
             updatedAt: jakartaTime,
@@ -1392,12 +1397,16 @@ export default {
           const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
           const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
 
+          // Generate the user-facing SPMB display code
+          const spmbDisplayCode = await generateSpmbDisplayCode(tx, warehouse?.code);
+
           const spmb = await tx.sPMB.create({
             data: {
               shipmentId: id,
               deliveryOrderId: combination.deliveryOrderId,
               warehouseId: combination.warehouseId,
               code: spmbCode,
+              displayCode: spmbDisplayCode,
               generatedById: performedById,
               createdAt: jakartaTime,
               updatedAt: jakartaTime,

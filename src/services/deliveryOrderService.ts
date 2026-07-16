@@ -4,6 +4,7 @@ import moment from 'moment-timezone';
 import { customAlphabet } from 'nanoid';
 import path from 'path';
 import prisma from '../config/prisma';
+import { generateSpmbDisplayCode } from '../lib/spmbCode';
 import { CustomError } from '../middlewares/error';
 import { DeliveryOrderCreateInput, DeliveryOrderUpdateInput } from '../schemas/deliveryOrder';
 import deliveryOrderLogService from './deliveryOrderLogService';
@@ -1077,6 +1078,9 @@ export default {
         const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
         const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
 
+        // Generate the user-facing SPMB display code
+        const spmbDisplayCode = await generateSpmbDisplayCode(tx, warehouse?.code);
+
         // Update the SPMB with new code
         const spmb = await tx.sPMB.update({
           where: {
@@ -1084,6 +1088,7 @@ export default {
           },
           data: {
             code: spmbCode,
+            displayCode: spmbDisplayCode,
             documentPath: null, // Will be updated after PDF generation
             updatedAt: jakartaTime,
             generatedById: performedById,
@@ -1601,6 +1606,7 @@ export default {
           id: true,
           documentPath: true,
           shipmentId: true,
+          warehouseId: true,
         },
       });
 
@@ -1622,9 +1628,18 @@ export default {
 
       // Regenerate SPMBs with updated quantities
       for (const existingSpmb of existingSpmbs) {
-        // Generate a unique SPMB code
+        // Get warehouse code for SPMB numbering
+        const warehouse = await tx.warehouse.findUnique({
+          where: { id: existingSpmb.warehouseId },
+          select: { code: true },
+        });
+
+        // Generate a unique SPMB code with warehouse prefix
         const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
-        const spmbCode = `SPMB-${nanoid()}`;
+        const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
+
+        // Generate the user-facing SPMB display code
+        const spmbDisplayCode = await generateSpmbDisplayCode(tx, warehouse?.code);
 
         // Update the SPMB with new code
         const spmb = await tx.sPMB.update({
@@ -1633,6 +1648,7 @@ export default {
           },
           data: {
             code: spmbCode,
+            displayCode: spmbDisplayCode,
             documentPath: null, // Will be updated after PDF generation
             updatedAt: jakartaTime,
             generatedById: performedById,
@@ -2270,7 +2286,7 @@ export default {
             // Collect data for logging
             spmbChanges.push({
               spmbId: spmb.id,
-              spmbCode: spmb.code,
+              spmbCode: spmb.displayCode ?? spmb.code,
               action: 'DELETED' as const,
               reason: 'No remaining items after transfer',
             });
@@ -2290,7 +2306,7 @@ export default {
               // Collect data for logging
               spmbChanges.push({
                 spmbId: spmb.id,
-                spmbCode: spmb.code,
+                spmbCode: spmb.displayCode ?? spmb.code,
                 action: 'UPDATED' as const,
                 reason: 'Updated quantities after transfer',
               });
@@ -2510,12 +2526,16 @@ export default {
           const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
           const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
 
+          // Generate the user-facing SPMB display code
+          const spmbDisplayCode = await generateSpmbDisplayCode(tx, warehouse?.code);
+
           const spmb = await tx.sPMB.create({
             data: {
               shipmentId: sourceShipmentId,
               deliveryOrderId: completeNewDO.id,
               warehouseId,
               code: spmbCode,
+              displayCode: spmbDisplayCode,
               generatedById: performedById,
               createdAt: jakartaTime,
               updatedAt: jakartaTime,
@@ -2790,6 +2810,9 @@ export default {
         const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
         const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
 
+        // Generate the user-facing SPMB display code
+        const spmbDisplayCode = await generateSpmbDisplayCode(tx, warehouse?.code);
+
         // Update the SPMB with new code
         const updatedSpmb = await tx.sPMB.update({
           where: {
@@ -2797,6 +2820,7 @@ export default {
           },
           data: {
             code: spmbCode,
+            displayCode: spmbDisplayCode,
             documentPath: null, // Will be updated after PDF generation
             updatedAt: jakartaTime,
             generatedById: performedById,
@@ -3591,6 +3615,9 @@ export default {
         const nanoid = customAlphabet('1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ', 6);
         const spmbCode = `${warehouse?.code || 'WH'}-${nanoid()}`;
 
+        // Generate the user-facing SPMB display code
+        const spmbDisplayCode = await generateSpmbDisplayCode(tx, warehouse?.code);
+
         // Update the SPMB with new code
         const updatedSpmb = await tx.sPMB.update({
           where: {
@@ -3598,6 +3625,7 @@ export default {
           },
           data: {
             code: spmbCode,
+            displayCode: spmbDisplayCode,
             documentPath: null, // Will be updated after PDF generation
             updatedAt: jakartaTime,
             generatedById: performedById,

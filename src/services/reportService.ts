@@ -98,6 +98,7 @@ export default {
                   select: {
                     id: true,
                     code: true,
+                    displayCode: true,
                     warehouseId: true,
                   },
                 },
@@ -526,6 +527,7 @@ export default {
                   select: {
                     id: true,
                     code: true,
+                    displayCode: true,
                     warehouseId: true,
                   },
                 },
@@ -800,6 +802,7 @@ export default {
                   select: {
                     id: true,
                     code: true,
+                    displayCode: true,
                     warehouseId: true,
                   },
                 },
@@ -954,7 +957,7 @@ export default {
                   spmb: spmbForDO
                     ? {
                         id: spmbForDO.id,
-                        code: spmbForDO.code,
+                        code: spmbForDO.displayCode ?? spmbForDO.code,
                       }
                     : null,
                 },
@@ -1229,6 +1232,7 @@ export default {
                   select: {
                     id: true,
                     code: true,
+                    displayCode: true,
                     warehouseId: true,
                   },
                 },
@@ -1382,7 +1386,7 @@ export default {
                 spmb: spmbForDO
                   ? {
                       id: spmbForDO.id,
-                      code: spmbForDO.code,
+                      code: spmbForDO.displayCode ?? spmbForDO.code,
                     }
                   : null,
               },
@@ -1522,6 +1526,7 @@ export default {
                   select: {
                     id: true,
                     code: true,
+                    displayCode: true,
                     warehouseId: true,
                   },
                 },

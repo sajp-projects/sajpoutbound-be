@@ -163,6 +163,7 @@ export default {
         spmbs: {
           select: {
             code: true,
+            displayCode: true,
             deliveryOrderId: true,
           },
         },
@@ -242,7 +243,7 @@ export default {
         const rowData = {
           no: rowNumber++,
           tanggal: moment(shipment.verifiedAt).tz('Asia/Jakarta').format('DD-MM-YYYY'),
-          noSpmb: spmbForDO?.code || '',
+          noSpmb: spmbForDO?.displayCode || spmbForDO?.code || '',
           namaCustomer: item.deliveryOrder.customer.name,
           namaBarang: item.product.name,
           qty: item.requestedQuantity,

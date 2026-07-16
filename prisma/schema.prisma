@@ -355,6 +355,7 @@ model SPMB {
   deliveryOrderId String
   warehouseId     String
   code            String        @unique
+  displayCode     String?       @unique
   documentPath    String?
   generatedById   String?
   createdAt       DateTime      @default(now())
