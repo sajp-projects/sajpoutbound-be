@@ -114,6 +114,9 @@ async function main() {
     const deliveryOrderCount = await prisma.deliveryOrder.deleteMany();
     console.log(`  - DeliveryOrder: ${deliveryOrderCount.count} records deleted`);
 
+    const spmbCounterCount = await prisma.spmbDailyCounter.deleteMany();
+    console.log(`  - SpmbDailyCounter: ${spmbCounterCount.count} records deleted`);
+
     // Step 5: Clear user session data (refresh tokens, expiry)
     console.log('\n[5/5] Clearing user session data...');
 
