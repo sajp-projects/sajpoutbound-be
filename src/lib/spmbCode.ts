@@ -5,8 +5,8 @@ const MONTH_LETTERS = 'ABCDEFGHIJKL';
 
 /**
  * Generates the user-facing SPMB display code in the format:
- *   {warehouseCode}-{monthLetter}{yy}{dd}{sequence}
- * Example: GDB-G26161 (SPMB #1 for warehouse GDB, created July 16, 2026)
+ *   {warehouseCode}-{monthLetter}{yy}{dd}-{sequence}
+ * Example: GDB-G2616-1 (SPMB #1 for warehouse GDB, created July 16, 2026)
  *
  * The sequence resets per warehouse per day, starts at 1, and has no zero
  * padding (…9, 10, 11, …).
@@ -35,11 +35,6 @@ export const generateSpmbDisplayCode = async (
   const prefix = `${warehouse}-${monthLetter}${yearSuffix}${daySuffix}`;
   const dateKey = `${yearSuffix}${String(jakartaTime.getMonth() + 1).padStart(2, '0')}${daySuffix}`;
 
-  // Atomic per-warehouse-per-day counter. The INSERT..ON DUPLICATE KEY UPDATE
-  // row lock serializes concurrent transactions, so two shipments created at
-  // the same moment can never get the same sequence. LAST_INSERT_ID(expr)
-  // makes the incremented value readable on this connection without another
-  // locking read.
   await tx.$executeRaw`
     INSERT INTO SpmbDailyCounter (warehouseCode, dateKey, seq)
     VALUES (${warehouse}, ${dateKey}, LAST_INSERT_ID(1))
@@ -48,5 +43,5 @@ export const generateSpmbDisplayCode = async (
   const rows = await tx.$queryRaw<{ seq: bigint }[]>`SELECT LAST_INSERT_ID() AS seq`;
   const sequence = Number(rows[0].seq);
 
-  return `${prefix}${sequence}`;
+  return `${prefix}-${sequence}`;
 };
